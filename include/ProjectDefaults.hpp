@@ -36,15 +36,27 @@ namespace Preferences
   //
   // Eingänge GPIO, nicht konfigurierbar
   //
-  constexpr uint8_t INPUT_TACHO = 3;            //! Tachoimpuls / Reed Kontakt
+  constexpr uint8_t INPUT_TACHO = 16;           //! Tachoimpuls / Reed Kontakt
   constexpr uint8_t INPUT_FUNCTION_SWITCH = 4;  //! Funktionstaster Cross/WLAN
   constexpr uint8_t INPUT_RAIN_SWITCH = 5;      //! Funktionstaster Regen (optional)
   constexpr uint8_t INPUT_ANALOG = A0;          //! Eingang Analogschnittstelle
   //
   // Wie lange dauert das entprellen in Millisekunden
   //
-  constexpr uint32_t deBounceTimeMs = 50;     //! Millisekunden zum entprellen
+  constexpr uint32_t deBounceTimeMs = 100;    //! Millisekunden zum entprellen
   constexpr uint32_t longClickTimeMs = 4000;  //! Milisekunden fuer Langen Click (WiFi ON)
+  //
+  // intervalle beim blinken
+  //
+  constexpr uint32_t BLINK_LED_CONTROL_NORMAL_OFF = 3000;
+  constexpr uint32_t BLINK_LED_CONTROL_NORMAL_ON = 10;
+  constexpr uint32_t BLINK_LED_CONTROL_CROSS_OFF = 100;
+  constexpr uint32_t BLINK_LED_CONTROL_CROSS_ON = 4000;
+  constexpr uint32_t BLINK_LED_CONTROL_AP_OFF = 100;
+  constexpr uint32_t BLINK_LED_CONTROL_AP_ON = 1000;
+  constexpr uint32_t BLINK_LED_CONTROL_TEST_OFF = 60;
+  constexpr uint32_t BLINK_LED_CONTROL_TEST_ON = 60;
+
   //
   // Kommandos REST API
   //

@@ -12,12 +12,13 @@ namespace Preferences
     LONG
   };
 
-  //! Betriebsart des Ölers (normal, regen, cross, test)
+  //! Betriebsart des Ölers (normal, regen, cross, accesspoint, test)
   enum opMode : uint8_t
   {
     NORMAL,
     RAIN,
     CROSS,
+    APMODE,
     TEST
   };
 
@@ -35,12 +36,17 @@ namespace Preferences
     static volatile uint32_t tachoPulseCount;
     static uint32_t tachoPulseActionOn;
     static bool functionSwitchDown;
+    static uint32_t lastActionDownTime;
+    static uint32_t lastActionUpTime;
 
+    static void initPrefs();
     static void setTachoAction( bool );
     static bool getTachoAction();
     static bool getFunctionSwitchDown();
     static fClick getLastAction();
-    static void setLastAction( fClick );
+    static void clearLastAction();
+    static void setOpMode( opMode );
+    static opMode getOpMode();
 
     private:
     static void makeDefaults();

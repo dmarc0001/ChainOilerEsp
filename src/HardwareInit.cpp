@@ -11,15 +11,15 @@ void initHardware()
   pinMode( LED_CONTROL, OUTPUT );
   pinMode( LED_RAIN, OUTPUT );
   pinMode( LED_PUMP, OUTPUT );
-  digitalWrite( LED_INTERNAL, HIGH );  // ==> AUS
+  digitalWrite( LED_INTERNAL, LOW );  // ==> AUS
   digitalWrite( LED_CONTROL, LOW );
   digitalWrite( LED_RAIN, LOW );
   digitalWrite( LED_PUMP, LOW );
   //
   // Eingänge nitialisieren
   //
-  pinMode( INPUT_TACHO, INPUT );
-  pinMode( INPUT_FUNCTION_SWITCH, INPUT );
+  pinMode( INPUT_TACHO, INPUT_PULLUP );
+  pinMode( INPUT_FUNCTION_SWITCH, INPUT_PULLUP );
   pinMode( INPUT_RAIN_SWITCH, INPUT );
   //
   // Interrupt für Eingänge
@@ -50,66 +50,23 @@ ICACHE_RAM_ATTR void tachoPulse()
 ICACHE_RAM_ATTR void functionSwitch()
 {
   using namespace Preferences;
-
-  static bool switchDown = false;
-  static uint32_t last = 0;
   //
-  // digital entprellen...
+  // digital entprellen macht Prefs mit den Zeitstempeln
   //
-  int newval = digitalRead( INPUT_FUNCTION_SWITCH );
-  if ( newval == LOW )
+  if ( digitalRead( INPUT_FUNCTION_SWITCH ) == LOW )
   {
-    // gedrückt, oder prellt noch
-    if ( last == 0 )
-    {
-      // zum ersten mal
-      last = millis();
-      return;
-    }
-    if ( !switchDown )
-    {
-      if ( ( millis() - last ) > deBounceTimeMs )
-      {
-        //
-        // okay sollte das prellen erledigt haben
-        // markiere das der schalter gedrückt ist
-        //
-        switchDown = true;
-        Prefs::functionSwitchDown = true;
-      }
-      else
-      {
-        //
-        // neu anfangen und warten dass das stabil bleibt
-        //
-        last = millis();
-      }
-    }
-    return;
+    //
+    // LOW festhalten
+    //
+    Prefs::functionSwitchDown = true;
+    Prefs::lastActionDownTime = millis();
   }
-  //
-  // Okay dann ist es HIGH
-  // Losgelassen (oder prellt noch)
-  //
-  if ( switchDown )
+  else
   {
     //
-    // war schalter gedrückt akzeptiert?
+    // HIGH festhalten
     //
-    if ( ( millis() - last ) > longClickTimeMs )
-    {
-      //
-      // war länger als longClickTimeMs -> Funktion WiFi aktiviert
-      //
-      Prefs::setLastAction( fClick::LONG );
-    }
-    else
-    {
-      //
-      //
-    }
-    Prefs::setLastAction( fClick::SHORT );
-    switchDown = false;
+    Prefs::lastActionUpTime = millis();
     Prefs::functionSwitchDown = false;
   }
 }

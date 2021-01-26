@@ -2,10 +2,6 @@
 #include "main.hpp"
 
 //
-// wird durch Schaltung von aussen der Webservice angefordert
-//
-volatile bool isWebService{ false };
-//
 // lokale Server instsanzieren
 //
 DNSServer dnsServer;
@@ -18,6 +14,16 @@ void setup()
   Serial.println( "" );
   Serial.println( "controller is starting..." );
   //
+  // Einstellungen lesen, Preferenzen initialisieren
+  //
+#ifdef DEBUG
+  Serial.println( "initializing preferences..." );
+#endif
+  Preferences::Prefs::initPrefs();
+#ifdef DEBUG
+  Serial.println( "initializing prferences...OK" );
+#endif
+  //
   // Hardware initialisieren
   //
 #ifdef DEBUG
@@ -27,13 +33,13 @@ void setup()
 #ifdef DEBUG
   Serial.println( "initializing hardware...OK" );
 #endif
+  Prefs::setOpMode( opMode::NORMAL );
 }
 
 void loop()
 {
   using namespace Preferences;
   static bool runWebservice{ false };
-  static volatile unsigned long lastTimer = 0;
 
   int rainSensorValue;
   //
@@ -55,39 +61,66 @@ void loop()
     if ( Prefs::getLastAction() == fClick::SHORT )
     {
       // Kurzer Taster -> Cross Aktiv / deaktiv
-
+#ifdef DEBUG
+      Serial.println( "short func key click..." );
+#endif
+      if ( Prefs::getOpMode() == opMode::CROSS || Prefs::getOpMode() == opMode::APMODE )
+      {
+        Prefs::setOpMode( opMode::NORMAL );
+      }
+      else
+      {
+        Prefs::setOpMode( opMode::CROSS );
+      }
       //
       // zurücksetzten, da ausgewertet
       //
-      Prefs::setLastAction( fClick::NONE );
+      Prefs::clearLastAction();
     }
     else if ( Prefs::getLastAction() == fClick::LONG )
     {
+#ifdef DEBUG
+      Serial.println( "long func key click..." );
+#endif
       //
       // WLAN umschalten
       //
-      isWebService = !isWebService;
+      if ( Prefs::getOpMode() == opMode::APMODE )
+      {
+        Prefs::setOpMode( opMode::NORMAL );
+      }
+      else
+      {
+        Prefs::setOpMode( opMode::APMODE );
+      }
       //
       // zurücksetzten, da ausgewertet
       //
-      Prefs::setLastAction( fClick::NONE );
+      Prefs::clearLastAction();
     }
   }
 
   //
   // Kontrolle ob der Webservive und WiFi gestartet werden sollen
   //
-  if ( isWebService && !runWebservice )
+  if ( Prefs::getOpMode() == opMode::APMODE && !runWebservice )
   {
     //
     // WiFi und Webservice starten
     //
+#ifdef DEBUG
+    Serial.println( "start accesspoint..." );
+#endif
     WiFi.softAP( "chainoiler" );
     Serial.print( "AP IP: " );
+#ifdef DEBUG
     Serial.println( WiFi.softAPIP() );
     Serial.println( " dns service is starting..." );
+#endif
     dnsServer.start( 53, "*", WiFi.softAPIP() );
     oilServer.begin( &asServer );
+    runWebservice = true;
+    delay( 50 );
   }
   //
   // läuft der Service
@@ -100,11 +133,14 @@ void loop()
   //
   // Service beenden
   //
-  if ( runWebservice && !isWebService )
+  if ( runWebservice && Prefs::getOpMode() != opMode::APMODE )
   {
     //
     // der Service soll beendet werden
     //
+#ifdef DEBUG
+    Serial.println( "stop accesspoint..." );
+#endif
     dnsServer.stop();
     oilServer.end();
     WiFi.softAPdisconnect();
@@ -128,4 +164,8 @@ void loop()
     delay( 50 );
     digitalWrite( LED_INTERNAL, HIGH );
   }
+  //
+  // noch das verchiedentliche LED gedingse
+  //
+  LedControl::loop();
 }
