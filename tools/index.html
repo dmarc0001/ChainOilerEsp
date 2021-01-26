@@ -1,0 +1,496 @@
+<!doctype html>
+<html>
+<header>
+  <title>LED Controller</title>
+  <style>
+    body {
+      background-color: #f0f0f0;
+      color: rgb(0, 0, 119);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    h1 {
+      text-transform: uppercase;
+      font-weight: bolder;
+      font-size: larger;
+      padding-left: 1em;
+      padding-top: 1em;
+      width: 85%;
+      border-bottom: medium solid rgb(92, 92, 92);
+      padding-bottom: .3em;
+    }
+
+    h2 {
+      text-transform: uppercase;
+      font-weight: bold;
+      font-size: large;
+      padding-left: 1em;
+      padding-top: .1em;
+      width: 95%;
+      border-bottom: thin solid rgb(92, 92, 92);
+      padding-bottom: .23em;
+    }
+
+    h1:first-letter {
+      font-size: x-large;
+      color: crimson;
+    }
+
+    h2:first-letter {
+      font-size: larger;
+      color: crimson;
+    }
+
+    div.bundle {
+      text-align: left;
+      border: thin solid gray;
+      border-radius: 1em;
+      margin: .5em;
+      padding: 1em;
+      min-width: 30em;
+      max-width: 45em;
+      box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    }
+
+    div.bundle span {
+      padding-top: .8em;
+      margin-bottom: .3em;
+      float: left;
+      width: 30%;
+    }
+
+    input,
+    select {
+      border: thin solid gray;
+      border-radius: .2em;
+      padding: .8em;
+    }
+
+    input:hover,
+    select:hover {
+      border: thin solid darkgreen;
+    }
+
+    input:focus,
+    div.bundle select:focus {
+      color: rgb(3, 4, 90);
+      background-color: rgb(239, 246, 170);
+    }
+
+    input[type="button"]:focus {
+      background-color: rgba(251, 251, 251, 0);
+    }
+
+    input[type="button"]:hover {
+      border: thin solid red;
+    }
+
+    div.bundle input,
+    div.bundle select {
+      width: 65%;
+      margin-bottom: .5em;
+    }
+
+    div.bundle input[type="button"] {
+      width: 98%;
+    }
+
+    div.bundle input[type="checkbox"] {
+      width: 5em;
+    }
+
+    /*kleine Displays*/
+    @media all and (max-width: 75em) {
+      body {
+        font-size: xx-large;
+      }
+
+      h1 {
+        font-size: xxx-large;
+      }
+
+      h1:first-letter,
+      h2:first-letter {
+        font-size: xxx-large;
+      }
+
+      h2 {
+        font-size: xx-large;
+      }
+
+      input,
+      select {
+        font-size: xx-large;
+      }
+
+      div.bundle span {
+        float: none;
+        text-align: right;
+        width: 100%;
+      }
+
+      div.bundle input,
+      div.bundle select {
+        margin-top: .4em;
+        margin-bottom: .8em;
+        border-radius: .4em;
+        padding: 1em;
+        width: 95%;
+      }
+
+      div.bundle input[type="button"] {
+        margin-top: 1.2em;
+        width: 98.5%;
+      }
+    }
+
+    /* switche ende*/
+  </style>
+  <script>
+    var lastChange = 10;
+    var busyLock = 10;
+    var busyLockStart = 30;
+
+    function init_page() {
+
+      setInterval(function () {
+        if (lastChange > 0) { lastChange-- };
+        if (busyLock > 0) { busyLock-- };
+      }, 500);
+    }
+
+    function save_wlan() {
+      var ssid = null;
+      var ssid_passwd = null;
+      var mdns_host = null;
+      var send_val = 2;
+
+      console.debug("save_wlan()...");
+      var elem = document.getElementById('wlan_access_ssid');
+      if (elem) {
+        ssid = elem.value;
+        console.debug("WLAN SSID: " + ssid + ' len: ' + ssid.length);
+      }
+      var elem = document.getElementById('wlan_access_passwd');
+      if (elem) {
+        ssid_passwd = elem.value;
+        console.debug("WLAN PASSWORD: " + ssid_passwd + ' len: ' + ssid_passwd.length);
+      }
+      var elem = document.getElementById('wlan_ndns_hostname');
+      if (elem) {
+        mdns_host = elem.value;
+        console.debug("WLAN mDNS Hostname: " + mdns_host + ' len: ' + mdns_host.length);
+      }
+      if (ssid == null || ssid_passwd == null || mdns_host == null) {
+        console.error();
+        console.error("JavaScript: can\'t find one of the needet HTML elements.");
+        return;
+      }
+      // auswerten
+      if (ssid.length < 4 || ssid_passwd.length < 4) {
+        ssid = "null";
+        ssid_passwd = "null";
+        send_val = send_val - 1;
+        console.debug("ssid and pw not to send...");
+      }
+      if (mdns_host.length < 4) {
+        mdns_host = "null";
+        send_val = send_val - 1;
+      }
+      // lohnt das Senden?
+      if (send_val > 0) {
+        // Send request
+        var xhr = new XMLHttpRequest();
+        var url = '/rest/wlan_access';
+        xhr.open('POST', url, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState === 4 && xhr.status === 200) {
+            var json = JSON.parse(xhr.responseText);
+            console.log('response from controller:');
+            console.log('set ssid: ' + json.wlan_ssid);
+            console.log('set passwd: ' + json.wlan_pw);
+            console.log('set mdns host: ' + json.mdns_host);
+            console.log('status: ' + json.status);
+            location.replace('/');
+          }
+        };
+        var data = JSON.stringify({ 'wlan_ssid': ssid, 'wlan_pw': ssid_passwd, 'mdns_host': mdns_host });
+        console.debug(data);
+        xhr.send(data);
+      }
+      else {
+        console.log("not send to controller because no data valid.");
+      }
+    }
+
+    function save_api_access() {
+      var access_uid = null;
+      var access_password = null;
+      var access_password2 = null;
+      var send_data = false;
+
+      console.debug("save_api_access()...");
+      var elem = document.getElementById('api_access_uid');
+      if (elem) {
+        access_uid = elem.value;
+        console.debug("API access user id exist: " + access_uid + ' len: ' + access_uid.length);
+      }
+      var elem = document.getElementById('api_access_password');
+      if (elem) {
+        access_password = elem.value;
+        console.debug("API access password exist, len: " + access_password.length);
+      }
+      var elem = document.getElementById('api_access_password2');
+      if (elem) {
+        access_password2 = elem.value;
+        console.debug("API access repeated password exist, len: " + access_password2.length);
+      }
+      if (access_uid == null || access_password == null || access_password2 == null) {
+        console.error("JavaScript: can\'t find one of the needet HTML elements.");
+        return;
+      }
+      //
+      if (access_uid.length == 0) {
+        console.debug("empty uid accepted.");
+        access_uid = 'null';
+        send_data = true;
+      }
+      else {
+        if (access_uid.length > 4) {
+          console.debug("userid <" + access_uid + "> aceppted.");
+          send_data = true;
+        }
+        else {
+          conole.error("userid too short (min 4 characters)");
+          send_data = false;
+        }
+      }
+      if (send_data && access_password.length == 0 && access_password2.length == 0) {
+        console.debug("empty password accepted.");
+        access_password = 'null';
+      }
+      else if (send_data && access_password.length > 5 && access_password2.length > 5) {
+        if (access_password === access_password2) {
+          console.debug("passwords are equal, password accepted.")
+        }
+        else {
+          console.error("passwords are not equal.");
+          send_data = false;
+        }
+      }
+      else {
+        console.error("password to short or not repeated.");
+        send_data = false;
+      }
+      if (send_data === true) {
+        // Send request
+        var xhr = new XMLHttpRequest();
+        var url = '/rest/api_access';
+        xhr.open('POST', url, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState === 4 && xhr.status === 200) {
+            var json = JSON.parse(xhr.responseText);
+            console.log('response from controller:');
+            console.log('set account: ' + json.api_id);
+            console.log('set passwd: ' + json.api_pw);
+            console.log('status: ' + json.status);
+            location.replace('/');
+          }
+        };
+        var data = JSON.stringify({ 'api_id': access_uid, 'api_pw': access_password });
+        console.debug(data);
+        xhr.send(data);
+      }
+      else {
+        console.error("not send to controller because an error.");
+      }
+    }
+
+    function save_fw_access() {
+      var access_uid = null;
+      var access_password = null;
+      var access_password2 = null;
+
+      console.debug("save_fw_access()...");
+      var elem = document.getElementById('fw_access_uid');
+      if (elem) {
+        access_uid = elem.value;
+        console.debug("Firmware access user id exist: " + access_uid + ' len: ' + access_uid.length);
+      }
+      var elem = document.getElementById('fw_access_password');
+      if (elem) {
+        access_password = elem.value;
+        console.debug("Firmware access password exist, len: " + access_password.length);
+      }
+      var elem = document.getElementById('fw_access_password2');
+      if (elem) {
+        access_password2 = elem.value;
+        console.debug("Firmware access repeated password exist, len: " + access_password2.length);
+      }
+      if (access_uid == null || access_password == null || access_password2 == null) {
+        console.error("JavaScript: can\'t find one of the needet HTML elements.");
+        return;
+      }
+      //
+      if (access_uid.length > 4) {
+        console.debug("access_uid aceppted.");
+        if (access_password.length > 5 && access_password2.length > 5) {
+          if (access_password === access_password2) {
+            console.debug("Firmware access password and repeated password are equal. accepted");
+            // Send request
+            var xhr = new XMLHttpRequest();
+            var url = '/rest/fw_access';
+            xhr.open('POST', url, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onreadystatechange = function () {
+              if (xhr.readyState === 4 && xhr.status === 200) {
+                var json = JSON.parse(xhr.responseText);
+                console.log('response from controller:');
+                console.log('set account: ' + json.access_id);
+                console.log('set passwd: ' + json.access_pw);
+                console.log('status: ' + json.status);
+                location.replace('/');
+              }
+            };
+            var data = JSON.stringify({ 'access_id': access_uid, 'access_pw': access_password });
+            console.debug(data);
+            xhr.send(data);
+          }
+        }
+      }
+    }
+
+    function save_pwm_config() {
+      var pwm_res = null;
+      var pwm_freq = null;
+      var pwm_inv = null;
+      var elem = null;
+
+      console.debug("save_pwm_config()...");
+      var elem = document.getElementById('pwm_resolution');
+      if (elem) {
+        if (elem.value > 0) {
+          pwm_res = elem.value;
+        }
+      }
+      elem = document.getElementById('pwm_freq');
+      if (elem) {
+        if (elem.value && elem.value >= 100 && elem.value <= 50000) {
+          pwm_freq = elem.value;
+        }
+      }
+      elem = document.getElementById('pwm_inverse');
+      if (elem) {
+        //pwm_inv = elem.value;
+        if (elem.value == "0" || elem.value == "1") {
+          pwm_inv = elem.value;
+        }
+      }
+      var xhr = new XMLHttpRequest();
+      var url = '/rest/pwm';
+      xhr.open('POST', url, true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+          var json = JSON.parse(xhr.responseText);
+          console.log('response from controller:');
+          console.log('pwm resolution: ' + json.pwm_res);
+          console.log('pwm frequence: ' + json.pwm_freq);
+          console.log('pwm invers: ' + json.pwm_inv);
+          console.log('status: ' + json.status);
+          location.replace('/');
+        }
+      };
+      var data = JSON.stringify({ 'pwm_res': pwm_res, 'pwm_freq': pwm_freq, 'pwm_inv': pwm_inv });
+      console.debug(data);
+      xhr.send(data);
+    }
+  </script>
+</header>
+
+<body onload="init_page()" id="color_picker_area">
+  <h1>Config Page</h1>
+
+  <div class="bundle" id="wlan_acces_form">
+    <h2>WLAN Access</h2>
+
+    <span><label for="wlan_access_ssid">SSID:</label></span>
+    <input type="input" id="wlan_access_ssid" name="wlan_access_ssid" value="" placeholder="Your WLAN SSID" />
+
+    <span><label for="wlan_access_passwd">WLAN Password:</label></span>
+    <input type="password" id="wlan_access_passwd" name="wlan_access_passwd" value=""
+      placeholder="Your WLAN Password" />
+
+    <span><label for="wlan_ndns_hostname">mDNS Hostname:</label></span>
+    <input type="input" id="wlan_ndns_hostname" name="wlan_ndns_hostname" value=""
+      placeholder="This Hostname (w.o. domain)" />
+
+    <input type="button" value="[SAVE WLAN]" onclick="save_wlan();">
+  </div>
+
+  <div class="bundle" id="api_acces_form">
+    <h2>API Access <i>-maybe empty-</i></h2>
+
+    <span><label for="api_access_uid">Username:</label></span>
+    <input type="input" id="api_access_uid" name="api_access_uid" value="" placeholder="Username for Access" />
+
+    <span><label for="api_access_password">Password:</label></span>
+    <input type="password" id="api_access_password" name="api_access_password" value=""
+      placeholder="Password for Access" />
+
+    <span><label for="api_access_password2">Password repeat:</label></span>
+    <input type="password" id="api_access_password2" name="api_access_password2" value=""
+      placeholder="Repeated Password for Access" />
+    <p><i>If you let fields empty and click SAVE ACCESS it will be able access without user/password. It is the default
+        behavior.</i></p>
+    </p>
+    <input type="button" value="[SAVE ACCESS]" onclick="save_api_access();">
+  </div>
+
+  <div class="bundle" id="update_acces_form">
+    <h2>Firmware Config Access</h2>
+
+    <span><label for="fw_access_uid">Username:</label></span>
+    <input type="input" id="fw_access_uid" name="fw_access_uid" value="" placeholder="Username for Access" />
+
+    <span><label for="fw_access_password">Password:</label></span>
+    <input type="password" id="fw_access_password" name="fw_access_password" value=""
+      placeholder="Password for Access" />
+
+    <span><label for="fw_access_password2">Password repeat:</label></span>
+    <input type="password" id="fw_access_password2" name="fw_access_password2" value=""
+      placeholder="Repeated Password for Access" />
+    <input type="button" value="[SAVE ACCESS]" onclick="save_fw_access();">
+  </div>
+
+  <div class="bundle">
+    <h2>Hardware PWM Properties</h2>
+
+    <span><label for="pwm_resolution">Resolution:</label></span>
+    <select name="pwm_resolution" id="pwm_resolution" size="1">
+      <option value="0">--- do not set ---</option>
+      <option value="8">08 Bits</option>
+      <option value="10">10 Bits</option>
+      <option value="12">12 Bits</option>
+      <option value="15">15 Bits</option>
+    </select>
+
+    <span><label for="pwm_freq">Frequence:</label></span>
+    <input type="number" id="pwm_freq" name="pwm_freq" value="" placeholder="set Freq (Hz)" />
+
+    <span><label for="pwm_inverse">Inverse PWM:</label></span>
+    <select name="pwm_inverse" id="pwm_inverse" size="1">
+      <option value="">--- do not set ---</option>
+      <option value="1">inverse PWM signal</option>
+      <option value="0">not inverse PWM signal</option>
+    </select>
+
+    <input type="button" value="[SAVE PWM]" onclick="save_pwm_config();">
+
+  </div>
+  <div style="margin-top: 5em;"></div>
+</body>
+
+</html>
