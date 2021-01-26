@@ -21,7 +21,7 @@ namespace Preferences
   constexpr double normalOilInterval = 4000.0;    //! Schmierinterval 4000 Meter
   constexpr double rainOilIntervalFactor = 1.4;   //! wieviel mal gegenüber normal schmieren
   constexpr double crossOilIntervalFactor = 8.0;  //! wieviel mal öfter beim Crossen schmieren
-  constexpr int threshodRainSensor = 512;         //! Schwellenwert für Regen
+  constexpr int threshodRainSensor = 512;         //! Schwellenwert für Regen TODO: Hysterese zum Abschalten
   //
   // die Schlüsselnamen für den Speicher
   // Einstelungen für den Controller

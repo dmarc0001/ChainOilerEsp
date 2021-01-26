@@ -157,19 +157,29 @@ void loop()
     rainSensorValue = analogRead( INPUT_ANALOG );
     if ( rainSensorValue > threshodRainSensor )
     {
-      if ( Prefs::getOpMode() != opMode::APMODE && Prefs::getOpMode() == opMode::TEST && Prefs::getOpMode() != opMode::RAIN )
+      //
+      // nur bei NORMAL, die anderen Modi haben Vorrang
+      //
+      if ( Prefs::getOpMode() == opMode::NORMAL )
       {
         Prefs::setOpMode( opMode::RAIN );
+        LedControl::setRainLED( true );
       }
+    }
+    else if ( Prefs::getOpMode() == opMode::RAIN )
+    {
+      Prefs::setOpMode( opMode::NORMAL );
     }
 #ifdef DEBUG
     Serial.print( "analog value: " );
     Serial.print( rainSensorValue );
     Serial.println( " from max 1023" );
 #endif
-    digitalWrite( LED_INTERNAL, LOW );
-    delay( 50 );
-    digitalWrite( LED_INTERNAL, HIGH );
+    /*
+        digitalWrite( LED_INTERNAL, LOW );
+        delay( 50 );
+        digitalWrite( LED_INTERNAL, HIGH );
+        */
   }
   //
   // noch das verchiedentliche LED gedingse

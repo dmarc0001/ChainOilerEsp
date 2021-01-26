@@ -3,7 +3,7 @@
 namespace Preferences
 {
   //! Voreinstellungen beim Start
-  const char *Prefs::serialStr = "20210126-232148-build-0185";
+  const char *Prefs::serialStr = "20210126-235743-build-0193";
   volatile bool Prefs::isTachoAction{ false };
   fClick Prefs::lastAction{ fClick::NONE };
   uint32_t Prefs::lastActionDownTime{ 0L };

@@ -12,4 +12,5 @@ class LedControl
 
   public:
   static void loop();
+  static void setRainLED( bool );
 };

@@ -15,6 +15,7 @@ void LedControl::loop()
       {
         digitalWrite( LED_RAIN, LOW );
       }
+    case opMode::RAIN:
       if ( controlLedIsOn && timeDiff > BLINK_LED_CONTROL_NORMAL_ON )
       {
         controlLedIsOn = false;
@@ -29,11 +30,11 @@ void LedControl::loop()
       }
       break;
 
-    case opMode::RAIN:
-      // direkt schalten im loop
-      break;
-
     case opMode::CROSS:
+      if ( digitalRead( LED_RAIN ) != LOW )
+      {
+        digitalWrite( LED_RAIN, LOW );
+      }
       if ( controlLedIsOn && timeDiff > BLINK_LED_CONTROL_CROSS_ON )
       {
         controlLedIsOn = false;
@@ -49,6 +50,10 @@ void LedControl::loop()
       break;
 
     case opMode::APMODE:
+      if ( digitalRead( LED_RAIN ) != LOW )
+      {
+        digitalWrite( LED_RAIN, LOW );
+      }
       if ( controlLedIsOn && timeDiff > BLINK_LED_CONTROL_AP_ON )
       {
         controlLedIsOn = false;
@@ -66,6 +71,10 @@ void LedControl::loop()
       break;
 
     case opMode::TEST:
+      if ( digitalRead( LED_RAIN ) != LOW )
+      {
+        digitalWrite( LED_RAIN, LOW );
+      }
       if ( controlLedIsOn && timeDiff > BLINK_LED_CONTROL_TEST_ON )
       {
         controlLedIsOn = false;
@@ -80,4 +89,9 @@ void LedControl::loop()
       }
       break;
   }
+}
+
+void LedControl::setRainLED( bool en )
+{
+  digitalWrite( LED_RAIN, en ? HIGH : LOW );
 }
