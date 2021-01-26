@@ -155,6 +155,13 @@ void loop()
   if ( ( 0x07ffUL & millis() ) == 0 )
   {
     rainSensorValue = analogRead( INPUT_ANALOG );
+    if ( rainSensorValue > threshodRainSensor )
+    {
+      if ( Prefs::getOpMode() != opMode::APMODE && Prefs::getOpMode() == opMode::TEST && Prefs::getOpMode() != opMode::RAIN )
+      {
+        Prefs::setOpMode( opMode::RAIN );
+      }
+    }
 #ifdef DEBUG
     Serial.print( "analog value: " );
     Serial.print( rainSensorValue );
