@@ -3,9 +3,9 @@
 namespace Preferences
 {
   //! Voreinstellungen beim Start
-  const char *Prefs::serialStr = "20210127-191828-build-0238";
+  const char *Prefs::serialStr = "20210127-203202-build-0244";
   volatile bool Prefs::isTachoAction{ false };
-  static uint32_t timeForPumpLedFlash{ pumpLedLightingTime };
+  uint32_t Prefs::timeForPumpLedFlash{ pumpLedLightingTime };
   fClick Prefs::lastAction{ fClick::NONE };
   uint32_t Prefs::lastActionDownTime{ 0L };
   uint32_t Prefs::lastActionUpTime{ 0L };
@@ -14,8 +14,31 @@ namespace Preferences
   uint32_t Prefs::tachoPulseActionOn{ 0 };
   bool Prefs::functionSwitchDown{ false };
 
-  void Prefs::initPrefs()
+  bool Prefs::initPrefs()
   {
+    bool initOk = false;
+    initOk = SPIFFS.begin();
+    if ( !( initOk ) )  // Format SPIFS, of not formatted. - Try 1
+    {
+      Serial.println( "SPIFFS filesystem format..." );
+      SPIFFS.format();
+      initOk = SPIFFS.begin();
+    }
+    if ( !( initOk ) )  // Format SPIFS. - Try 2
+    {
+      SPIFFS.format();
+      initOk = SPIFFS.begin();
+    }
+    if ( initOk )
+    {
+      Serial.println( "SPIFFS is OK" );
+    }
+    else
+    {
+      Serial.println( "SPIFFS is NOT OK" );
+    }
+    return initOk;
+
     // TODO: Preferenzen aus Festspeicher lesen oder defaults setzten
     // TODO: Nichtflüchtigen Speicher init, auslesen oder neu beschreiben
 

@@ -1,6 +1,8 @@
 #pragma once
 #include <Arduino.h>
+#include "FS.h"
 #include "ProjectDefaults.hpp"
+#include "SPI.h"
 
 namespace Preferences
 {
@@ -40,7 +42,7 @@ namespace Preferences
     static uint32_t lastActionDownTime;
     static uint32_t lastActionUpTime;
 
-    static void initPrefs();
+    static bool initPrefs();
     static void setTachoAction( bool );
     static bool getTachoAction();
     static uint32_t getTimeForPumpLedFlash();
