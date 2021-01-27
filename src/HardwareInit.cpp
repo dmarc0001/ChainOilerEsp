@@ -11,7 +11,7 @@ void initHardware()
   pinMode( LED_CONTROL, OUTPUT );
   pinMode( LED_RAIN, OUTPUT );
   pinMode( LED_PUMP, OUTPUT );
-  digitalWrite( LED_INTERNAL, LOW );  // ==> AUS
+  digitalWrite( LED_INTERNAL, HIGH );  // ==> AUS
   digitalWrite( LED_CONTROL, LOW );
   digitalWrite( LED_RAIN, LOW );
   digitalWrite( LED_PUMP, LOW );

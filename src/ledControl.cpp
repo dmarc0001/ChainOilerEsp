@@ -1,13 +1,28 @@
 #include "ledControl.hpp"
 
 uint32_t LedControl::lastChanged{ 0 };
+uint32_t LedControl::pumpSwitchedOn{ 0 };
 
 void LedControl::loop()
 {
-  static bool controlLedIsOn = false;
-  uint32_t timeDiff = millis() - LedControl::lastChanged;
-
   using namespace Preferences;
+  static bool controlLedIsOn = false;
+  uint32_t timeDiff = millis() - LedControl::pumpSwitchedOn;
+
+  //
+  // die Pumpen LED aus, wenn die Zeit ran ist
+  //
+  if ( digitalRead( LED_PUMP ) == HIGH )
+  {
+    if ( timeDiff > Prefs::getTimeForPumpLedFlash() )
+    {
+      digitalWrite( LED_PUMP, LOW );
+    }
+  }
+  //
+  // die anderen LED
+  //
+  timeDiff = millis() - LedControl::lastChanged;
   switch ( Prefs::getOpMode() )
   {
     case opMode::NORMAL:
@@ -50,10 +65,6 @@ void LedControl::loop()
       break;
 
     case opMode::APMODE:
-      if ( digitalRead( LED_RAIN ) != LOW )
-      {
-        digitalWrite( LED_RAIN, LOW );
-      }
       if ( controlLedIsOn && timeDiff > BLINK_LED_CONTROL_AP_ON )
       {
         controlLedIsOn = false;
@@ -94,4 +105,31 @@ void LedControl::loop()
 void LedControl::setRainLED( bool en )
 {
   digitalWrite( LED_RAIN, en ? HIGH : LOW );
+}
+
+void LedControl::setPumpLED( bool en )
+{
+  digitalWrite( LED_PUMP, en ? HIGH : LOW );
+  LedControl::pumpSwitchedOn = millis();
+}
+
+void LedControl::showAttention()
+{
+  static bool attentionLEDIsOn = false;
+  uint32_t timeDiff = millis() - LedControl::lastChanged;
+
+  if ( attentionLEDIsOn && timeDiff > BLINK_LED_ATTENTION_ON )
+  {
+    attentionLEDIsOn = false;
+    digitalWrite( LED_CONTROL, LOW );
+    digitalWrite( LED_RAIN, HIGH );
+    LedControl::lastChanged = millis();
+  }
+  else if ( !attentionLEDIsOn && timeDiff > BLINK_LED_ATTENTION_OFF )
+  {
+    attentionLEDIsOn = true;
+    digitalWrite( LED_CONTROL, HIGH );
+    digitalWrite( LED_RAIN, LOW );
+    LedControl::lastChanged = millis();
+  }
 }

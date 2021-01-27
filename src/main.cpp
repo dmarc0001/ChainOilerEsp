@@ -39,9 +39,6 @@ void setup()
 void loop()
 {
   using namespace Preferences;
-  static bool runWebservice{ false };
-
-  int rainSensorValue;
   //
   // ÖLPUMPE erforderlich?
   //
@@ -50,59 +47,134 @@ void loop()
     //
     // TODO: Pumpe auslösen
     //
+    LedControl::setPumpLED( true );
     Prefs::setTachoAction( false );
   }
+  //
+  // REGENSENSOR
+  // alle paar Sekunden erfragen
+  // warte immer etwa 4 Sekunden
+  //
+  checkRainSensor();
   //
   // Funktionstaste
   //
   if ( Prefs::getLastAction() != fClick::NONE )
   {
-    // auswerten
-    if ( Prefs::getLastAction() == fClick::SHORT )
+    checkControlKey();
+  }
+  else
+  {
+    //
+    // bei fClick::NONE
+    //
+    if ( Prefs::getLongClickTimeElapsed() )
     {
-      // Kurzer Taster -> Cross Aktiv / deaktiv
-#ifdef DEBUG
-      Serial.println( "short func key click..." );
-#endif
-      if ( Prefs::getOpMode() == opMode::CROSS || Prefs::getOpMode() == opMode::APMODE )
-      {
-        Prefs::setOpMode( opMode::NORMAL );
-      }
-      else
-      {
-        Prefs::setOpMode( opMode::CROSS );
-      }
-      //
-      // zurücksetzten, da ausgewertet
-      //
-      Prefs::clearLastAction();
+      LedControl::showAttention();
     }
-    else if ( Prefs::getLastAction() == fClick::LONG )
+    else
     {
-#ifdef DEBUG
-      Serial.println( "long func key click..." );
-#endif
       //
-      // WLAN umschalten
+      // noch das verchiedentliche LED gedingse
       //
-      if ( Prefs::getOpMode() == opMode::APMODE )
-      {
-        Prefs::setOpMode( opMode::NORMAL );
-      }
-      else
-      {
-        Prefs::setOpMode( opMode::APMODE );
-      }
-      //
-      // zurücksetzten, da ausgewertet
-      //
-      Prefs::clearLastAction();
+      LedControl::loop();
     }
   }
-
   //
   // Kontrolle ob der Webservive und WiFi gestartet werden sollen
   //
+  checkStartStopWLANService();
+}
+
+/**
+ * Regnet es?
+ */
+void checkRainSensor()
+{
+  int rainSensorValue;
+  //
+  if ( ( 0x0fffUL & millis() ) == 0 )
+  {
+    rainSensorValue = analogRead( INPUT_ANALOG );
+    if ( rainSensorValue > threshodRainSensor )
+    {
+      //
+      // nur bei NORMAL, die anderen Modi haben Vorrang
+      //
+      if ( Prefs::getOpMode() == opMode::NORMAL )
+      {
+        Prefs::setOpMode( opMode::RAIN );
+        LedControl::setRainLED( true );
+      }
+    }
+    else if ( Prefs::getOpMode() == opMode::RAIN )
+    {
+      Prefs::setOpMode( opMode::NORMAL );
+    }
+#ifdef DEBUG
+    Serial.print( "analog value (rain sensor): " );
+    Serial.print( rainSensorValue );
+    Serial.println( " from max 1023" );
+#endif
+    delay( 15 );
+  }
+}
+
+/**
+ * Was passierte an der Taste?
+ */
+void checkControlKey()
+{
+  // auswerten
+  if ( Prefs::getLastAction() == fClick::SHORT )
+  {
+    // Kurzer Taster -> Cross Aktiv / deaktiv
+#ifdef DEBUG
+    Serial.println( "short func key click..." );
+#endif
+    if ( Prefs::getOpMode() == opMode::CROSS || Prefs::getOpMode() == opMode::APMODE )
+    {
+      Prefs::setOpMode( opMode::NORMAL );
+    }
+    else
+    {
+      Prefs::setOpMode( opMode::CROSS );
+    }
+    //
+    // zurücksetzten, da ausgewertet
+    //
+    Prefs::clearLastAction();
+  }
+  else if ( Prefs::getLastAction() == fClick::LONG )
+  {
+#ifdef DEBUG
+    Serial.println( "long func key click..." );
+#endif
+    //
+    // WLAN umschalten
+    //
+    if ( Prefs::getOpMode() == opMode::APMODE )
+    {
+      Prefs::setOpMode( opMode::NORMAL );
+    }
+    else
+    {
+      Prefs::setOpMode( opMode::APMODE );
+    }
+    //
+    // zurücksetzten, da ausgewertet
+    //
+    Prefs::clearLastAction();
+  }
+}
+
+/**
+ * starten oder stoppen der WLAN Dienste?
+ */
+void checkStartStopWLANService()
+{
+  static bool runWebservice{ false };
+
   if ( Prefs::getOpMode() == opMode::APMODE && !runWebservice )
   {
     //
@@ -146,43 +218,4 @@ void loop()
     WiFi.softAPdisconnect();
     runWebservice = false;
   }
-
-  //
-  // REGENSENSOR
-  // alle paar Sekunden erfragen
-  // warte immer etwa 2 Sekunden
-  //
-  if ( ( 0x07ffUL & millis() ) == 0 )
-  {
-    rainSensorValue = analogRead( INPUT_ANALOG );
-    if ( rainSensorValue > threshodRainSensor )
-    {
-      //
-      // nur bei NORMAL, die anderen Modi haben Vorrang
-      //
-      if ( Prefs::getOpMode() == opMode::NORMAL )
-      {
-        Prefs::setOpMode( opMode::RAIN );
-        LedControl::setRainLED( true );
-      }
-    }
-    else if ( Prefs::getOpMode() == opMode::RAIN )
-    {
-      Prefs::setOpMode( opMode::NORMAL );
-    }
-#ifdef DEBUG
-    Serial.print( "analog value: " );
-    Serial.print( rainSensorValue );
-    Serial.println( " from max 1023" );
-#endif
-    /*
-        digitalWrite( LED_INTERNAL, LOW );
-        delay( 50 );
-        digitalWrite( LED_INTERNAL, HIGH );
-        */
-  }
-  //
-  // noch das verchiedentliche LED gedingse
-  //
-  LedControl::loop();
 }

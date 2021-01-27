@@ -3,8 +3,9 @@
 namespace Preferences
 {
   //! Voreinstellungen beim Start
-  const char *Prefs::serialStr = "20210126-235743-build-0193";
+  const char *Prefs::serialStr = "20210127-191828-build-0238";
   volatile bool Prefs::isTachoAction{ false };
+  static uint32_t timeForPumpLedFlash{ pumpLedLightingTime };
   fClick Prefs::lastAction{ fClick::NONE };
   uint32_t Prefs::lastActionDownTime{ 0L };
   uint32_t Prefs::lastActionUpTime{ 0L };
@@ -16,7 +17,10 @@ namespace Preferences
   void Prefs::initPrefs()
   {
     // TODO: Preferenzen aus Festspeicher lesen oder defaults setzten
-    // TODO: Nichtflüchtigen Speucher init, auslesen oder neu beschreiben
+    // TODO: Nichtflüchtigen Speicher init, auslesen oder neu beschreiben
+
+    //
+    tachoPulseActionOn = static_cast< uint32_t >( floor( normalOilInterval / ( weelCircumFerence * pulsePerWeelRound ) ) );
   }
 
   /**
@@ -37,6 +41,13 @@ namespace Preferences
   };
 
   /**
+   * Wie lange soll die LED leuchten
+   */
+  uint32_t Prefs::getTimeForPumpLedFlash()
+  {
+    return timeForPumpLedFlash;
+  }
+  /**
    * Ist der Funktionsschalter gedrückt?
    */
   bool Prefs::getFunctionSwitchDown()
@@ -44,32 +55,61 @@ namespace Preferences
     return functionSwitchDown;
   }
 
-  fClick Prefs::getLastAction()
+  bool Prefs::getLongClickTimeElapsed()
   {
     if ( functionSwitchDown )
     {
-      return fClick::NONE;
-    }
-    //
-    // das entprellt die Taste
-    //
-    if ( lastActionUpTime > lastActionDownTime )
-    {
-      uint32_t timeDiff = lastActionUpTime - lastActionDownTime;
-      if ( timeDiff > deBounceTimeMs )
+      // Taste unten, erwarte weiteres
+      // die zweit für long abgelaufen?
+      uint32_t timeDiff = millis() - lastActionDownTime;
+      if ( timeDiff > longClickTimeMs )
       {
-        //
-        // Okay entprellt
-        //
+        return true;
+      }
+    }
+    return false;
+  }
+
+  fClick Prefs::getLastAction()
+  {
+    //
+    // Taste noch unten
+    //
+    if ( functionSwitchDown )
+    {
+      if ( lastActionUpTime > lastActionDownTime )
+      {
+        uint32_t timeDiff = lastActionUpTime - lastActionDownTime;
         if ( timeDiff > longClickTimeMs )
         {
           lastAction = fClick::LONG;
         }
-        else
+      }
+      return fClick::NONE;
+    }
+    else
+    {
+      //
+      // das entprellt die Taste
+      //
+      if ( lastActionUpTime > lastActionDownTime )
+      {
+        uint32_t timeDiff = lastActionUpTime - lastActionDownTime;
+        if ( timeDiff > deBounceTimeMs )
         {
-          lastAction = fClick::SHORT;
+          //
+          // Okay entprellt
+          //
+          if ( timeDiff > longClickTimeMs )
+          {
+            lastAction = fClick::LONG;
+          }
+          else
+          {
+            lastAction = fClick::SHORT;
+          }
+          return lastAction;
         }
-        return lastAction;
       }
     }
     return fClick::NONE;
@@ -91,7 +131,6 @@ namespace Preferences
     return mode;
   }
 
-  
   void Prefs::makeDefaults()
   {
     using namespace Preferences;

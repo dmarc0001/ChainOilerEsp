@@ -28,6 +28,7 @@ namespace Preferences
     private:
     static const char *serialStr;
     static volatile bool isTachoAction;
+    static uint32_t timeForPumpLedFlash;
     static fClick lastAction;
     static opMode mode;
     Prefs(){};
@@ -42,7 +43,9 @@ namespace Preferences
     static void initPrefs();
     static void setTachoAction( bool );
     static bool getTachoAction();
+    static uint32_t getTimeForPumpLedFlash();
     static bool getFunctionSwitchDown();
+    static bool getLongClickTimeElapsed();
     static fClick getLastAction();
     static void clearLastAction();
     static void setOpMode( opMode );

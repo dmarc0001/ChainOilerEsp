@@ -8,3 +8,6 @@
 
 void setup();
 void loop();
+void checkRainSensor();
+void checkControlKey();
+void checkStartStopWLANService();

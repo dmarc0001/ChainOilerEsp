@@ -22,6 +22,7 @@ namespace Preferences
   constexpr double rainOilIntervalFactor = 1.4;   //! wieviel mal gegenüber normal schmieren
   constexpr double crossOilIntervalFactor = 8.0;  //! wieviel mal öfter beim Crossen schmieren
   constexpr int threshodRainSensor = 512;         //! Schwellenwert für Regen TODO: Hysterese zum Abschalten
+  constexpr uint32_t pumpLedLightingTime = 500;   //! Leuchtzeit der Pumpen-LED
   //
   // die Schlüsselnamen für den Speicher
   // Einstelungen für den Controller
@@ -49,7 +50,7 @@ namespace Preferences
   constexpr uint32_t deBounceTimeMs = 100;    //! Millisekunden zum entprellen
   constexpr uint32_t longClickTimeMs = 4000;  //! Milisekunden fuer Langen Click (WiFi ON)
   //
-  // intervalle beim blinken
+  // intervalle beim blinken in Millisekunden
   //
   constexpr uint32_t BLINK_LED_CONTROL_NORMAL_OFF = 3000;
   constexpr uint32_t BLINK_LED_CONTROL_NORMAL_ON = 10;
@@ -59,6 +60,8 @@ namespace Preferences
   constexpr uint32_t BLINK_LED_CONTROL_AP_ON = 1000;
   constexpr uint32_t BLINK_LED_CONTROL_TEST_OFF = 60;
   constexpr uint32_t BLINK_LED_CONTROL_TEST_ON = 60;
+  constexpr uint32_t BLINK_LED_ATTENTION_OFF = 35;
+  constexpr uint32_t BLINK_LED_ATTENTION_ON = 35;
 
   //
   // Kommandos REST API
