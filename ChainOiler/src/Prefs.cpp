@@ -3,24 +3,54 @@
 namespace Preferences
 {
   //! Voreinstellungen beim Start
-  const char *Prefs::serialStr = "20210127-191828-build-0238";
+  const char *Prefs::serialStr = "20210129-183047-build-0331";
+  String Prefs::WLANSSID{ defaultSSID };
+  String Prefs::WLANPassword{ defaultPassword };
+  double Prefs::pulsePerWeelRound{ defaultPulsePerWeelRound };
+  double Prefs::weelCircumFerence{ defaultWeelCircumFerence };
+  double Prefs::normalOilInterval{ defaultNormalOilInterval };
+  double Prefs::rainOilIntervalFactor{ defaultRainOilIntervalFactor };
+  double Prefs::crossOilIntervalFactor{ defaultCrossOilIntervalFactor };
+  int Prefs::threshodRainSensor{ defaultPumpLedLightingTime };
+  uint32_t Prefs::pumpLedLightingTime{ defaultPumpLedLightingTime };
   volatile bool Prefs::isTachoAction{ false };
-  static uint32_t timeForPumpLedFlash{ pumpLedLightingTime };
   fClick Prefs::lastAction{ fClick::NONE };
   uint32_t Prefs::lastActionDownTime{ 0L };
   uint32_t Prefs::lastActionUpTime{ 0L };
   opMode Prefs::mode{ opMode::NORMAL };
   volatile uint32_t Prefs::tachoPulseCount{ 0 };
-  uint32_t Prefs::tachoPulseActionOn{ 0 };
+  uint32_t Prefs::tachoPulseActionOnCount{ 0 };
   bool Prefs::functionSwitchDown{ false };
 
-  void Prefs::initPrefs()
+  bool Prefs::initPrefs()
   {
+    SPI.begin();
+    bool initOk = false;
+    initOk = SPIFFS.begin();
+    if ( !( initOk ) )  // Format SPIFS, of not formatted. - Try 1
+    {
+      Serial.println( "SPIFFS filesystem format..." );
+      SPIFFS.format();
+      initOk = SPIFFS.begin();
+    }
+    if ( !( initOk ) )  // Format SPIFS. - Try 2
+    {
+      SPIFFS.format();
+      initOk = SPIFFS.begin();
+    }
+    if ( initOk )
+    {
+      Serial.println( "SPIFFS is OK" );
+    }
+    else
+    {
+      Serial.println( "SPIFFS is NOT OK" );
+    }
+    return initOk;
+
     // TODO: Preferenzen aus Festspeicher lesen oder defaults setzten
     // TODO: Nichtflüchtigen Speicher init, auslesen oder neu beschreiben
-
     //
-    tachoPulseActionOn = static_cast< uint32_t >( floor( normalOilInterval / ( weelCircumFerence * pulsePerWeelRound ) ) );
   }
 
   /**
@@ -40,12 +70,54 @@ namespace Preferences
     return isTachoAction;
   };
 
+  void Prefs::computeTachoActionCountValue()
+  {
+    double factor = 1.0;
+
+    switch ( mode )
+    {
+      case opMode::NORMAL:
+        factor = 1.0;
+        break;
+      case opMode::RAIN:
+        factor = rainOilIntervalFactor;
+        break;
+      case opMode::CROSS:
+        factor = crossOilIntervalFactor;
+        break;
+      case opMode::APMODE:
+        factor = 1.0;
+        break;
+      case opMode::TEST:
+        factor = 1.0;
+        break;
+    };
+    //
+    // errechne den korrekten Wert mit Faktor
+    //
+    // Strecke in Metern * impulse per Umdrehung / Rdumfang in Metern, das ganze mal Faktor
+    // ergibt die Strecke, bei der eine Aktion ausgelöst wird
+    //
+    tachoPulseActionOnCount =
+        static_cast< uint32_t >( floor( ( ( normalOilInterval * pulsePerWeelRound ) / weelCircumFerence ) / factor ) );
+    Serial.print( "oil interval: " );
+    Serial.print( normalOilInterval );
+    Serial.print( " m, pulses per round: " );
+    Serial.print( pulsePerWeelRound );
+    Serial.print( ", wheel_c: " );
+    Serial.print( weelCircumFerence );
+    Serial.print( " m, factor: " );
+    Serial.print( factor );
+    Serial.print( " result: " );
+    Serial.println( tachoPulseActionOnCount );
+  }
+
   /**
    * Wie lange soll die LED leuchten
    */
   uint32_t Prefs::getTimeForPumpLedFlash()
   {
-    return timeForPumpLedFlash;
+    return pumpLedLightingTime;
   }
   /**
    * Ist der Funktionsschalter gedrückt?
@@ -131,6 +203,21 @@ namespace Preferences
     return mode;
   }
 
+  int Prefs::getThreshodRainSensor()
+  {
+    return threshodRainSensor;
+  }
+
+  uint32_t Prefs::getTachoPulseCount()
+  {
+    return tachoPulseCount;
+  }
+
+  uint32_t Prefs::getTachoPulseActionOnCount()
+  {
+    return tachoPulseActionOnCount;
+  }
+
   void Prefs::makeDefaults()
   {
     using namespace Preferences;
@@ -138,7 +225,7 @@ namespace Preferences
     //
     // Aktion nach normalOilInterval Metern bei Radumfang weelCircumFerence und pulsePerWeelRound Pulsen per Umdrehung
     //
-    tachoPulseActionOn = static_cast< uint32_t >( floor( normalOilInterval / ( weelCircumFerence * pulsePerWeelRound ) ) );
+    computeTachoActionCountValue();
   }
 
 }  // namespace Preferences

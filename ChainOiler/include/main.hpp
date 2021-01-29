@@ -8,6 +8,7 @@
 
 void setup();
 void loop();
+void checkTachoActions();
 void checkRainSensor();
 void checkControlKey();
 void checkStartStopWLANService();

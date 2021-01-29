@@ -1,4 +1,5 @@
 #include "HardwareInit.hpp"
+#include "Prefs.hpp"
 #include "ProjectDefaults.hpp"
 
 void initHardware()
@@ -18,7 +19,7 @@ void initHardware()
   //
   // Eingänge nitialisieren
   //
-  pinMode( INPUT_TACHO, INPUT_PULLUP );
+  pinMode( INPUT_TACHO, INPUT );
   pinMode( INPUT_FUNCTION_SWITCH, INPUT_PULLUP );
   pinMode( INPUT_RAIN_SWITCH, INPUT );
   //
@@ -36,10 +37,9 @@ void initHardware()
 ICACHE_RAM_ATTR void tachoPulse()
 {
   using namespace Preferences;
-
   ++Prefs::tachoPulseCount;
   {
-    if ( Prefs::tachoPulseCount == Prefs::tachoPulseActionOn )
+    if ( Prefs::tachoPulseCount > Prefs::tachoPulseActionOnCount )
     {
       Prefs::tachoPulseCount = 0L;
       Prefs::setTachoAction( true );

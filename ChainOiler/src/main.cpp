@@ -34,6 +34,7 @@ void setup()
   Serial.println( "initializing hardware...OK" );
 #endif
   Prefs::setOpMode( opMode::NORMAL );
+  Prefs::computeTachoActionCountValue();
 }
 
 void loop()
@@ -42,14 +43,7 @@ void loop()
   //
   // ÖLPUMPE erforderlich?
   //
-  if ( Prefs::getTachoAction() )
-  {
-    //
-    // TODO: Pumpe auslösen
-    //
-    LedControl::setPumpLED( true );
-    Prefs::setTachoAction( false );
-  }
+  checkTachoActions();
   //
   // REGENSENSOR
   // alle paar Sekunden erfragen
@@ -87,16 +81,62 @@ void loop()
 }
 
 /**
+ * Tachoaktionen machen
+ */
+void checkTachoActions()
+{
+  static Preferences::opMode lastMode = opMode::NORMAL;
+
+  if ( Prefs::getTachoAction() )
+  {
+    //
+    // TODO: Pumpe auslösen
+    //
+    Serial.println( "oil pump action... " );
+    LedControl::setPumpLED( true );
+    Prefs::setTachoAction( false );
+  }
+  //
+  // gab es eine Änderung?
+  //
+  if ( Prefs::getOpMode() == lastMode )
+  {
+    //
+    // nein, habe fertig
+    //
+    return;
+  }
+  //
+  // Lasse daten für neuen Zustand berechnen
+  //
+  Prefs::computeTachoActionCountValue();
+  // merken
+  lastMode = Prefs::getOpMode();
+}
+
+/**
  * Regnet es?
  */
 void checkRainSensor()
 {
+  static int oldSensorValue;
   int rainSensorValue;
   //
   if ( ( 0x0fffUL & millis() ) == 0 )
   {
+    Serial.print( "TACHO " );
+    Serial.print( Prefs::getTachoPulseCount() );
+    Serial.print( " to: " );
+    Serial.println( Prefs::getTachoPulseActionOnCount() );
     rainSensorValue = analogRead( INPUT_ANALOG );
-    if ( rainSensorValue > threshodRainSensor )
+    if ( rainSensorValue == oldSensorValue )
+    {
+      delay( 5 );
+      return;
+    }
+    oldSensorValue = rainSensorValue;
+    //
+    if ( rainSensorValue > Prefs::getThreshodRainSensor() )
     {
       //
       // nur bei NORMAL, die anderen Modi haben Vorrang
@@ -116,7 +156,7 @@ void checkRainSensor()
     Serial.print( rainSensorValue );
     Serial.println( " from max 1023" );
 #endif
-    delay( 15 );
+    delay( 5 );
   }
 }
 
