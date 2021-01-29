@@ -3,7 +3,7 @@
 namespace Preferences
 {
   //! Voreinstellungen beim Start
-  const char *Prefs::serialStr = "20210129-183047-build-0331";
+  const char *Prefs::serialStr = "20210129-191827-build-0335";
   String Prefs::WLANSSID{ defaultSSID };
   String Prefs::WLANPassword{ defaultPassword };
   double Prefs::pulsePerWeelRound{ defaultPulsePerWeelRound };

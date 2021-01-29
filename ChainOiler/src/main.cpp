@@ -94,6 +94,12 @@ void checkTachoActions()
     //
     Serial.println( "oil pump action... " );
     LedControl::setPumpLED( true );
+    //
+    // Pumpeminmuls starten
+    //
+    digitalWrite( Preferences::PUMP_CONTROL, HIGH );
+    timer1_write( 625 );  // 20 ms
+    //
     Prefs::setTachoAction( false );
   }
   //

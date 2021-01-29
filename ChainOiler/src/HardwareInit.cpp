@@ -12,10 +12,12 @@ void initHardware()
   pinMode( LED_CONTROL, OUTPUT );
   pinMode( LED_RAIN, OUTPUT );
   pinMode( LED_PUMP, OUTPUT );
+  pinMode( PUMP_CONTROL, OUTPUT );
   digitalWrite( LED_INTERNAL, HIGH );  // ==> AUS
   digitalWrite( LED_CONTROL, LOW );
   digitalWrite( LED_RAIN, LOW );
   digitalWrite( LED_PUMP, LOW );
+  digitalWrite( PUMP_CONTROL, LOW );
   //
   // Eingänge nitialisieren
   //
@@ -29,6 +31,16 @@ void initHardware()
   attachInterrupt( digitalPinToInterrupt( INPUT_TACHO ), tachoPulse, FALLING );
   // Funktionstaste
   attachInterrupt( digitalPinToInterrupt( INPUT_FUNCTION_SWITCH ), functionSwitch, CHANGE );
+  // Timer für die Pumle
+  timer1_attachInterrupt( timerIsr );
+  //
+  // 80 MHZ geteilt durch 256 == 31.25 kHz (Uhrquarz?)
+  // TIM_EDGE == interrupt muss nicht zurück gesetzt werden
+  // TIM_LOOP == kontinuierliches auslösen
+  //
+  timer1_enable( TIM_DIV256, TIM_EDGE, TIM_SINGLE );
+  // 20 ms
+  timer1_write( 625 );
 }
 
 /**
@@ -69,4 +81,13 @@ ICACHE_RAM_ATTR void functionSwitch()
     Prefs::lastActionUpTime = millis();
     Prefs::functionSwitchDown = false;
   }
+}
+
+/**
+ * Time Interrupt Service routine
+ * schaltet die Pumpe LOW
+ */
+ICACHE_RAM_ATTR void timerIsr()
+{
+  digitalWrite( Preferences::PUMP_CONTROL, LOW );
 }
