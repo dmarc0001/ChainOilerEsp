@@ -14,15 +14,15 @@ namespace Preferences
   //
   // Konfigurierbare Parameter
   //
-  constexpr char defaultSSID[] = "CHAINOILER";    //! SSID für WLAN-Accesspoint
-  constexpr char defaultPassword[] = "password";  //! Passwort für WLAN
-  constexpr double pulsePerWeelRound = 1.0;       //! Defaultwert für Reed, Honda Africa Twin 109
-  constexpr double weelCircumFerence = 1.996;     //! Default Umfang Hinterrad
-  constexpr double normalOilInterval = 4000.0;    //! Schmierinterval 4000 Meter
-  constexpr double rainOilIntervalFactor = 1.4;   //! wieviel mal gegenüber normal schmieren
-  constexpr double crossOilIntervalFactor = 8.0;  //! wieviel mal öfter beim Crossen schmieren
-  constexpr int threshodRainSensor = 512;         //! Schwellenwert für Regen TODO: Hysterese zum Abschalten
-  constexpr uint32_t pumpLedLightingTime = 500;   //! Leuchtzeit der Pumpen-LED
+  constexpr char defaultSSID[] = "CHAINOILER";           //! SSID für WLAN-Accesspoint
+  constexpr char defaultPassword[] = "password";         //! Passwort für WLAN
+  constexpr double defaultPulsePerWeelRound = 109.0;     //! Defaultwert für Reed, Honda Africa Twin 109
+  constexpr double defaultWeelCircumFerence = 1.81;      //! Default Umfang Hinterrad
+  constexpr double defaultNormalOilInterval = 4000.0;    //! Schmierinterval 4000 Meter
+  constexpr double defaultRainOilIntervalFactor = 1.4;   //! wieviel mal gegenüber normal schmieren
+  constexpr double defaultCrossOilIntervalFactor = 6.0;  //! wieviel mal öfter beim Crossen schmieren
+  constexpr int defaultHhreshodRainSensor = 512;         //! Schwellenwert für Regen TODO: Hysterese zum Abschalten
+  constexpr uint32_t defaultPumpLedLightingTime = 300;   //! Leuchtzeit der Pumpen-LED
   //
   // die Schlüsselnamen für den Speicher
   // Einstelungen für den Controller
@@ -40,10 +40,12 @@ namespace Preferences
   //
   // Eingänge GPIO, nicht konfigurierbar
   //
-  constexpr uint8_t INPUT_TACHO = 16;           //! Tachoimpuls / Reed Kontakt
+  constexpr uint8_t INPUT_TACHO = 5;  //! Tachoimpuls / Reed Kontakt
+  // constexpr uint8_t INPUT_TACHO = 16;           //! Tachoimpuls / Reed Kontakt
   constexpr uint8_t INPUT_FUNCTION_SWITCH = 4;  //! Funktionstaster Cross/WLAN
-  constexpr uint8_t INPUT_RAIN_SWITCH = 5;      //! Funktionstaster Regen (optional)
-  constexpr uint8_t INPUT_ANALOG = A0;          //! Eingang Analogschnittstelle
+  constexpr uint8_t INPUT_RAIN_SWITCH = 16;     //! Funktionstaster Regen (optional)
+  // constexpr uint8_t INPUT_RAIN_SWITCH = 5;      //! Funktionstaster Regen (optional)
+  constexpr uint8_t INPUT_ANALOG = A0;  //! Eingang Analogschnittstelle
   //
   // Wie lange dauert das entprellen in Millisekunden
   //
