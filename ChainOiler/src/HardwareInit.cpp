@@ -48,14 +48,36 @@ void initHardware()
  */
 ICACHE_RAM_ATTR void tachoPulse()
 {
+  static uint32_t speedStart = 0L;
   using namespace Preferences;
+  //
+  // Zähle die Impuse in zwei Variablen
+  // eine für Abstand der Schmierung, eine für Speed
+  //
   ++Prefs::tachoPulseCount;
+  ++Prefs::tachoPulseForSpeedCount;
+  //
+  // Schwelle für Schmierung überschritten?
+  //
+  if ( Prefs::tachoPulseCount > Prefs::tachoPulseActionOnCount )
   {
-    if ( Prefs::tachoPulseCount > Prefs::tachoPulseActionOnCount )
-    {
-      Prefs::tachoPulseCount = 0L;
-      Prefs::setTachoAction( true );
-    }
+    //
+    // Zähler neu starten und Ereignis markieren
+    //
+    Prefs::tachoPulseCount = 0L;
+    Prefs::setTachoAction( true );
+  }
+  //
+  // Schwelle für Messstrecke erreicht?
+  //
+  if ( Prefs::tachoPulseForSpeedCount > Prefs::pulsesPerMeasuredRoute )
+  {
+    //
+    // Zähler zurück setzen, Zeit für Berechnung merken
+    //
+    Prefs::tachoPulseForSpeedCount = 0L;
+    Prefs::measuresMsPerRouteMeters = millis() - speedStart;
+    speedStart = millis();
   }
 }
 

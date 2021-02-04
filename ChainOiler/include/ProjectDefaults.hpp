@@ -14,15 +14,16 @@ namespace Preferences
   //
   // Konfigurierbare Parameter
   //
-  constexpr char defaultSSID[] = "CHAINOILER";           //! SSID für WLAN-Accesspoint
-  constexpr char defaultPassword[] = "password";         //! Passwort für WLAN
-  constexpr double defaultPulsePerWeelRound = 109.0;     //! Defaultwert für Reed, Honda Africa Twin 109
-  constexpr double defaultWeelCircumFerence = 1.81;      //! Default Umfang Hinterrad
-  constexpr double defaultNormalOilInterval = 4000.0;    //! Schmierinterval 4000 Meter
-  constexpr double defaultRainOilIntervalFactor = 1.4;   //! wieviel mal gegenüber normal schmieren
-  constexpr double defaultCrossOilIntervalFactor = 6.0;  //! wieviel mal öfter beim Crossen schmieren
-  constexpr int defaultHhreshodRainSensor = 512;         //! Schwellenwert für Regen TODO: Hysterese zum Abschalten
-  constexpr uint32_t defaultPumpLedLightingTime = 300;   //! Leuchtzeit der Pumpen-LED
+  constexpr char defaultSSID[] = "CHAINOILER";             //! SSID für WLAN-Accesspoint
+  constexpr char defaultPassword[] = "password";           //! Passwort für WLAN
+  constexpr double defaultPulsePerWeelRound = 109.0;       //! Defaultwert für Reed, Honda Africa Twin 109
+  constexpr double defaultWeelCircumFerence = 1.81;        //! Default Umfang Hinterrad
+  constexpr double defaultNormalOilInterval = 4000.0;      //! Schmierinterval 4000 Meter
+  constexpr double defaultRainOilIntervalFactor = 1.4;     //! wieviel mal gegenüber normal schmieren
+  constexpr double defaultCrossOilIntervalFactor = 6.0;    //! wieviel mal öfter beim Crossen schmieren
+  constexpr double defaultSpeedProgressionFactor = -0.76;  //! der Faktor für die Berechnung der Progression
+  constexpr int defaultHhreshodRainSensor = 512;           //! Schwellenwert für Regen TODO: Hysterese zum Abschalten
+  constexpr uint32_t defaultPumpLedLightingTime = 300;     //! Leuchtzeit der Pumpen-LED
   //
   // die Schlüsselnamen für den Speicher
   // Einstelungen für den Controller
@@ -64,6 +65,10 @@ namespace Preferences
   constexpr uint32_t BLINK_LED_CONTROL_TEST_ON = 60;
   constexpr uint32_t BLINK_LED_ATTENTION_OFF = 35;
   constexpr uint32_t BLINK_LED_ATTENTION_ON = 35;
+  //
+  // Konstanten
+  //
+  constexpr double MEASURE_ROUTE_METERS = 350.0;  //! wie weit messe ich für die Geschwindigkeit
 
   //
   // Kommandos REST API

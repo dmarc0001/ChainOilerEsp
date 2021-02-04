@@ -12,3 +12,4 @@ void checkTachoActions();
 void checkRainSensor();
 void checkControlKey();
 void checkStartStopWLANService();
+void checkSpeedActions();

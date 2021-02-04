@@ -34,7 +34,7 @@ void setup()
   Serial.println( "initializing hardware...OK" );
 #endif
   Prefs::setOpMode( opMode::NORMAL );
-  Prefs::computeTachoActionCountValue();
+  Prefs::computeTachoActionCountValue( 1.0 );
 }
 
 void loop()
@@ -73,6 +73,13 @@ void loop()
       //
       LedControl::loop();
     }
+  }
+  if ( opMode::NORMAL == Prefs::getOpMode() )
+  {
+    //
+    // im normalen Mode mache ich Anpassung an die Geschwindigkeit
+    //
+    checkSpeedActions();
   }
   //
   // Kontrolle ob der Webservive und WiFi gestartet werden sollen
@@ -115,7 +122,7 @@ void checkTachoActions()
   //
   // Lasse daten für neuen Zustand berechnen
   //
-  Prefs::computeTachoActionCountValue();
+  Prefs::computeTachoActionCountValue( 1.0 );
   // merken
   lastMode = Prefs::getOpMode();
 }
@@ -211,6 +218,34 @@ void checkControlKey()
     // zurücksetzten, da ausgewertet
     //
     Prefs::clearLastAction();
+  }
+}
+
+/**
+ * Prüfe ob was mit der Geschwindigkeit zu machen ist
+ */
+void checkSpeedActions()
+{
+  static double oldSpeed = 0.0;
+  // so alle Sekunde
+  if ( ( 0x03ffUL & millis() ) == 0 )
+  {
+    // wie schnell sind wir
+    double currSpeed = Prefs::computeSpeed();
+    // wie gross ist die Differenz zu eben
+    int diff = abs( static_cast< int >( currSpeed - oldSpeed ) );
+    if ( diff > 5 )
+    {
+      // Berechne die Progression
+      // y = x * Factor + 120
+      //
+      double fact = ( ( currSpeed * Prefs::getSpeedProgressionFactor() ) + 120.0 ) / 100.0;
+#ifdef DEBUG
+      Serial.print( "progression speed factor: " );
+      Serial.println( fact );
+#endif
+      Prefs::computeTachoActionCountValue( fact );
+    }
   }
 }
 

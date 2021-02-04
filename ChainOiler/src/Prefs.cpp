@@ -3,7 +3,7 @@
 namespace Preferences
 {
   //! Voreinstellungen beim Start
-  const char *Prefs::serialStr = "20210129-191827-build-0335";
+  const char *Prefs::serialStr = "20210204-194433-build-0338";
   String Prefs::WLANSSID{ defaultSSID };
   String Prefs::WLANPassword{ defaultPassword };
   double Prefs::pulsePerWeelRound{ defaultPulsePerWeelRound };
@@ -11,6 +11,7 @@ namespace Preferences
   double Prefs::normalOilInterval{ defaultNormalOilInterval };
   double Prefs::rainOilIntervalFactor{ defaultRainOilIntervalFactor };
   double Prefs::crossOilIntervalFactor{ defaultCrossOilIntervalFactor };
+  double Prefs::speedProgressionFactor{ defaultSpeedProgressionFactor };
   int Prefs::threshodRainSensor{ defaultPumpLedLightingTime };
   uint32_t Prefs::pumpLedLightingTime{ defaultPumpLedLightingTime };
   volatile bool Prefs::isTachoAction{ false };
@@ -19,7 +20,10 @@ namespace Preferences
   uint32_t Prefs::lastActionUpTime{ 0L };
   opMode Prefs::mode{ opMode::NORMAL };
   volatile uint32_t Prefs::tachoPulseCount{ 0 };
+  volatile uint32_t Prefs::tachoPulseForSpeedCount{ 0 };
   uint32_t Prefs::tachoPulseActionOnCount{ 0 };
+  uint32_t Prefs::pulsesPerMeasuredRoute{ ( MEASURE_ROUTE_METERS / weelCircumFerence ) * defaultPulsePerWeelRound };
+  uint32_t Prefs::measuresMsPerRouteMeters{ 0 };
   bool Prefs::functionSwitchDown{ false };
 
   bool Prefs::initPrefs()
@@ -70,14 +74,14 @@ namespace Preferences
     return isTachoAction;
   };
 
-  void Prefs::computeTachoActionCountValue()
+  void Prefs::computeTachoActionCountValue( double pFactor )
   {
-    double factor = 1.0;
+    double factor = pFactor;
 
     switch ( mode )
     {
       case opMode::NORMAL:
-        factor = 1.0;
+        // wird vorgegeben   factor = 1.0;
         break;
       case opMode::RAIN:
         factor = rainOilIntervalFactor;
@@ -218,6 +222,17 @@ namespace Preferences
     return tachoPulseActionOnCount;
   }
 
+  double Prefs::computeSpeed()
+  {
+    // Berechne Geschwindigkeit in m/s
+    return ( Preferences::MEASURE_ROUTE_METERS / measuresMsPerRouteMeters );
+  }
+
+  double Prefs::getSpeedProgressionFactor()
+  {
+    return speedProgressionFactor;
+  }
+
   void Prefs::makeDefaults()
   {
     using namespace Preferences;
@@ -225,7 +240,8 @@ namespace Preferences
     //
     // Aktion nach normalOilInterval Metern bei Radumfang weelCircumFerence und pulsePerWeelRound Pulsen per Umdrehung
     //
-    computeTachoActionCountValue();
+    computeTachoActionCountValue( 1.0 );
+    // SPEED_PROGRESSION_FACTOR
   }
 
 }  // namespace Preferences
