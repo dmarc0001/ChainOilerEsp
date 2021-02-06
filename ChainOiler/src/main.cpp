@@ -1,5 +1,6 @@
 
 #include "main.hpp"
+#include <user_interface.h>
 
 //
 // lokale Server instsanzieren
@@ -35,11 +36,54 @@ void setup()
 #endif
   Prefs::setOpMode( opMode::NORMAL );
   Prefs::computeTachoActionCountValue( 1.0 );
+  //
+  rst_info *rinfo = ESP.getResetInfoPtr();
+  //
+  // entscheide was vor deim start passiert war
+  //
+  if ( ( *rinfo ).reason == REASON_DEFAULT_RST || ( *rinfo ).reason == REASON_SOFT_RESTART || ( *rinfo ).reason == REASON_EXT_SYS_RST )
+  {
+    Serial.println( "normal start..." );
+    //
+    // nur DEBUG
+    //
+    Prefs::setOpMode( opMode::AWAKE );
+  }
+  else if ( ( *rinfo ).reason == REASON_DEEP_SLEEP_AWAKE )
+  {
+    Serial.println( "I'm awake from deep sleep..." );
+    //
+    // soll die LED zuj blicken bringen
+    //
+    Prefs::setOpMode( opMode::AWAKE );
+  }
+  else
+  {
+    Serial.print( String( "\nNot normal start: " ) + ESP.getResetReason() + "\n" );
+  }
 }
 
 void loop()
 {
   using namespace Preferences;
+  //
+  // aufwachen-zeigen
+  //
+  if ( Prefs::getOpMode() == opMode::AWAKE )
+  {
+    // Serial.println( "awake blink..." );
+    if ( millis() < 3000UL )
+    {
+      LedControl::loop();
+      return;
+    }
+    Serial.println( "awake blinking...OVER" );
+    //
+    // TODO: den Mode vor dem Deep sleep
+    //
+    Prefs::setOpMode( opMode::NORMAL );
+  }
+
   //
   // ÖLPUMPE erforderlich?
   //
@@ -227,6 +271,7 @@ void checkControlKey()
 void checkSpeedActions()
 {
   static double oldSpeed = 0.0;
+  double p_factor = 1.0;
   // so alle Sekunde
   if ( ( 0x03ffUL & millis() ) == 0 )
   {
@@ -234,17 +279,23 @@ void checkSpeedActions()
     double currSpeed = Prefs::computeSpeed();
     // wie gross ist die Differenz zu eben
     int diff = abs( static_cast< int >( currSpeed - oldSpeed ) );
-    if ( diff > 5 )
+    if ( diff > 2 )
     {
+      oldSpeed = currSpeed;
       // Berechne die Progression
       // y = x * Factor + 120
       //
-      double fact = ( ( currSpeed * Prefs::getSpeedProgressionFactor() ) + 120.0 ) / 100.0;
+      p_factor = ( ( currSpeed * Prefs::getSpeedProgressionFactor() ) + 120.0 ) / 100.0;
 #ifdef DEBUG
-      Serial.print( "progression speed factor: " );
-      Serial.println( fact );
+      Serial.print( "progression speed : " );
+      Serial.print( currSpeed );
+      Serial.print( " m/s " );
+      Serial.print( currSpeed * 3.6 );
+      Serial.print( " km/h factor: " );
+      Serial.print( p_factor );
+      Serial.println( "." );
 #endif
-      Prefs::computeTachoActionCountValue( fact );
+      Prefs::computeTachoActionCountValue( p_factor );
     }
   }
 }
@@ -264,6 +315,7 @@ void checkStartStopWLANService()
 #ifdef DEBUG
     Serial.println( "start accesspoint..." );
 #endif
+    WiFi.forceSleepWake();
     WiFi.softAP( "chainoiler" );
     Serial.print( "AP IP: " );
 #ifdef DEBUG
@@ -297,6 +349,7 @@ void checkStartStopWLANService()
     dnsServer.stop();
     oilServer.end();
     WiFi.softAPdisconnect();
+    WiFi.forceSleepBegin();
     runWebservice = false;
   }
 }

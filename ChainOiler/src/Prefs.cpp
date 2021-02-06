@@ -3,7 +3,7 @@
 namespace Preferences
 {
   //! Voreinstellungen beim Start
-  const char *Prefs::serialStr = "20210204-194433-build-0338";
+  const char *Prefs::serialStr = "20210206-180552-build-0423";
   String Prefs::WLANSSID{ defaultSSID };
   String Prefs::WLANPassword{ defaultPassword };
   double Prefs::pulsePerWeelRound{ defaultPulsePerWeelRound };
@@ -22,7 +22,8 @@ namespace Preferences
   volatile uint32_t Prefs::tachoPulseCount{ 0 };
   volatile uint32_t Prefs::tachoPulseForSpeedCount{ 0 };
   uint32_t Prefs::tachoPulseActionOnCount{ 0 };
-  uint32_t Prefs::pulsesPerMeasuredRoute{ ( MEASURE_ROUTE_METERS / weelCircumFerence ) * defaultPulsePerWeelRound };
+  uint32_t Prefs::pulsesPerMeasuredRoute{
+      ( static_cast< uint32_t >( floor( MEASURE_ROUTE_METERS / weelCircumFerence ) * defaultPulsePerWeelRound ) ) };
   uint32_t Prefs::measuresMsPerRouteMeters{ 0 };
   bool Prefs::functionSwitchDown{ false };
 
@@ -30,32 +31,82 @@ namespace Preferences
   {
     SPI.begin();
     bool initOk = false;
-    initOk = SPIFFS.begin();
-    if ( !( initOk ) )  // Format SPIFS, of not formatted. - Try 1
+    initOk = LittleFS.begin();
+    if ( !( initOk ) )  // Format FS, of not formatted. - Try 1
     {
-      Serial.println( "SPIFFS filesystem format..." );
-      SPIFFS.format();
-      initOk = SPIFFS.begin();
+      Serial.println( "LittleFS filesystem format..." );
+      LittleFS.format();
+      initOk = LittleFS.begin();
     }
-    if ( !( initOk ) )  // Format SPIFS. - Try 2
+    if ( !( initOk ) )  // Format LittleFS. - Try 2
     {
-      SPIFFS.format();
-      initOk = SPIFFS.begin();
+      LittleFS.format();
+      initOk = LittleFS.begin();
     }
     if ( initOk )
     {
-      Serial.println( "SPIFFS is OK" );
+      Serial.println( "LittleFs is OK" );
     }
     else
     {
-      Serial.println( "SPIFFS is NOT OK" );
+      Serial.println( "LittleFs is NOT OK" );
     }
+#ifdef DEBUG
+    printPrefs();
+#endif
+
     return initOk;
 
     // TODO: Preferenzen aus Festspeicher lesen oder defaults setzten
     // TODO: Nichtflüchtigen Speicher init, auslesen oder neu beschreiben
     //
   }
+
+#ifdef DEBUG
+  void Prefs::printPrefs()
+  {
+    Serial.print( "Prefs::serialStr: " );
+    Serial.println( Prefs::serialStr );
+    //
+    Serial.print( "Prefs::WLANSSID: " );
+    Serial.println( Prefs::WLANSSID );
+    //
+    Serial.print( "Prefs::pulsePerWeelRound: " );
+    Serial.println( Prefs::pulsePerWeelRound );
+    //
+    Serial.print( "Prefs::weelCircumFerence: " );
+    Serial.println( Prefs::weelCircumFerence );
+    //
+    Serial.print( "Prefs::normalOilInterval: " );
+    Serial.println( Prefs::normalOilInterval );
+    //
+    Serial.print( "Prefs::rainOilIntervalFactor: " );
+    Serial.println( Prefs::rainOilIntervalFactor );
+    //
+    Serial.print( "Prefs::crossOilIntervalFactor: " );
+    Serial.println( Prefs::crossOilIntervalFactor );
+    //
+    Serial.print( "Prefs::speedProgressionFactor: " );
+    Serial.println( Prefs::speedProgressionFactor );
+    //
+    Serial.print( "Prefs::threshodRainSensor: " );
+    Serial.println( Prefs::threshodRainSensor );
+    //
+    Serial.print( "Prefs::pumpLedLightingTime: " );
+    Serial.println( Prefs::pumpLedLightingTime );
+    //
+    Serial.print( "Prefs::mode (NORMAL): " );
+    Serial.println( Prefs::mode );
+    //
+    Serial.print( "Prefs::tachoPulseActionOnCount: " );
+    Serial.println( Prefs::tachoPulseActionOnCount );
+    //
+    Serial.print( "Prefs::pulsesPerMeasuredRoute: " );
+    Serial.println( Prefs::pulsesPerMeasuredRoute );
+    //
+    delay( 1000 );
+  }
+#endif
 
   /**
    * Tacho Action ist gesetzt!
@@ -80,8 +131,10 @@ namespace Preferences
 
     switch ( mode )
     {
+      case opMode::AWAKE:
       case opMode::NORMAL:
-        // wird vorgegeben   factor = 1.0;
+        // wird vorgegeben
+        // factor = 1.0;
         break;
       case opMode::RAIN:
         factor = rainOilIntervalFactor;
@@ -222,10 +275,16 @@ namespace Preferences
     return tachoPulseActionOnCount;
   }
 
-  double Prefs::computeSpeed()
+  uint32_t Prefs::computeSpeed()
   {
     // Berechne Geschwindigkeit in m/s
-    return ( Preferences::MEASURE_ROUTE_METERS / measuresMsPerRouteMeters );
+    uint32_t km = Preferences::MEASURE_ROUTE_METERS * 1000UL;
+    if ( km > measuresMsPerRouteMeters && measuresMsPerRouteMeters > 0 )
+    {
+      uint32_t value = static_cast< uint32_t >( km / measuresMsPerRouteMeters );
+      return value;
+    }
+    return 0;
   }
 
   double Prefs::getSpeedProgressionFactor()

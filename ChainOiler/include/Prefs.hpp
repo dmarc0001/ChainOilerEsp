@@ -1,7 +1,7 @@
 #pragma once
 #include <Arduino.h>
-#include "FS.h"
 #include "HardwareInit.hpp"
+#include "LittleFS.h"
 #include "ProjectDefaults.hpp"
 #include "SPI.h"
 
@@ -18,6 +18,7 @@ namespace Preferences
   //! Betriebsart des Ölers (normal, regen, cross, accesspoint, test)
   enum opMode : uint8_t
   {
+    AWAKE,
     NORMAL,
     RAIN,
     CROSS,
@@ -43,7 +44,10 @@ namespace Preferences
     static volatile bool isTachoAction;    //! Marker, Pume anwerfen!
     static fClick lastAction;              //! was hat die Funktionstaste hinterlassen
     static opMode mode;                    //! Betriebsart des Gerätes
-    Prefs(){};                             //! privater Konstruktor, nur statisches Objekt!
+#ifdef DEBUG
+    static void printPrefs();  //! Preferenzen zeigen
+#endif
+    Prefs(){};  //! privater Konstruktor, nur statisches Objekt!
 
     protected:
     static volatile uint32_t tachoPulseCount;          //! aktueller Zähler der impulse (ISR)
@@ -72,8 +76,8 @@ namespace Preferences
     static int getThreshodRainSensor();
     static uint32_t getTachoPulseCount();
     static uint32_t getTachoPulseActionOnCount();
-    static double computeSpeed();  //! berechne Geschwindigkeit in M/S
-    static double getSpeedProgressionFactor(); //! gib den progressionsfaktor
+    static uint32_t computeSpeed();             //! berechne Geschwindigkeit in M/S
+    static double getSpeedProgressionFactor();  //! gib den progressionsfaktor
     private:
     static void makeDefaults();
   };

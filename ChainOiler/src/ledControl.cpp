@@ -8,15 +8,17 @@ void LedControl::loop()
   using namespace Preferences;
   static bool controlLedIsOn = false;
   uint32_t timeDiff = millis() - LedControl::pumpSwitchedOn;
-
   //
   // die Pumpen LED aus, wenn die Zeit ran ist
   //
-  if ( digitalRead( LED_PUMP ) == HIGH )
+  if ( Prefs::getOpMode() != opMode::AWAKE )
   {
-    if ( timeDiff > Prefs::getTimeForPumpLedFlash() )
+    if ( digitalRead( LED_PUMP ) == HIGH )
     {
-      digitalWrite( LED_PUMP, LOW );
+      if ( timeDiff > Prefs::getTimeForPumpLedFlash() )
+      {
+        digitalWrite( LED_PUMP, LOW );
+      }
     }
   }
   //
@@ -25,6 +27,24 @@ void LedControl::loop()
   timeDiff = millis() - LedControl::lastChanged;
   switch ( Prefs::getOpMode() )
   {
+    case opMode::AWAKE:
+      if ( controlLedIsOn && timeDiff > BLINK_LED_AWAKE_ON )
+      {
+        controlLedIsOn = false;
+        digitalWrite( LED_RAIN, HIGH );
+        digitalWrite( LED_CONTROL, LOW );
+        digitalWrite( LED_PUMP, HIGH );
+        LedControl::lastChanged = millis();
+      }
+      else if ( !controlLedIsOn && timeDiff > BLINK_LED_AWAKE_OFF )
+      {
+        controlLedIsOn = true;
+        digitalWrite( LED_RAIN, LOW );
+        digitalWrite( LED_CONTROL, HIGH );
+        digitalWrite( LED_PUMP, LOW );
+        LedControl::lastChanged = millis();
+      }
+      break;
     case opMode::NORMAL:
       if ( digitalRead( LED_RAIN ) != LOW )
       {

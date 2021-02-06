@@ -1,10 +1,15 @@
 #include "HardwareInit.hpp"
+#include <ESP8266WiFi.h>
 #include "Prefs.hpp"
 #include "ProjectDefaults.hpp"
 
 void initHardware()
 {
   using namespace Preferences;
+  //
+  // Wifi erst mal aus
+  //
+  WiFi.forceSleepBegin();
   //
   // Ausgänge initialisieren
   //
@@ -28,7 +33,7 @@ void initHardware()
   // Interrupt für Eingänge
   //
   // Tachoimpuls
-  attachInterrupt( digitalPinToInterrupt( INPUT_TACHO ), tachoPulse, FALLING );
+  attachInterrupt( digitalPinToInterrupt( INPUT_TACHO ), tachoPulse, RISING );
   // Funktionstaste
   attachInterrupt( digitalPinToInterrupt( INPUT_FUNCTION_SWITCH ), functionSwitch, CHANGE );
   // Timer für die Pumle
@@ -48,7 +53,7 @@ void initHardware()
  */
 ICACHE_RAM_ATTR void tachoPulse()
 {
-  static uint32_t speedStart = 0L;
+  static ulong speedStart = 0L;
   using namespace Preferences;
   //
   // Zähle die Impuse in zwei Variablen

@@ -65,10 +65,12 @@ namespace Preferences
   constexpr uint32_t BLINK_LED_CONTROL_TEST_ON = 60;
   constexpr uint32_t BLINK_LED_ATTENTION_OFF = 35;
   constexpr uint32_t BLINK_LED_ATTENTION_ON = 35;
+  constexpr uint32_t BLINK_LED_AWAKE_OFF = 150;
+  constexpr uint32_t BLINK_LED_AWAKE_ON = 80;
   //
   // Konstanten
   //
-  constexpr double MEASURE_ROUTE_METERS = 350.0;  //! wie weit messe ich für die Geschwindigkeit
+  constexpr uint32_t MEASURE_ROUTE_METERS = 350;  //! wie weit messe ich für die Geschwindigkeit
 
   //
   // Kommandos REST API
