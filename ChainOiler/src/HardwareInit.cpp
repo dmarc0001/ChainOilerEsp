@@ -27,7 +27,7 @@ void initHardware()
   // Eingänge intialisieren
   //
   pinMode( INPUT_TACHO, INPUT );
-  pinMode( INPUT_FUNCTION_SWITCH, INPUT_PULLUP );
+  pinMode( INPUT_FUNCTION_SWITCH, INPUT );
   //
   // Interrupt für Eingänge
   //
