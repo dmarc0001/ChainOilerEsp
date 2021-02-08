@@ -33,20 +33,14 @@ namespace Preferences
   //
   // Ausgänge GPIO, nicht konfigurierbar
   //
-  constexpr uint8_t LED_INTERNAL = 2;   //! Blaue, interne LED
-  constexpr uint8_t LED_CONTROL = 12;   //! LED für Kontrolle, WLAN, CROSS
-  constexpr uint8_t LED_RAIN = 13;      //! Regen Betriebsanzeige
-  constexpr uint8_t LED_PUMP = 14;      //! Aktivitätsanzeige Pumpe
-  constexpr uint8_t PUMP_CONTROL = 15;  //! Betätigt die Punpe, 20ms Stöße
-  //
-  // Eingänge GPIO, nicht konfigurierbar
-  //
-  constexpr uint8_t INPUT_TACHO = 5;  //! Tachoimpuls / Reed Kontakt
-  // constexpr uint8_t INPUT_TACHO = 16;           //! Tachoimpuls / Reed Kontakt
+  constexpr uint8_t LED_REED_CONTROL = 2;       //! Blaue, interne LED
+  constexpr uint8_t LED_CONTROL = 12;           //! LED für Kontrolle, WLAN, CROSS
+  constexpr uint8_t LED_RAIN = 13;              //! Regen Betriebsanzeige
+  constexpr uint8_t LED_PUMP = 14;              //! Aktivitätsanzeige Pumpe
+  constexpr uint8_t PUMP_CONTROL_OUT = 15;      //! Betätigt die Punpe, 20ms Stöße
+  constexpr uint8_t INPUT_TACHO = 5;            //! Tachoimpuls / Reed Kontakt
   constexpr uint8_t INPUT_FUNCTION_SWITCH = 4;  //! Funktionstaster Cross/WLAN
-  constexpr uint8_t INPUT_RAIN_SWITCH = 16;     //! Funktionstaster Regen (optional)
-  // constexpr uint8_t INPUT_RAIN_SWITCH = 5;      //! Funktionstaster Regen (optional)
-  constexpr uint8_t INPUT_ANALOG = A0;  //! Eingang Analogschnittstelle
+  constexpr uint8_t INPUT_ANALOG = A0;          //! Eingang Analogschnittstelle
   //
   // Wie lange dauert das entprellen in Millisekunden
   //

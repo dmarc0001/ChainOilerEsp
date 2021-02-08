@@ -13,22 +13,21 @@ void initHardware()
   //
   // Ausgänge initialisieren
   //
-  pinMode( LED_INTERNAL, OUTPUT );
+  pinMode( LED_REED_CONTROL, OUTPUT );
   pinMode( LED_CONTROL, OUTPUT );
   pinMode( LED_RAIN, OUTPUT );
   pinMode( LED_PUMP, OUTPUT );
-  pinMode( PUMP_CONTROL, OUTPUT );
-  digitalWrite( LED_INTERNAL, HIGH );  // ==> AUS
+  pinMode( PUMP_CONTROL_OUT, OUTPUT );
+  digitalWrite( LED_REED_CONTROL, HIGH );  // ==> AUS
   digitalWrite( LED_CONTROL, LOW );
   digitalWrite( LED_RAIN, LOW );
   digitalWrite( LED_PUMP, LOW );
-  digitalWrite( PUMP_CONTROL, LOW );
+  digitalWrite( PUMP_CONTROL_OUT, LOW );
   //
-  // Eingänge nitialisieren
+  // Eingänge intialisieren
   //
   pinMode( INPUT_TACHO, INPUT );
   pinMode( INPUT_FUNCTION_SWITCH, INPUT_PULLUP );
-  pinMode( INPUT_RAIN_SWITCH, INPUT );
   //
   // Interrupt für Eingänge
   //
@@ -116,5 +115,5 @@ ICACHE_RAM_ATTR void functionSwitch()
  */
 ICACHE_RAM_ATTR void timerIsr()
 {
-  digitalWrite( Preferences::PUMP_CONTROL, LOW );
+  digitalWrite( Preferences::PUMP_CONTROL_OUT, LOW );
 }

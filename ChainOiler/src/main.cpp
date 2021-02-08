@@ -148,7 +148,7 @@ void checkTachoActions()
     //
     // Pumpeminmuls starten
     //
-    digitalWrite( Preferences::PUMP_CONTROL, HIGH );
+    digitalWrite( Preferences::PUMP_CONTROL_OUT, HIGH );
     timer1_write( 625 );  // 20 ms
     //
     Prefs::setTachoAction( false );
