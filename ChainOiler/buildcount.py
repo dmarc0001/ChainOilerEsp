@@ -14,10 +14,10 @@ __version__ = '0.1'
 COUNTFILE = "count.cnt"
 TEMPFILE = "tempfile.tmp"
 SRCFOLDER = "src/"
-PREFS_FILE = "Prefs.cpp"
+PREFS_FILE = "AppPreferences.cpp"
 
-REGEX_EXPR = r"^\s+const\s+char\s+.Prefs::serialStr\s+=\s+\".*\";.*"
-REPLACEMENT = "  const char *Prefs::serialStr = \"{}\";\n"
+REGEX_EXPR = r"^\s+const\s+char\s+.Preferences::serialStr\s+=\s+\".*\";.*"
+REPLACEMENT = "  const char *Preferences::serialStr = \"{}\";\n"
 
 
 def create_countfile():

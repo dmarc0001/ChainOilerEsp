@@ -140,7 +140,7 @@ void loop()
     //
     // Timer programmieren
     //
-    if ( speed > 0.01 )
+    if ( speed > 2.5 )
     {
       uint32_t pulses = pulsesForKmh( speed );
       timer1_write( pulses );

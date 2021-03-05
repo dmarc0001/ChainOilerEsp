@@ -1,15 +1,4 @@
 #pragma once
+#include "esp_log.h"
 
-#include "HardwareInit.hpp"
-#include "Prefs.hpp"
-#include "ProjectDefaults.hpp"
-#include "ledControl.hpp"
-#include "webservice.hpp"
-
-void setup();
-void loop();
-void checkTachoActions();
-void checkRainSensor();
-void checkControlKey();
-void checkStartStopWLANService();
-void checkSpeedActions();
+extern "C" void app_main();
