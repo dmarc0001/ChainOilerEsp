@@ -1,4 +1,6 @@
-# ChainOilerEsp
-Chain oiler with esp controller and WLAN config (OTA Updates)
+# Enhanced Chain Oiler like a McCoi Oiler for Motorcycles
 
+...in progress...
+
+description comming soon
 

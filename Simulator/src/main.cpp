@@ -2,6 +2,7 @@
 
 void setup()
 {
+  breakAction = false;
   Serial.begin( 115200 );
   Serial.println( "" );
   Serial.println( "controller is starting..." );
@@ -10,10 +11,14 @@ void setup()
   pinMode( LED_INTERNAL, OUTPUT );
   // den simulierten Tachoumpuls
   pinMode( TACHO_OUT, OUTPUT );
+  // break Taste
+  pinMode( BREAK_SW_IN, INPUT_PULLUP );
   // LED AUS
   digitalWrite( LED_INTERNAL, HIGH );
 
   timer1_attachInterrupt( timerIsr );
+  attachInterrupt( digitalPinToInterrupt( BREAK_SW_IN ), functionBreakSwitchIsr, CHANGE );
+
   //
   // 80 MHZ geteilt durch 16 == 5 MHz
   // TIM_EDGE == interrupt muss nicht zurück gesetzt werden
@@ -64,13 +69,35 @@ void loop()
   static double current_max = static_cast< double >( random( MIN_SPEED + 10, MAX_SPEED ) );
   static double current_min = static_cast< double >( MIN_SPEED );
   static bool isUpwarts = true;
+  static bool makeABreak = false;
+  static bool isBreakTime = false;
 
   if ( ( 0x01ffUL & millis() ) == 0 )
   {
     //
     // zufällig die Geschwindigkeit in meinen Grenzen ändern
     //
-    double deltaSpeed = static_cast< double >( random( 1, 8 ) ) / 2.0;
+    if ( breakAction )
+    {
+      makeABreak = !makeABreak;
+      breakAction = false;
+      if ( makeABreak )
+      {
+        Serial.println( "changed: make a break!" );
+        // werde langsamer
+        isUpwarts = false;
+      }
+      else
+      {
+        Serial.print( "changed: end the break, drive on\n" );
+        speed = MIN_SPEED;
+        if ( isBreakTime )
+        {
+          timer1_enable( TIM_DIV16, TIM_EDGE, TIM_LOOP );
+        }
+      }
+    }
+    double deltaSpeed = static_cast< double >( random( 1, 8 ) ) / 2.51;
     if ( isUpwarts )
     {
       // schneller?
@@ -91,8 +118,15 @@ void loop()
       if ( speed < current_min )
       {
         // zu langsam
-        isUpwarts = true;
-        current_max = static_cast< double >( random( MIN_SPEED, MAX_SPEED ) );
+        if ( makeABreak )
+        {
+          speed -= deltaSpeed;
+        }
+        else
+        {
+          isUpwarts = true;
+          current_max = static_cast< double >( random( MIN_SPEED, MAX_SPEED ) );
+        }
       }
       else
       {
@@ -106,18 +140,37 @@ void loop()
     //
     // Timer programmieren
     //
-    uint32_t pulses = pulsesForKmh( speed );
-    timer1_write( pulses );
-    //
-    // Simulator läuft signalisieren
-    //
-    if ( digitalRead( LED_INTERNAL ) == HIGH )
+    if ( speed > 2.5 )
     {
-      digitalWrite( LED_INTERNAL, LOW );
+      uint32_t pulses = pulsesForKmh( speed );
+      timer1_write( pulses );
     }
     else
     {
-      digitalWrite( LED_INTERNAL, HIGH );
+      //
+      // wen zu langsam, keine Impulse
+      //
+      if ( !isBreakTime )
+      {
+        Serial.println( "make the break, no tacho pulses..." );
+        timer1_disable();
+        digitalWrite( TACHO_OUT, LOW );
+        isBreakTime = true;
+      }
+    }
+    //
+    // Simulator läuft signalisieren
+    //
+    if ( !isBreakTime )
+    {
+      if ( digitalRead( LED_INTERNAL ) == HIGH )
+      {
+        digitalWrite( LED_INTERNAL, LOW );
+      }
+      else
+      {
+        digitalWrite( LED_INTERNAL, HIGH );
+      }
     }
     delay( 2 );
   }
@@ -129,7 +182,6 @@ void loop()
 ICACHE_RAM_ATTR void timerIsr()
 {
   volatile static int tacho_state = LOW;
-
   if ( tacho_state == LOW )
   {
     digitalWrite( TACHO_OUT, HIGH );
@@ -140,5 +192,40 @@ ICACHE_RAM_ATTR void timerIsr()
   {
     digitalWrite( TACHO_OUT, LOW );
     tacho_state = LOW;
+  }
+}
+
+ICACHE_RAM_ATTR void functionBreakSwitchIsr()
+{
+  volatile static uint32_t downTime = 0L;
+  volatile static bool functionSwitchDown = false;
+
+  if ( digitalRead( BREAK_SW_IN ) == LOW )
+  {
+    //
+    // LOW festhalten
+    //
+    functionSwitchDown = true;
+    downTime = millis();
+  }
+  else
+  {
+    //
+    // wechsel low->high?
+    //
+    if ( functionSwitchDown )
+    {
+      if ( millis() - downTime > 100 )
+      {
+        // ACTION
+        breakAction = true;
+      }
+      else
+      {
+        // prellt noch
+        downTime = 0L;
+      }
+      functionSwitchDown = false;
+    }
   }
 }

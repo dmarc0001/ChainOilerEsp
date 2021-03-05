@@ -6,7 +6,8 @@
 // IO Ports definieren
 //
 constexpr int LED_INTERNAL = 02;
-constexpr int TACHO_OUT = 05;
+constexpr int TACHO_OUT = 04;
+constexpr int BREAK_SW_IN = 13;
 //
 // Tacho definitionen
 //
@@ -27,4 +28,6 @@ void setup();
 void loop();
 uint32_t pulsesForKmh( double speed );
 ICACHE_RAM_ATTR void timerIsr();
+ICACHE_RAM_ATTR void functionBreakSwitchIsr();
 volatile uint32_t g_counter;
+volatile bool breakAction;
