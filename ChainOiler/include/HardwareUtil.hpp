@@ -33,6 +33,7 @@ namespace esp32s2
     pcnt_evt_type_t evt_type; //! INT type
     int16_t value;            //! value
   };
+  using deltaTimeTenMeters_us = uint64_t; //! zeitstempel für 5 Meter
 
   class EspCtrl
   {
@@ -42,17 +43,19 @@ namespace esp32s2
 
   protected:
     static void init();
-    static xQueueHandle pcnt_evt_queue;
+    static xQueueHandle pathLenQueue;
+    static xQueueHandle speedQueue;
 
   public:
     friend class ChOiler::MainWorker;
-    static void IRAM_ATTR tachoOilerCountISR(void *);
     static rain_value_t getRainValues();
     static esp_sleep_wakeup_cause_t getWakeupCause() { return wakeupCause; };
     static void goDeepSleep();
 
   private:
-    static bool initTachoPulseCounter();
+    static bool initTachoPulseCounters();
+    static void IRAM_ATTR tachoOilerCountISR(void *);
+    static void IRAM_ATTR speedCountISR(void *);
   };
 
 } // namespace esp32s2

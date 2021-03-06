@@ -4,7 +4,7 @@
 
 namespace Prefs
 {
-  const char *Preferences::serialStr = "20210306-133915-build-0200";
+  const char *Preferences::serialStr = "20210306-194306-build-0250";
   const std::string Preferences::serialString = std::string(Preferences::serialStr);
   const char *Preferences::tag{"Preferences"};                                           //! tag fürs debug logging
   nvs_handle_t Preferences::nvs_handle{0};                                               //! handle für NVS
@@ -267,9 +267,17 @@ namespace Prefs
   int16_t Preferences::getPulsesFor100Meters()
   {
     double val100Meters = (100.0 / circumFerence) * pulsePerRound;
-    int16_t count = static_cast<int16_t>(std::floor(val100Meters));
-    ESP_LOGE(tag, "%s: pulses for 100 meters: <%06d>", __func__, count);
+    int16_t count = static_cast<int16_t>(std::ceil(val100Meters));
+    ESP_LOGI(tag, "%s: ==== pulses for 100 meters: <%06d>", __func__, count);
     return count;
+  }
+
+  int16_t Preferences::getPulsesFor10Meters()
+  {
+    double val10Meters = (10.0 / circumFerence) * pulsePerRound;
+    int16_t count = static_cast<int16_t>(std::ceil(val10Meters));
+    ESP_LOGI(tag, "%s: ==== pulses for 5 meters: <%06d>", __func__, count);
+    return (count >= 1) ? count : 1;
   }
 
   uint16_t Preferences::getMinimalPulseLength()

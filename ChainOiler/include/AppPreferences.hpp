@@ -33,34 +33,33 @@ namespace Prefs
     static volatile uint32_t lastTachoPulse;          //! wann war der letzte Puls (deep sleep)
 
   public:
-    static const std::string &getVersion();  //! Versionsstring zurückgeben
-    static void init();                      //! das (statische) Objekt initialisieren
-    static void close();                     //! Objekt schließen
-    static void format();                    //! den Speicher schließen
-    static void setApSSID(std::string);      //! Accesspoint SSID setzten
-    static std::string getApSSID();          //! Accesspoint SSID lesen
-    static void makeDefaults();              //! Einstellungen initialisieren
-    static void readPreferences();           //! Einstellungen aus dem Speicher lesen
-    static void setApPasswd(std::string);    //! Accesspoint Passwort setzen
-    static std::string getApPasswd();        //! Accesspoint Passwort lesen
-    static void setPulsePerRound(double);    //! Setzte Impulse per Radumdrehung
-    static double getPulsePerRound();        //! lese Impulse per Radumdrehung
-    static void setCircumFerence(double);    //! setzte Radumfang
-    static double getCircumFerence();        //! lese Radumfang
-    static void setOilInterval(double);      //! Setzte die Strecke zwischen den Ölungen
-    static double getOilInterval();          //! lese Strecke zwischen den Ölungen
-    static void setRainFactor(double);       //! Setzte den Faktor bei Regen
-    static double getRainFactor();           //! lese den Faktor bei Regen
-    static void setCrossFactor(double);      //! setze den Faktor beim Crossbetrieb
-    static double getCrossFactor();          //! lese den Faktor beim Crossbetrieb
-    static void setSpeedProgression(double); //! setzte Faktor bei Geschwindigkeit
-    static double getSpeedProgression();     //! lese den Faktor bei Geschwindigkeit
-    static void setSensorThreshold(int);     //! setzte sen Schwelenwert des Regensensors
-    static int getSensorThreshold();         //! lese Schwellenwert des Regensensors
-    // TODO: sehen, wie der zähler das aufteilen kann
-    static int16_t getPulsesFor100Meters();  //! gib impulse per 100 Meter, errechnet aus den Parametern
-    static uint16_t getMinimalPulseLength(); //! die kleinste Pulslänge in meiner Konfiguration
-
+    static const std::string &getVersion();        //! Versionsstring zurückgeben
+    static void init();                            //! das (statische) Objekt initialisieren
+    static void close();                           //! Objekt schließen
+    static void format();                          //! den Speicher schließen
+    static void setApSSID(std::string);            //! Accesspoint SSID setzten
+    static std::string getApSSID();                //! Accesspoint SSID lesen
+    static void makeDefaults();                    //! Einstellungen initialisieren
+    static void readPreferences();                 //! Einstellungen aus dem Speicher lesen
+    static void setApPasswd(std::string);          //! Accesspoint Passwort setzen
+    static std::string getApPasswd();              //! Accesspoint Passwort lesen
+    static void setPulsePerRound(double);          //! Setzte Impulse per Radumdrehung
+    static double getPulsePerRound();              //! lese Impulse per Radumdrehung
+    static void setCircumFerence(double);          //! setzte Radumfang
+    static double getCircumFerence();              //! lese Radumfang
+    static void setOilInterval(double);            //! Setzte die Strecke zwischen den Ölungen
+    static double getOilInterval();                //! lese Strecke zwischen den Ölungen
+    static void setRainFactor(double);             //! Setzte den Faktor bei Regen
+    static double getRainFactor();                 //! lese den Faktor bei Regen
+    static void setCrossFactor(double);            //! setze den Faktor beim Crossbetrieb
+    static double getCrossFactor();                //! lese den Faktor beim Crossbetrieb
+    static void setSpeedProgression(double);       //! setzte Faktor bei Geschwindigkeit
+    static double getSpeedProgression();           //! lese den Faktor bei Geschwindigkeit
+    static void setSensorThreshold(int);           //! setzte sen Schwelenwert des Regensensors
+    static int getSensorThreshold();               //! lese Schwellenwert des Regensensors
+    static int16_t getPulsesFor100Meters();        //! gib impulse per 100 Meter, errechnet aus den Parametern
+    static int16_t getPulsesFor10Meters();         //! impulse per 5 Metrer, für Tacho
+    static uint16_t getMinimalPulseLength();       //! die kleinste Pulslänge in meiner Konfiguration
     static uint32_t getCounterPulsesForInterval(); //! wie viele impuse zum erreichen der strecke
 
   private:

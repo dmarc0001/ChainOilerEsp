@@ -6,9 +6,11 @@
 
 namespace Prefs
 {
-  /****************************************************************************
-   * Konstanten für das Programm +
-   ***************************************************************************/
+  //****************************************************************************
+  // Konstanten für das Programm
+  // Berechningen intern in Metern und Sekunden
+  // Konfig in km/h
+  //****************************************************************************
   //
   // Version des Speichers bei Versionen, wenn änderungen an speicher
   // muss die Version erhöht werden und im code reagiert werden
@@ -77,7 +79,9 @@ namespace Prefs
   //
   // Konstanten
   //
-  constexpr uint32_t MEASURE_ROUTE_METERS = 350; //! wie weit messe ich für die Geschwindigkeit
+  constexpr size_t QUEUE_LEN_DISTANCE = 10; //! Wie lang ist die RTOS Queue für entfernungsmessung
+  constexpr size_t QUEUE_LEN_TACHO = 20;    //! wie lang ist die queue für Tacho Ereignisse
+  constexpr size_t SPEED_HISTORY_LEN = 200; //! max länge der Tempo-Historie
 
   //
   // Kommandos REST API
