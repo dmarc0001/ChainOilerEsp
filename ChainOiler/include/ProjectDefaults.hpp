@@ -41,17 +41,18 @@ namespace Prefs
   //
   // Ein-/Ausgänge GPIO, nicht konfigurierbar
   //
-  constexpr gpio_num_t LED_REED_CONTROL = GPIO_NUM_26;         //! Kontrolle für Tacho und Reed Impuls
-  constexpr gpio_num_t LED_CONTROL = GPIO_NUM_33;              //! LED für Kontrolle, WLAN, CROSS
-  constexpr gpio_num_t LED_RAIN = GPIO_NUM_34;                 //! Regen Betriebsanzeige
-  constexpr gpio_num_t LED_PUMP = GPIO_NUM_35;                 //! Aktivitätsanzeige Pumpe
-  constexpr gpio_num_t OUTPUT_PUMP_CONTROL = GPIO_NUM_45;      //! Betätigt die Punpe, 20ms Stöße
-  constexpr gpio_num_t OUTPUT_RAIN_SW_01 = GPIO_NUM_42;        //! Schaltet Regensensor 01
-  constexpr gpio_num_t OUTPUT_RAIN_SW_02 = GPIO_NUM_41;        //! Schaltet Regensensor 02
-  constexpr gpio_num_t INPUT_TACHO = GPIO_NUM_4;               //! Tachoimpuls / Reed Kontakt
-  constexpr gpio_num_t INPUT_FUNCTION_SWITCH = GPIO_NUM_5;     //! Funktionstaster Cross/WLAN
-  constexpr adc1_channel_t INPUT_ADC_RAIN_00 = ADC1_CHANNEL_0; //! Eingang Analogschnittstelle GPIO01- PIN01
-  constexpr adc1_channel_t INPUT_ADC_RAIN_01 = ADC1_CHANNEL_1; //! Eingang Analogschnittstelle GPIO02 - PIN02
+  constexpr gpio_num_t LED_REED_CONTROL = GPIO_NUM_26;          //! Kontrolle für Tacho und Reed Impuls
+  constexpr gpio_num_t LED_CONTROL = GPIO_NUM_33;               //! LED für Kontrolle, WLAN, CROSS
+  constexpr gpio_num_t LED_RAIN = GPIO_NUM_34;                  //! Regen Betriebsanzeige
+  constexpr gpio_num_t LED_PUMP = GPIO_NUM_35;                  //! Aktivitätsanzeige Pumpe
+  constexpr gpio_num_t OUTPUT_PUMP_CONTROL = GPIO_NUM_45;       //! Betätigt die Punpe, 20ms Stöße
+  constexpr gpio_num_t OUTPUT_RAIN_SW_01 = GPIO_NUM_42;         //! Schaltet Regensensor 01
+  constexpr gpio_num_t OUTPUT_RAIN_SW_02 = GPIO_NUM_41;         //! Schaltet Regensensor 02
+  constexpr gpio_num_t INPUT_TACHO = GPIO_NUM_4;                //! Tachoimpuls / Reed Kontakt
+  constexpr gpio_num_t INPUT_FUNCTION_SWITCH = GPIO_NUM_5;      //! Funktionstaster Cross/WLAN
+  constexpr gpio_num_t INPUT_RAIN_SWITCH_OPTIONAL = GPIO_NUM_6; //! optionaler Regentaster (TODO:)
+  constexpr adc1_channel_t INPUT_ADC_RAIN_00 = ADC1_CHANNEL_0;  //! Eingang Analogschnittstelle GPIO01- PIN01
+  constexpr adc1_channel_t INPUT_ADC_RAIN_01 = ADC1_CHANNEL_2;  //! Eingang Analogschnittstelle GPIO03 - PIN03
   //
   // Wie lange dauert das entprellen in Millisekunden
   //

@@ -84,9 +84,9 @@ namespace esp32s2
     //  Tacho und Knopf
     //
     /*gpio_config_t config_in = {.pin_bit_mask = BIT64(INPUT_TACHO) | BIT64(INPUT_FUNCTION_SWITCH),*/
-    gpio_config_t config_in = {.pin_bit_mask = BIT64(INPUT_FUNCTION_SWITCH),
+    gpio_config_t config_in = {.pin_bit_mask = BIT64(INPUT_FUNCTION_SWITCH) | BIT64(INPUT_TACHO) | BIT64(INPUT_RAIN_SWITCH_OPTIONAL),
                                .mode = GPIO_MODE_INPUT,
-                               .pull_up_en = GPIO_PULLUP_DISABLE,
+                               .pull_up_en = GPIO_PULLUP_ENABLE,
                                .pull_down_en = GPIO_PULLDOWN_ENABLE,
                                .intr_type = GPIO_INTR_DISABLE};
     gpio_config(&config_in);
@@ -98,8 +98,11 @@ namespace esp32s2
     //
     ESP_LOGD(tag, "%s: init ADC...", __func__);
     adc1_config_width(ADC_WIDTH_BIT_13);
-    adc1_config_channel_atten(INPUT_ADC_RAIN_00, ADC_ATTEN_DB_0);
-    adc1_config_channel_atten(INPUT_ADC_RAIN_01, ADC_ATTEN_DB_0);
+    //
+    // Dämpfung für Meßbereich einstellen
+    //
+    adc1_config_channel_atten(INPUT_ADC_RAIN_00, ADC_ATTEN_DB_11 /*ADC_ATTEN_DB_0*/);
+    adc1_config_channel_atten(INPUT_ADC_RAIN_01, ADC_ATTEN_DB_11 /*ADC_ATTEN_DB_0*/);
     ESP_LOGD(tag, "%s: init ADC...done", __func__);
     EspCtrl::initTachoPulseCounter();
   }
@@ -149,17 +152,18 @@ namespace esp32s2
     using namespace Prefs;
 
     pcnt_unit_t unit0 = PCNT_UNIT_0;
+
     int16_t pulsesFor100Meters = Preferences::getPulsesFor100Meters();
 
-    ESP_LOGD(tag, "%s: init pulse counter unit0...", __func__);
     //
     // Queue initialisieren
     //
     pcnt_evt_queue = xQueueCreate(100, sizeof(pcnt_evt_t));
+    ESP_LOGD(tag, "%s: init pulse counter unit0, channel 0...", __func__);
     //
-    // Pulszähler initialisieren
+    // Pulszähler Wegstrecke initialisieren
     //
-    pcnt_config_t pcnt_config = {
+    pcnt_config_t pcnt_config_w = {
         .pulse_gpio_num = INPUT_TACHO,       /* der eingangspin */
         .ctrl_gpio_num = PCNT_PIN_NOT_USED,  /* kein Kontrolleingang */
         .lctrl_mode = PCNT_MODE_KEEP,        /* Zählrichtung bei CTRL 0 (ignoriert, da ctrl -1) */
@@ -174,7 +178,8 @@ namespace esp32s2
     //
     // initialisieren der unit
     //
-    pcnt_unit_config(&pcnt_config);
+    ESP_ERROR_CHECK(pcnt_unit_config(&pcnt_config_w));
+    ESP_LOGD(tag, "%s: init pulse counter unit0, channel 0...done", __func__);
     //
     // Configure and enable the input filter
     // 1800 zyklen sind bei 80 mhz 22 us
@@ -206,7 +211,7 @@ namespace esp32s2
     // ISR installieren und Callback aktivieren
     //
     pcnt_isr_service_install(0);
-    pcnt_isr_handler_add(unit0, tachoOilerCountISR, nullptr);
+    pcnt_isr_handler_add(unit0, EspCtrl::tachoOilerCountISR, nullptr);
 
     /* Everything is set up, now go to counting */
     pcnt_counter_resume(unit0);
@@ -218,7 +223,7 @@ namespace esp32s2
  * and pass this information together with the event type
  * the main program using a queue.
  */
-  void IRAM_ATTR tachoOilerCountISR(void *)
+  void IRAM_ATTR EspCtrl::tachoOilerCountISR(void *)
   {
     pcnt_evt_t evt;
     evt.unit = PCNT_UNIT_0;

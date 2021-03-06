@@ -6,17 +6,17 @@
 #include <time.h>
 #include <sys/time.h>
 #include <utility>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "driver/rtc_io.h"
-#include "driver/uart.h"
-#include "driver/pcnt.h"
-#include "driver/ledc.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/queue.h>
+#include <driver/rtc_io.h>
+#include <driver/uart.h>
+#include <driver/pcnt.h>
+#include <driver/ledc.h>
 #include <driver/adc.h>
-#include "esp_sleep.h"
-#include "esp_attr.h"
-#include "esp_log.h"
+#include <esp_sleep.h>
+#include <esp_attr.h>
+#include <esp_log.h>
 
 namespace ChOiler
 {
@@ -25,8 +25,6 @@ namespace ChOiler
 
 namespace esp32s2
 {
-  void IRAM_ATTR tachoOilerCountISR(void *);
-
   using rain_value_t = std::pair<int, int>;
   using pcnt_evt_t = struct
   {
@@ -48,7 +46,7 @@ namespace esp32s2
 
   public:
     friend class ChOiler::MainWorker;
-    friend void IRAM_ATTR tachoOilerCountISR(void *);
+    static void IRAM_ATTR tachoOilerCountISR(void *);
     static rain_value_t getRainValues();
     static esp_sleep_wakeup_cause_t getWakeupCause() { return wakeupCause; };
     static void goDeepSleep();
