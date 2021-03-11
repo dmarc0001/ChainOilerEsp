@@ -9,6 +9,7 @@ namespace esp32s2
   xQueueHandle EspCtrl::speedQueue = nullptr;                                //! handle fuer queue
   const char *EspCtrl::tag{"EspCtrl"};                                       //! tag fürs debug logging
   esp_sleep_wakeup_cause_t EspCtrl::wakeupCause{ESP_SLEEP_WAKEUP_UNDEFINED}; //! der Grund des Erwachens
+  esp_timer_handle_t EspCtrl::timerHandle{nullptr};                          //! timer handle
 
   /**
    * Initialisieere die Hardware
@@ -59,6 +60,21 @@ namespace esp32s2
       //
       printf("TODO: restore counters from NVS...");
     }
+    EspCtrl::initGPIOPorts();
+    EspCtrl::initTachoPulseCounters();
+    EspCtrl::initADC();
+    EspCtrl::initTimer();
+  }
+
+  /**
+ * @brief initiiere GPIO Ports
+ * 
+ * @return true 
+ * @return false 
+ */
+  bool EspCtrl::initGPIOPorts()
+  {
+    using namespace Prefs;
     //
     // GPIO Konfigurieren
     //
@@ -82,7 +98,7 @@ namespace esp32s2
                                 .intr_type = GPIO_INTR_DISABLE};
     gpio_config(&config_out);
     //
-    //  Tacho und Knopf
+    //  Tacho und Knopf (Knopf-GPIO_INTR_ANYEDGE)
     //
     /*gpio_config_t config_in = {.pin_bit_mask = BIT64(INPUT_TACHO) | BIT64(INPUT_FUNCTION_SWITCH),*/
     gpio_config_t config_in = {.pin_bit_mask = BIT64(INPUT_FUNCTION_SWITCH) | BIT64(INPUT_TACHO) | BIT64(INPUT_RAIN_SWITCH_OPTIONAL),
@@ -91,6 +107,26 @@ namespace esp32s2
                                .pull_down_en = GPIO_PULLDOWN_ENABLE,
                                .intr_type = GPIO_INTR_DISABLE};
     gpio_config(&config_in);
+    //
+    // Interrupt für zwei PINS einschalten
+    //
+    gpio_set_intr_type(INPUT_FUNCTION_SWITCH, GPIO_INTR_ANYEDGE);
+    gpio_set_intr_type(INPUT_RAIN_SWITCH_OPTIONAL, GPIO_INTR_ANYEDGE);
+    //
+    // ISR Servive installieren
+    //
+    gpio_install_isr_service(0);
+    //
+    // Handler für die beiden Ports
+    //
+    gpio_isr_handler_add(INPUT_FUNCTION_SWITCH, EspCtrl::buttonIsr, (void *)INPUT_FUNCTION_SWITCH);
+    gpio_isr_handler_add(INPUT_RAIN_SWITCH_OPTIONAL, EspCtrl::buttonIsr, (void *)INPUT_RAIN_SWITCH_OPTIONAL);
+    return true;
+  }
+
+  bool EspCtrl::initADC()
+  {
+    using namespace Prefs;
     //
     // Analog-Digital-Wandler starten
     // TODO: Messbereich optimieren
@@ -105,20 +141,30 @@ namespace esp32s2
     adc1_config_channel_atten(INPUT_ADC_RAIN_00, ADC_ATTEN_DB_11 /*ADC_ATTEN_DB_0*/);
     adc1_config_channel_atten(INPUT_ADC_RAIN_01, ADC_ATTEN_DB_11 /*ADC_ATTEN_DB_0*/);
     ESP_LOGD(tag, "%s: init ADC...done", __func__);
-    EspCtrl::initTachoPulseCounters();
+    return true;
   }
 
-  /**
-   * Regensensor wert zurück geben
-   */
-  rain_value_t EspCtrl::getRainValues()
+  bool EspCtrl::initTimer()
   {
-    using namespace Prefs;
-
-    rain_value_t val;
-    val.first = adc1_get_raw(INPUT_ADC_RAIN_00);
-    val.second = adc1_get_raw(INPUT_ADC_RAIN_01);
-    return (val);
+    //
+    // timer für Punpe starten
+    //
+    const esp_timer_create_args_t appTimerArgs =
+        {
+            .callback = &EspCtrl::timerCallback,
+            .arg = nullptr,
+            .dispatch_method = ESP_TIMER_TASK,
+            .name = "app_timer"};
+    //
+    // timer erzeugen
+    //
+    ESP_ERROR_CHECK(esp_timer_create(&appTimerArgs, &EspCtrl::timerHandle));
+    //
+    // timer starten, microsekunden ( 20 ms soll es)
+    //
+    ESP_ERROR_CHECK(esp_timer_start_periodic(EspCtrl::timerHandle, 20000));
+    //
+    return true;
   }
 
   /**
@@ -143,6 +189,26 @@ namespace esp32s2
     // Wiederbelebung erst durch Tachoimpuls
     //
     esp_deep_sleep_start();
+  }
+
+  void EspCtrl::timerCallback(void *)
+  {
+    static volatile bool haveSwitchedOn = false;
+
+    if (haveSwitchedOn)
+    {
+      haveSwitchedOn = false;
+      // Aus
+      gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 0);
+      // set LED ON
+    }
+    else if (AppStati::pumpCycles > 0)
+    {
+      haveSwitchedOn = true;
+      --AppStati::pumpCycles;
+      // an
+      gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 1);
+    }
   }
 
   /**
@@ -251,6 +317,23 @@ namespace esp32s2
     return true;
   }
 
+  /**
+   * Regensensor wert zurück geben
+   */
+  rain_value_t EspCtrl::getRainValues()
+  {
+    using namespace Prefs;
+
+    rain_value_t val;
+    val.first = adc1_get_raw(INPUT_ADC_RAIN_00);
+    val.second = adc1_get_raw(INPUT_ADC_RAIN_01);
+    return (val);
+  }
+
+  /**
+  * @brief Messe die gefahrene Entfernung
+  * 
+  */
   void IRAM_ATTR EspCtrl::tachoOilerCountISR(void *)
   {
     pcnt_evt_t evt;
@@ -278,6 +361,10 @@ namespace esp32s2
     }
   }
 
+  /**
+  * @brief Messe die Geschwindigkeit
+  * 
+  */
   void IRAM_ATTR EspCtrl::speedCountISR(void *)
   {
     static volatile uint64_t lastTimestamp = 0ULL; // initiale zeit
@@ -304,6 +391,37 @@ namespace esp32s2
           portYIELD_FROM_ISR();
         }
       }
+    }
+  }
+
+  void IRAM_ATTR EspCtrl::buttonIsr(void *arg)
+  {
+    using namespace Prefs;
+
+    gpio_num_t *gpio_num = static_cast<gpio_num_t *>(arg);
+    int level;
+
+    switch (*gpio_num)
+    {
+    case Prefs::INPUT_FUNCTION_SWITCH:
+      level = gpio_get_level(Prefs::INPUT_FUNCTION_SWITCH);
+      //
+      // Was ist passiert? Level 0 bedeutet Knopf gedrückt
+      //
+      AppStati::functionSwitchDown = (level == 1) ? false : true;
+      AppStati::lastFunctionSwitchAction = esp_timer_get_time();
+      break;
+
+    case Prefs::INPUT_RAIN_SWITCH_OPTIONAL:
+      level = gpio_get_level(Prefs::INPUT_RAIN_SWITCH_OPTIONAL);
+      //
+      // Was ist passiert? Level 0 bedeutet Knopf gedrückt
+      //
+      AppStati::rainSwitchDown = (level == 1) ? false : true;
+      AppStati::lastRainSwitchAction = esp_timer_get_time();
+      break;
+    default:
+      break;
     }
   }
 

@@ -16,7 +16,9 @@
 #include <driver/adc.h>
 #include <esp_sleep.h>
 #include <esp_attr.h>
+#include <esp_timer.h>
 #include <esp_log.h>
+#include "AppStati.hpp"
 
 namespace ChOiler
 {
@@ -40,6 +42,7 @@ namespace esp32s2
   private:
     static const char *tag;
     static esp_sleep_wakeup_cause_t wakeupCause;
+    static esp_timer_handle_t timerHandle;
 
   protected:
     static void init();
@@ -53,9 +56,14 @@ namespace esp32s2
     static void goDeepSleep();
 
   private:
+    static bool initGPIOPorts();
     static bool initTachoPulseCounters();
+    static bool initADC();
+    static bool initTimer();
     static void IRAM_ATTR tachoOilerCountISR(void *);
     static void IRAM_ATTR speedCountISR(void *);
+    static void IRAM_ATTR buttonIsr(void *);
+    static void timerCallback(void *);
   };
 
 } // namespace esp32s2

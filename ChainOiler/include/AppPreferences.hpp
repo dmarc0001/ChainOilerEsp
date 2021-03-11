@@ -8,6 +8,7 @@
 
 namespace Prefs
 {
+
   class Preferences
   {
   private:
@@ -26,11 +27,6 @@ namespace Prefs
     static double crossFactor;             //! Faktor für öl beim crossen
     static double speedProgression;        //! Mehr öl bei höherer Geschwindigkeit
     static int rainSensorThreshold;        //! Schwellwert des Regensensors
-
-  protected:
-    static volatile uint32_t tachoPulseCount;         //! zähle die impulse zum Streckenmessen
-    static volatile uint32_t tachoPulseForSpeedCount; //! zähle die impulse zum Geschwindigkeit messen
-    static volatile uint32_t lastTachoPulse;          //! wann war der letzte Puls (deep sleep)
 
   public:
     static const std::string &getVersion();        //! Versionsstring zurückgeben
