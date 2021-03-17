@@ -2,12 +2,13 @@
 #include <cstring>
 
 const char *WiFiStuff::tag = "WiFiStuff";
+esp_netif_t *WiFiStuff::instance{nullptr};
 
 void WiFiStuff::initWiFi()
 {
   ESP_ERROR_CHECK( esp_netif_init() );
   ESP_ERROR_CHECK( esp_event_loop_create_default() );
-  esp_netif_create_default_wifi_ap();
+  WiFiStuff::instance = esp_netif_create_default_wifi_ap();
 
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK( esp_wifi_init( &cfg ) );
@@ -29,7 +30,7 @@ void WiFiStuff::initWiFi()
   ESP_ERROR_CHECK( esp_wifi_set_mode( WIFI_MODE_AP ) );
   ESP_ERROR_CHECK( esp_wifi_set_config( WIFI_IF_AP, &wifi_config ) );
   ESP_ERROR_CHECK( esp_wifi_start() );
-
+#ifdef DEBUG
   uint8_t primaryChannel, secoundChannel;
   wifi_second_chan_t secondChannelEnum;
 
@@ -44,6 +45,22 @@ void WiFiStuff::initWiFi()
     ESP_LOGI( WiFiStuff::tag, "wifi_init_softap finished. SSID:%s password:%s channel:%d, 2nd channel: %d", apSSID, apPw,
               primaryChannel, secoundChannel );
   }
+  const char *loc_hostname;
+  if ( ESP_OK == esp_netif_get_hostname( WiFiStuff::instance, &loc_hostname ) )
+  {
+    ESP_LOGD( WiFiStuff::tag, "WiFi interface hostname: %s", loc_hostname );
+  }
+#endif
+}
+
+void WiFiStuff::stopWiFi()
+{
+  ESP_LOGI( WiFiStuff::tag, "stop WiFi functionality..." );
+  ESP_ERROR_CHECK( esp_wifi_deinit() );
+  ESP_ERROR_CHECK( esp_wifi_clear_default_wifi_driver_and_handlers( WiFiStuff::instance ) );
+  esp_netif_destroy( WiFiStuff::instance );
+  WiFiStuff::instance = nullptr;
+  ESP_LOGI( WiFiStuff::tag, "stop WiFi functionality...done" );
 }
 
 void WiFiStuff::evtHandler( void *arg, esp_event_base_t evtBase, int32_t evtId, void *data )
