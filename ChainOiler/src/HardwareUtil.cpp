@@ -5,9 +5,11 @@
 
 namespace esp32s2
 {
-  xQueueHandle EspCtrl::pcnt_evt_queue = nullptr;                            //! handle fuer queue
+  xQueueHandle EspCtrl::pathLenQueue = nullptr;                              //! handle fuer queue
+  xQueueHandle EspCtrl::speedQueue = nullptr;                                //! handle fuer queue
   const char *EspCtrl::tag{"EspCtrl"};                                       //! tag fürs debug logging
   esp_sleep_wakeup_cause_t EspCtrl::wakeupCause{ESP_SLEEP_WAKEUP_UNDEFINED}; //! der Grund des Erwachens
+  esp_timer_handle_t EspCtrl::timerHandle{nullptr};                          //! timer handle
 
   /**
    * Initialisieere die Hardware
@@ -58,6 +60,21 @@ namespace esp32s2
       //
       printf("TODO: restore counters from NVS...");
     }
+    EspCtrl::initGPIOPorts();
+    EspCtrl::initTachoPulseCounters();
+    EspCtrl::initADC();
+    EspCtrl::initTimer();
+  }
+
+  /**
+ * @brief initiiere GPIO Ports
+ * 
+ * @return true 
+ * @return false 
+ */
+  bool EspCtrl::initGPIOPorts()
+  {
+    using namespace Prefs;
     //
     // GPIO Konfigurieren
     //
@@ -81,15 +98,35 @@ namespace esp32s2
                                 .intr_type = GPIO_INTR_DISABLE};
     gpio_config(&config_out);
     //
-    //  Tacho und Knopf
+    //  Tacho und Knopf (Knopf-GPIO_INTR_ANYEDGE)
     //
     /*gpio_config_t config_in = {.pin_bit_mask = BIT64(INPUT_TACHO) | BIT64(INPUT_FUNCTION_SWITCH),*/
     gpio_config_t config_in = {.pin_bit_mask = BIT64(INPUT_FUNCTION_SWITCH) | BIT64(INPUT_TACHO) | BIT64(INPUT_RAIN_SWITCH_OPTIONAL),
                                .mode = GPIO_MODE_INPUT,
                                .pull_up_en = GPIO_PULLUP_ENABLE,
-                               .pull_down_en = GPIO_PULLDOWN_ENABLE,
+                               .pull_down_en = GPIO_PULLDOWN_DISABLE,
                                .intr_type = GPIO_INTR_DISABLE};
     gpio_config(&config_in);
+    //
+    // Interrupt für zwei PINS einschalten
+    //
+    gpio_set_intr_type(INPUT_FUNCTION_SWITCH, GPIO_INTR_ANYEDGE);
+    gpio_set_intr_type(INPUT_RAIN_SWITCH_OPTIONAL, GPIO_INTR_ANYEDGE);
+    //
+    // ISR Servive installieren
+    //
+    gpio_install_isr_service(0);
+    //
+    // Handler für die beiden Ports
+    //
+    gpio_isr_handler_add(INPUT_FUNCTION_SWITCH, EspCtrl::buttonIsr, (void *)INPUT_FUNCTION_SWITCH);
+    gpio_isr_handler_add(INPUT_RAIN_SWITCH_OPTIONAL, EspCtrl::buttonIsr, (void *)INPUT_RAIN_SWITCH_OPTIONAL);
+    return true;
+  }
+
+  bool EspCtrl::initADC()
+  {
+    using namespace Prefs;
     //
     // Analog-Digital-Wandler starten
     // TODO: Messbereich optimieren
@@ -104,20 +141,30 @@ namespace esp32s2
     adc1_config_channel_atten(INPUT_ADC_RAIN_00, ADC_ATTEN_DB_11 /*ADC_ATTEN_DB_0*/);
     adc1_config_channel_atten(INPUT_ADC_RAIN_01, ADC_ATTEN_DB_11 /*ADC_ATTEN_DB_0*/);
     ESP_LOGD(tag, "%s: init ADC...done", __func__);
-    EspCtrl::initTachoPulseCounter();
+    return true;
   }
 
-  /**
-   * Regensensor wert zurück geben
-   */
-  rain_value_t EspCtrl::getRainValues()
+  bool EspCtrl::initTimer()
   {
-    using namespace Prefs;
-
-    rain_value_t val;
-    val.first = adc1_get_raw(INPUT_ADC_RAIN_00);
-    val.second = adc1_get_raw(INPUT_ADC_RAIN_01);
-    return (val);
+    //
+    // timer für Punpe starten
+    //
+    const esp_timer_create_args_t appTimerArgs =
+        {
+            .callback = &EspCtrl::timerCallback,
+            .arg = nullptr,
+            .dispatch_method = ESP_TIMER_TASK,
+            .name = "app_timer"};
+    //
+    // timer erzeugen
+    //
+    ESP_ERROR_CHECK(esp_timer_create(&appTimerArgs, &EspCtrl::timerHandle));
+    //
+    // timer starten, microsekunden ( 20 ms soll es)
+    //
+    ESP_ERROR_CHECK(esp_timer_start_periodic(EspCtrl::timerHandle, 20000));
+    //
+    return true;
   }
 
   /**
@@ -144,22 +191,44 @@ namespace esp32s2
     esp_deep_sleep_start();
   }
 
+  void EspCtrl::timerCallback(void *)
+  {
+    static volatile bool haveSwitchedOn = false;
+
+    if (haveSwitchedOn)
+    {
+      haveSwitchedOn = false;
+      // Aus
+      gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 0);
+      // set LED ON
+    }
+    else if (AppStati::pumpCycles > 0)
+    {
+      haveSwitchedOn = true;
+      --AppStati::pumpCycles;
+      // an
+      gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 1);
+    }
+  }
+
   /**
    * initialisiert den Counter für Eingangssignale für den Tachoimpuls
    */
-  bool EspCtrl::initTachoPulseCounter()
+  bool EspCtrl::initTachoPulseCounters()
   {
     using namespace Prefs;
 
     pcnt_unit_t unit0 = PCNT_UNIT_0;
-
+    pcnt_unit_t unit1 = PCNT_UNIT_1;
     int16_t pulsesFor100Meters = Preferences::getPulsesFor100Meters();
-
+    int16_t pulsesFor10Meters = Preferences::getPulsesFor10Meters();
     //
     // Queue initialisieren
     //
-    pcnt_evt_queue = xQueueCreate(100, sizeof(pcnt_evt_t));
+    pathLenQueue = xQueueCreate(QUEUE_LEN_DISTANCE, sizeof(pcnt_evt_t));
     ESP_LOGD(tag, "%s: init pulse counter unit0, channel 0...", __func__);
+    speedQueue = xQueueCreate(QUEUE_LEN_TACHO, sizeof(deltaTimeTenMeters_us));
+    ESP_LOGD(tag, "%s: init pulse counter unit1, channel 0...", __func__);
     //
     // Pulszähler Wegstrecke initialisieren
     //
@@ -169,7 +238,7 @@ namespace esp32s2
         .lctrl_mode = PCNT_MODE_KEEP,        /* Zählrichtung bei CTRL 0 (ignoriert, da ctrl -1) */
         .hctrl_mode = PCNT_MODE_KEEP,        /* Zählrichting bei CTRL HIGH (ignoriert da ctrl -1) */
         .pos_mode = PCNT_COUNT_INC,          /* bei positiver Flanke zählen */
-        .neg_mode = PCNT_COUNT_DIS,          /* Zähler bei negativer Betriebsart lassen */
+        .neg_mode = PCNT_COUNT_DIS,          /* Zähler bei negativer flanke lassen */
         .counter_h_lim = pulsesFor100Meters, /* 100 Meter Wert, dann rücksetzen */
         .counter_l_lim = 0,                  /* beim rückwärtszählen (aber hier nur positiver zähler) */
         .unit = unit0,                       /* unti 0 zum messen der wegstrecke */
@@ -181,48 +250,90 @@ namespace esp32s2
     ESP_ERROR_CHECK(pcnt_unit_config(&pcnt_config_w));
     ESP_LOGD(tag, "%s: init pulse counter unit0, channel 0...done", __func__);
     //
+    // Pulszähler Tacho initialisieren
+    //
+    pcnt_config_t pcnt_config_s = {
+        .pulse_gpio_num = INPUT_TACHO,      /* der eingangspin, deselbe wir unit 0 */
+        .ctrl_gpio_num = PCNT_PIN_NOT_USED, /* kein Kontrolleingang */
+        .lctrl_mode = PCNT_MODE_KEEP,       /* Zählrichtung bei CTRL 0 (ignoriert, da ctrl -1) */
+        .hctrl_mode = PCNT_MODE_KEEP,       /* Zählrichting bei CTRL HIGH (ignoriert da ctrl -1) */
+        .pos_mode = PCNT_COUNT_INC,         /* bei positiver Flanke zählen */
+        .neg_mode = PCNT_COUNT_DIS,         /* Zähler bei negativer flanke lassen */
+        .counter_h_lim = pulsesFor10Meters, /* 10 Meter Wert, dann rücksetzen */
+        .counter_l_lim = 0,                 /* beim rückwärtszählen (aber hier nur positiver zähler) */
+        .unit = unit1,                      /* unti 1 zum messen der wegstrecke */
+        .channel = PCNT_CHANNEL_0,          /* Kanal 0 zum zählen */
+    };
+    //
+    // initialisieren der unit
+    //
+    ESP_ERROR_CHECK(pcnt_unit_config(&pcnt_config_s));
+    ESP_LOGD(tag, "%s: init pulse counter unit1, channel 0...done", __func__);
+    //
     // Configure and enable the input filter
     // 1800 zyklen sind bei 80 mhz 22 us
     // also wird alles ignoriert was kürzer ist
     //
-    ESP_LOGD(tag, "%s: init pulse filter: filter value: %d, PPR: %.2f...", __func__, Preferences::getMinimalPulseLength(), Preferences::getPulsePerRound());
+    ESP_LOGD(tag, "%s: init unit0 pulse filter: filter value: %d, PPR: %.2f...", __func__, Preferences::getMinimalPulseLength(), Preferences::getPulsePerRound());
     pcnt_set_filter_value(unit0, Preferences::getMinimalPulseLength());
     //pcnt_set_filter_value(unit0, 1023);
     pcnt_filter_enable(unit0);
+    //
+    ESP_LOGD(tag, "%s: init unbi1 pulse filter: filter value: %d, PPR: %.2f...", __func__, Preferences::getMinimalPulseLength(), Preferences::getPulsePerRound());
+    pcnt_set_filter_value(unit1, Preferences::getMinimalPulseLength());
+    pcnt_filter_enable(unit1);
     //
     // Wert für event (ISR) setzten, wert erreicht, ISR rufen
     //
     pcnt_set_event_value(unit0, PCNT_EVT_THRES_0, pulsesFor100Meters);
     pcnt_event_enable(unit0, PCNT_EVT_THRES_0);
-    //pcnt_set_event_value(unit0, PCNT_EVT_THRES_1, pulsesFor100Meters);
-    //pcnt_event_enable(unit0, PCNT_EVT_THRES_1);
+    pcnt_set_event_value(unit1, PCNT_EVT_THRES_0, pulsesFor10Meters);
+    pcnt_event_enable(unit1, PCNT_EVT_THRES_0);
     //
     // event freigeben
     //
-    //pcnt_event_enable(unit0, PCNT_EVT_ZERO);
     pcnt_event_enable(unit0, PCNT_EVT_H_LIM);
-    //pcnt_event_enable(unit0, PCNT_EVT_L_LIM);
+    pcnt_event_enable(unit1, PCNT_EVT_H_LIM);
     //
     // Counter initialisieren
     //
     pcnt_counter_pause(unit0);
     pcnt_counter_clear(unit0);
+    pcnt_counter_pause(unit1);
+    pcnt_counter_clear(unit1);
     //
     // ISR installieren und Callback aktivieren
     //
     pcnt_isr_service_install(0);
     pcnt_isr_handler_add(unit0, EspCtrl::tachoOilerCountISR, nullptr);
+    pcnt_isr_handler_add(unit1, EspCtrl::speedCountISR, nullptr);
 
-    /* Everything is set up, now go to counting */
+    //
+    // alles ist initialisiert, starte die Counter
+    //
     pcnt_counter_resume(unit0);
-    ESP_LOGD(tag, "%s: init pulse counter unit0...done", __func__);
+    pcnt_counter_resume(unit1);
+    ESP_LOGD(tag, "%s: init pulse counter unit0/unit1...done", __func__);
     return true;
   }
 
-  /* Decode what PCNT's unit originated an interrupt
- * and pass this information together with the event type
- * the main program using a queue.
- */
+  /**
+   * Regensensor wert zurück geben
+   */
+  rain_value_t EspCtrl::getRainValues()
+  {
+    using namespace Prefs;
+
+    rain_value_t val;
+    val.first = adc1_get_raw(INPUT_ADC_RAIN_00);
+    val.second = adc1_get_raw(INPUT_ADC_RAIN_01);
+    return (val);
+  }
+
+  /**
+  * @brief Messe die gefahrene Entfernung
+  * 
+  */
   void IRAM_ATTR EspCtrl::tachoOilerCountISR(void *)
   {
     pcnt_evt_t evt;
@@ -240,13 +351,89 @@ namespace esp32s2
     // die Daten in die Queue speichern
     //
     pcnt_get_event_value(PCNT_UNIT_0, PCNT_EVT_THRES_0, &evt.value);
-    //if (uxQueueMessagesWaiting(EspCtrl::pcnt_evt_queue) < 90)
-    //{
-    xQueueSendFromISR(EspCtrl::pcnt_evt_queue, &evt, &task_awoken);
-    if (task_awoken == pdTRUE)
+    if (uxQueueMessagesWaiting(EspCtrl::pathLenQueue) < Prefs::QUEUE_LEN_DISTANCE)
     {
-      portYIELD_FROM_ISR();
+      xQueueSendFromISR(EspCtrl::pathLenQueue, &evt, &task_awoken);
+      if (task_awoken == pdTRUE)
+      {
+        portYIELD_FROM_ISR();
+      }
+    }
+  }
+
+  /**
+  * @brief Messe Zeit für 10 Meter
+  * 
+  */
+  void IRAM_ATTR EspCtrl::speedCountISR(void *)
+  {
+    //static volatile uint64_t lastTimestamp = 0ULL; // initiale zeit
+    uint64_t currentTimeStamp = esp_timer_get_time();
+    //deltaTimeTenMeters_ms deltaTime_ms{0};
+    //
+    // Differenz in Microsekunden
+    //
+    //if (currentTimeStamp > lastTimestamp)
+    //{
+    //  // berechnen und merken
+    //  uint64_t logDeltaTimeStamp_ms = (currentTimeStamp - lastTimestamp) >> 10;
+    //  if (logDeltaTimeStamp_ms > std::numeric_limits<deltaTimeTenMeters_ms>::max())
+    //  {
+    //    // zu gross, also max setzten
+    //    deltaTime_ms = std::numeric_limits<deltaTimeTenMeters_ms>::max();
+    //  }
+    //  else
+    //  {
+    //    // in ms umrechnen und sichern
+    //    deltaTime_ms = static_cast<deltaTimeTenMeters_ms>(logDeltaTimeStamp_ms);
+    //  }
+    //  lastTimestamp = currentTimeStamp;
+    //
+    int task_awoken = pdFALSE;
+    //
+    // die Daten in die Queue speichern
+    //
+    // pcnt_get_event_value(PCNT_UNIT_0, PCNT_EVT_THRES_0, &value);
+    if (uxQueueMessagesWaiting(EspCtrl::speedQueue) < Prefs::QUEUE_LEN_TACHO)
+    {
+      xQueueSendFromISR(EspCtrl::speedQueue, &currentTimeStamp, &task_awoken);
+      if (task_awoken == pdTRUE)
+      {
+        portYIELD_FROM_ISR();
+      }
     }
     //}
   }
+
+  void IRAM_ATTR EspCtrl::buttonIsr(void *arg)
+  {
+    using namespace Prefs;
+
+    gpio_num_t *gpio_num = static_cast<gpio_num_t *>(arg);
+    int level;
+
+    switch (*gpio_num)
+    {
+    case Prefs::INPUT_FUNCTION_SWITCH:
+      level = gpio_get_level(Prefs::INPUT_FUNCTION_SWITCH);
+      //
+      // Was ist passiert? Level 0 bedeutet Knopf gedrückt
+      //
+      AppStati::functionSwitchDown = (level == 1) ? false : true;
+      AppStati::lastFunctionSwitchAction = esp_timer_get_time();
+      break;
+
+    case Prefs::INPUT_RAIN_SWITCH_OPTIONAL:
+      level = gpio_get_level(Prefs::INPUT_RAIN_SWITCH_OPTIONAL);
+      //
+      // Was ist passiert? Level 0 bedeutet Knopf gedrückt
+      //
+      AppStati::rainSwitchDown = (level == 1) ? false : true;
+      AppStati::lastRainSwitchAction = esp_timer_get_time();
+      break;
+    default:
+      break;
+    }
+  }
+
 } // namespace esp32s2
