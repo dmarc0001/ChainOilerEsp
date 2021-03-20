@@ -11,10 +11,10 @@ constexpr int BREAK_SW_IN = 13;
 //
 // Tacho definitionen
 //
-constexpr double timerFreq = 5000000.0;  // 200 ns
-constexpr double pulsePerRound = 109.0;
-constexpr double weelScope = 1.8;
-constexpr double speedFactor = ( 60.0 * 60.0 );
+constexpr float timerFreq = 5000000.0;  // 200 ns
+constexpr float pulsePerRound = 109.0;
+constexpr float weelScope = 1.8;
+constexpr float speedFactor = ( 60.0 * 60.0 );
 
 //
 // simulation
@@ -31,3 +31,4 @@ ICACHE_RAM_ATTR void timerIsr();
 ICACHE_RAM_ATTR void functionBreakSwitchIsr();
 volatile uint32_t g_counter;
 volatile bool breakAction;
+volatile bool isBreak;

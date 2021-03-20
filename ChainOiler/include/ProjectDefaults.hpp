@@ -79,9 +79,10 @@ namespace Prefs
   //
   // Konstanten
   //
-  constexpr size_t QUEUE_LEN_DISTANCE = 10; //! Wie lang ist die RTOS Queue für entfernungsmessung
-  constexpr size_t QUEUE_LEN_TACHO = 20;    //! wie lang ist die queue für Tacho Ereignisse
-  constexpr size_t SPEED_HISTORY_LEN = 200; //! max länge der Tempo-Historie
+  constexpr size_t QUEUE_LEN_DISTANCE = 10;      //! Wie lang ist die RTOS Queue für entfernungsmessung
+  constexpr size_t QUEUE_LEN_TACHO = 20;         //! wie lang ist die queue für Tacho Ereignisse
+  constexpr size_t SPEED_HISTORY_LEN = 200;      //! max länge der Tempo-Historie
+  constexpr uint64_t HISTORY_MAX_TIME_MS = 4000; //! wie lang ist die history beim speed maximal
 
   //
   // Kommandos REST API

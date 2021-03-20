@@ -104,7 +104,7 @@ namespace esp32s2
     gpio_config_t config_in = {.pin_bit_mask = BIT64(INPUT_FUNCTION_SWITCH) | BIT64(INPUT_TACHO) | BIT64(INPUT_RAIN_SWITCH_OPTIONAL),
                                .mode = GPIO_MODE_INPUT,
                                .pull_up_en = GPIO_PULLUP_ENABLE,
-                               .pull_down_en = GPIO_PULLDOWN_ENABLE,
+                               .pull_down_en = GPIO_PULLDOWN_DISABLE,
                                .intr_type = GPIO_INTR_DISABLE};
     gpio_config(&config_in);
     //
@@ -238,7 +238,7 @@ namespace esp32s2
         .lctrl_mode = PCNT_MODE_KEEP,        /* Zählrichtung bei CTRL 0 (ignoriert, da ctrl -1) */
         .hctrl_mode = PCNT_MODE_KEEP,        /* Zählrichting bei CTRL HIGH (ignoriert da ctrl -1) */
         .pos_mode = PCNT_COUNT_INC,          /* bei positiver Flanke zählen */
-        .neg_mode = PCNT_COUNT_DIS,          /* Zähler bei negativer Betriebsart lassen */
+        .neg_mode = PCNT_COUNT_DIS,          /* Zähler bei negativer flanke lassen */
         .counter_h_lim = pulsesFor100Meters, /* 100 Meter Wert, dann rücksetzen */
         .counter_l_lim = 0,                  /* beim rückwärtszählen (aber hier nur positiver zähler) */
         .unit = unit0,                       /* unti 0 zum messen der wegstrecke */
@@ -258,7 +258,7 @@ namespace esp32s2
         .lctrl_mode = PCNT_MODE_KEEP,       /* Zählrichtung bei CTRL 0 (ignoriert, da ctrl -1) */
         .hctrl_mode = PCNT_MODE_KEEP,       /* Zählrichting bei CTRL HIGH (ignoriert da ctrl -1) */
         .pos_mode = PCNT_COUNT_INC,         /* bei positiver Flanke zählen */
-        .neg_mode = PCNT_COUNT_DIS,         /* Zähler bei negativer Betriebsart lassen */
+        .neg_mode = PCNT_COUNT_DIS,         /* Zähler bei negativer flanke lassen */
         .counter_h_lim = pulsesFor10Meters, /* 10 Meter Wert, dann rücksetzen */
         .counter_l_lim = 0,                 /* beim rückwärtszählen (aber hier nur positiver zähler) */
         .unit = unit1,                      /* unti 1 zum messen der wegstrecke */
@@ -362,36 +362,47 @@ namespace esp32s2
   }
 
   /**
-  * @brief Messe die Geschwindigkeit
+  * @brief Messe Zeit für 10 Meter
   * 
   */
   void IRAM_ATTR EspCtrl::speedCountISR(void *)
   {
-    static volatile uint64_t lastTimestamp = 0ULL; // initiale zeit
+    //static volatile uint64_t lastTimestamp = 0ULL; // initiale zeit
     uint64_t currentTimeStamp = esp_timer_get_time();
+    //deltaTimeTenMeters_ms deltaTime_ms{0};
     //
     // Differenz in Microsekunden
     //
-    if (currentTimeStamp > lastTimestamp)
+    //if (currentTimeStamp > lastTimestamp)
+    //{
+    //  // berechnen und merken
+    //  uint64_t logDeltaTimeStamp_ms = (currentTimeStamp - lastTimestamp) >> 10;
+    //  if (logDeltaTimeStamp_ms > std::numeric_limits<deltaTimeTenMeters_ms>::max())
+    //  {
+    //    // zu gross, also max setzten
+    //    deltaTime_ms = std::numeric_limits<deltaTimeTenMeters_ms>::max();
+    //  }
+    //  else
+    //  {
+    //    // in ms umrechnen und sichern
+    //    deltaTime_ms = static_cast<deltaTimeTenMeters_ms>(logDeltaTimeStamp_ms);
+    //  }
+    //  lastTimestamp = currentTimeStamp;
+    //
+    int task_awoken = pdFALSE;
+    //
+    // die Daten in die Queue speichern
+    //
+    // pcnt_get_event_value(PCNT_UNIT_0, PCNT_EVT_THRES_0, &value);
+    if (uxQueueMessagesWaiting(EspCtrl::speedQueue) < Prefs::QUEUE_LEN_TACHO)
     {
-      // berechnen und merken
-      deltaTimeTenMeters_us deltaTime_us = currentTimeStamp - lastTimestamp;
-      lastTimestamp = currentTimeStamp;
-      //
-      int task_awoken = pdFALSE;
-      //
-      // die Daten in die Queue speichern
-      //
-      // pcnt_get_event_value(PCNT_UNIT_0, PCNT_EVT_THRES_0, &value);
-      if (uxQueueMessagesWaiting(EspCtrl::speedQueue) < Prefs::QUEUE_LEN_TACHO)
+      xQueueSendFromISR(EspCtrl::speedQueue, &currentTimeStamp, &task_awoken);
+      if (task_awoken == pdTRUE)
       {
-        xQueueSendFromISR(EspCtrl::speedQueue, &deltaTime_us, &task_awoken);
-        if (task_awoken == pdTRUE)
-        {
-          portYIELD_FROM_ISR();
-        }
+        portYIELD_FROM_ISR();
       }
     }
+    //}
   }
 
   void IRAM_ATTR EspCtrl::buttonIsr(void *arg)

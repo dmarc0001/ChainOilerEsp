@@ -35,7 +35,7 @@ namespace esp32s2
     pcnt_evt_type_t evt_type; //! INT type
     int16_t value;            //! value
   };
-  using deltaTimeTenMeters_us = uint64_t; //! zeitstempel für 5 Meter
+  using deltaTimeTenMeters_us = uint64_t; //! zeitstempel für 10 Meter
 
   class EspCtrl
   {

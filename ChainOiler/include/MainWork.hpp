@@ -3,7 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <vector>
+#include <list>
+#include <limits>
 #include <time.h>
 #include <sys/time.h>
 #include "freertos/FreeRTOS.h"
@@ -12,7 +13,6 @@
 #include "driver/rtc_io.h"
 #include "driver/uart.h"
 #include "esp_log.h"
-
 #include "ProjectDefaults.hpp"
 #include "HardwareUtil.hpp"
 #include "AppPreferences.hpp"
@@ -25,8 +25,8 @@ namespace ChOiler
   class MainWorker
   {
   private:
-    static const char *tag;                                      //! Kennzeichnung fürs debug
-    static std::vector<esp32s2::deltaTimeTenMeters_us> speedVec; // Vector für Tachoauswertung
+    static const char *tag;                                     //! Kennzeichnung fürs debug
+    static std::list<esp32s2::deltaTimeTenMeters_us> speedList; // Vector für Tachoauswertung
 
   protected:
   public:

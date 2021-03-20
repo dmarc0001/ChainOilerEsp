@@ -20,12 +20,12 @@ namespace Prefs
     static int32_t version;                //! version der einstellungen
     static std::string ssid;               //! SSID des Accesspoints
     static std::string ap_passwd;          //! Passwort des Accespoints
-    static double pulsePerRound;           //! Impulse per Radumdrehung
-    static double circumFerence;           //! Antriebsrad Umfang
-    static double oilInterval;             //! Strecke zwischen den Ölgaben
-    static double rainFactor;              //! Faktor für Öl intervall verlängerung
-    static double crossFactor;             //! Faktor für öl beim crossen
-    static double speedProgression;        //! Mehr öl bei höherer Geschwindigkeit
+    static float pulsePerRound;            //! Impulse per Radumdrehung
+    static float circumFerence;            //! Antriebsrad Umfang
+    static float oilInterval;              //! Strecke zwischen den Ölgaben
+    static float rainFactor;               //! Faktor für Öl intervall verlängerung
+    static float crossFactor;              //! Faktor für öl beim crossen
+    static float speedProgression;         //! Mehr öl bei höherer Geschwindigkeit
     static int rainSensorThreshold;        //! Schwellwert des Regensensors
 
   public:
@@ -39,22 +39,22 @@ namespace Prefs
     static void readPreferences();                 //! Einstellungen aus dem Speicher lesen
     static void setApPasswd(std::string);          //! Accesspoint Passwort setzen
     static std::string getApPasswd();              //! Accesspoint Passwort lesen
-    static void setPulsePerRound(double);          //! Setzte Impulse per Radumdrehung
-    static double getPulsePerRound();              //! lese Impulse per Radumdrehung
-    static void setCircumFerence(double);          //! setzte Radumfang
-    static double getCircumFerence();              //! lese Radumfang
-    static void setOilInterval(double);            //! Setzte die Strecke zwischen den Ölungen
-    static double getOilInterval();                //! lese Strecke zwischen den Ölungen
-    static void setRainFactor(double);             //! Setzte den Faktor bei Regen
-    static double getRainFactor();                 //! lese den Faktor bei Regen
-    static void setCrossFactor(double);            //! setze den Faktor beim Crossbetrieb
-    static double getCrossFactor();                //! lese den Faktor beim Crossbetrieb
-    static void setSpeedProgression(double);       //! setzte Faktor bei Geschwindigkeit
-    static double getSpeedProgression();           //! lese den Faktor bei Geschwindigkeit
+    static void setPulsePerRound(float);           //! Setzte Impulse per Radumdrehung
+    static float getPulsePerRound();               //! lese Impulse per Radumdrehung
+    static void setCircumFerence(float);           //! setzte Radumfang
+    static float getCircumFerence();               //! lese Radumfang
+    static void setOilInterval(float);             //! Setzte die Strecke zwischen den Ölungen
+    static float getOilInterval();                 //! lese Strecke zwischen den Ölungen
+    static void setRainFactor(float);              //! Setzte den Faktor bei Regen
+    static float getRainFactor();                  //! lese den Faktor bei Regen
+    static void setCrossFactor(float);             //! setze den Faktor beim Crossbetrieb
+    static float getCrossFactor();                 //! lese den Faktor beim Crossbetrieb
+    static void setSpeedProgression(float);        //! setzte Faktor bei Geschwindigkeit
+    static float getSpeedProgression();            //! lese den Faktor bei Geschwindigkeit
     static void setSensorThreshold(int);           //! setzte sen Schwelenwert des Regensensors
     static int getSensorThreshold();               //! lese Schwellenwert des Regensensors
     static int16_t getPulsesFor100Meters();        //! gib impulse per 100 Meter, errechnet aus den Parametern
-    static int16_t getPulsesFor10Meters();         //! impulse per 5 Metrer, für Tacho
+    static int16_t getPulsesFor10Meters();         //! impulse per 10 Meter, für Tacho
     static uint16_t getMinimalPulseLength();       //! die kleinste Pulslänge in meiner Konfiguration
     static uint32_t getCounterPulsesForInterval(); //! wie viele impuse zum erreichen der strecke
 
@@ -63,7 +63,7 @@ namespace Prefs
     static bool setIntValue(const char *, int32_t);         //! schreibe einen 32 Bit INT wert in den Speicher
     static std::string getStringValue(const char *);        //! lese eine Zeichenkette aus dem Speicher
     static bool setStringValue(const char *, const char *); //! schreibe eine Zeichenkette in den Speicher
-    static double getDoubleValue(const char *, double);     //! lies einen double Wert aus dem Speicher
-    static bool setDoubleValue(const char *, double);       //! schreibe einen double Wert in den Speicher
+    static float getFloatValue(const char *, float);        //! lies einen double Wert aus dem Speicher
+    static bool setFloatValue(const char *, float);         //! schreibe einen double Wert in den Speicher
   };
 } // namespace Prefs

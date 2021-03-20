@@ -3,6 +3,7 @@
 void setup()
 {
   breakAction = false;
+  isBreak = false;
   Serial.begin( 115200 );
   Serial.println( "" );
   Serial.println( "controller is starting..." );
@@ -46,11 +47,11 @@ uint32_t pulsesForKmh( double speed )
   //
   // Wie viele Impulse per Meter gibt es
   //
-  double ppm = pulsePerRound / weelScope;
+  float ppm = pulsePerRound / weelScope;
   // Speed in meter per sekunde
-  double speedMeterPerSec = speed / 3.6;
+  float speedMeterPerSec = speed / 3.6;
   // frequenz bei der gegebenen Geschwindigkeit
-  double frequence = ppm * speedMeterPerSec * 2.0;
+  float frequence = ppm * speedMeterPerSec * 2.0;
   Serial.print( "speed: " );
   Serial.print( speed );
   Serial.print( " km/h, frequence (*2): " );
@@ -58,19 +59,18 @@ uint32_t pulsesForKmh( double speed )
   Serial.print( " Hz, count:" );
   Serial.println( g_counter );
   // faktor = 1/5MHz / 1/Freq ==> 5 mhz / freq
-  double factor = timerFreq / frequence;
+  float factor = timerFreq / frequence;
   uint32_t result = static_cast< uint32_t >( floor( factor ) );
   return result;
 }
 
 void loop()
 {
-  static double speed = 0.0;
-  static double current_max = static_cast< double >( random( MIN_SPEED + 10, MAX_SPEED ) );
-  static double current_min = static_cast< double >( MIN_SPEED );
+  static float speed = 0.0;
+  static float current_max = static_cast< float >( random( MIN_SPEED + 10, MAX_SPEED ) );
+  static float current_min = static_cast< float >( MIN_SPEED );
   static bool isUpwarts = true;
   static bool makeABreak = false;
-  static bool isBreakTime = false;
 
   if ( ( 0x01ffUL & millis() ) == 0 )
   {
@@ -79,6 +79,9 @@ void loop()
     //
     if ( breakAction )
     {
+      //
+      // es gab ein Ereignis
+      //
       makeABreak = !makeABreak;
       breakAction = false;
       if ( makeABreak )
@@ -90,14 +93,14 @@ void loop()
       else
       {
         Serial.print( "changed: end the break, drive on\n" );
+        // Pause beendet
+        isBreak = false;
         speed = MIN_SPEED;
-        if ( isBreakTime )
-        {
-          timer1_enable( TIM_DIV16, TIM_EDGE, TIM_LOOP );
-        }
+        timer1_enable( TIM_DIV16, TIM_EDGE, TIM_LOOP );
       }
     }
-    double deltaSpeed = static_cast< double >( random( 1, 8 ) ) / 2.51;
+
+    float deltaSpeed = static_cast< float >( random( 1, 8 ) ) / 2.51;
     if ( isUpwarts )
     {
       // schneller?
@@ -105,7 +108,7 @@ void loop()
       {
         // zu schnell
         isUpwarts = false;
-        current_min = static_cast< double >( random( MIN_SPEED, MAX_SPEED ) );
+        current_min = static_cast< float >( random( MIN_SPEED, MAX_SPEED ) );
       }
       else
       {
@@ -120,27 +123,32 @@ void loop()
         // zu langsam
         if ( makeABreak )
         {
-          speed -= deltaSpeed;
+          if ( speed < 0.6 )
+          {
+            speed = 0.0;
+          }
+          else
+          {
+            speed -= deltaSpeed;
+          }
         }
         else
         {
           isUpwarts = true;
-          current_max = static_cast< double >( random( MIN_SPEED, MAX_SPEED ) );
+          current_max = static_cast< float >( random( MIN_SPEED, MAX_SPEED ) );
         }
       }
       else
       {
+        // weniger werden
         speed -= deltaSpeed;
-        if ( speed < 0.0 )
-        {
-          speed = 0.0;
-        }
       }
     }
+
     //
     // Timer programmieren
     //
-    if ( speed > 2.5 )
+    if ( speed > 0.4 )
     {
       uint32_t pulses = pulsesForKmh( speed );
       timer1_write( pulses );
@@ -148,26 +156,29 @@ void loop()
     else
     {
       //
-      // wen zu langsam, keine Impulse
+      // wen zu langsam , keine Impulse
       //
-      if ( !isBreakTime )
+      if ( !isBreak )
       {
+        isBreak = true;
+        digitalWrite( LED_INTERNAL, LOW );  // led an
         Serial.println( "make the break, no tacho pulses..." );
         timer1_disable();
         digitalWrite( TACHO_OUT, LOW );
-        isBreakTime = true;
       }
     }
     //
     // Simulator läuft signalisieren
     //
-    if ( !isBreakTime )
+    if ( isBreak )
     {
-      if ( digitalRead( LED_INTERNAL ) == HIGH )
-      {
-        digitalWrite( LED_INTERNAL, LOW );
-      }
-      else
+      digitalWrite( LED_INTERNAL, HIGH );  // led aus
+      delay( 80 );
+      digitalWrite( LED_INTERNAL, LOW );  // led aus
+    }
+    else
+    {
+      if ( digitalRead( LED_INTERNAL ) == LOW )
       {
         digitalWrite( LED_INTERNAL, HIGH );
       }
@@ -182,6 +193,8 @@ void loop()
 ICACHE_RAM_ATTR void timerIsr()
 {
   volatile static int tacho_state = LOW;
+  if ( isBreak )
+    return;
   if ( tacho_state == LOW )
   {
     digitalWrite( TACHO_OUT, HIGH );

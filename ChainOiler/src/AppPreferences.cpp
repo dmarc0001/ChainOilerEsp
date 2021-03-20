@@ -4,7 +4,7 @@
 
 namespace Prefs
 {
-  const char *Preferences::serialStr = "20210311-170526-build-0280";
+  const char *Preferences::serialStr = "20210320-162743-build-0347";
   const std::string Preferences::serialString = std::string(Preferences::serialStr);
   const char *Preferences::tag{"Preferences"};                                           //! tag fürs debug logging
   nvs_handle_t Preferences::nvs_handle{0};                                               //! handle für NVS
@@ -12,12 +12,12 @@ namespace Prefs
   int32_t Preferences::version{currentPrefsVersion};                                     //! Version der Einstellungen
   std::string Preferences::ssid{DEFAULT_SSID};                                           //! SSID des Accespoint
   std::string Preferences::ap_passwd{DEFAULT_AP_PASSWORD};                               //! Password des Accesspoint
-  double Preferences::pulsePerRound{DEFAULT_PULSE_PER_WEEL_ROUND};                       //! impulse per Radumdrehung
-  double Preferences::circumFerence{DEFAULT_WHEEL_CIRCUM_FERENCE};                       //! Radumfang für Tacho
-  double Preferences::oilInterval{DEFAULT_OIL_INTERVAL};                                 //! Das Intrerval für die Ölung
-  double Preferences::rainFactor{DEFAULT_RAIN_OIL_INTERVAL_FACTOR};                      //! Streckenfaktor bei Regen
-  double Preferences::crossFactor{DEFAULT_CROSS_OIL_INTERVAL_FACTOR};                    //! Streckenfaktor beim crossen
-  double Preferences::speedProgression{DEFAULT_SPEED_PROGRESSION_FACTOR};                //! Mehr öl bei höherer Geschwindigkeit
+  float Preferences::pulsePerRound{DEFAULT_PULSE_PER_WEEL_ROUND};                        //! impulse per Radumdrehung
+  float Preferences::circumFerence{DEFAULT_WHEEL_CIRCUM_FERENCE};                        //! Radumfang für Tacho
+  float Preferences::oilInterval{DEFAULT_OIL_INTERVAL};                                  //! Das Intrerval für die Ölung
+  float Preferences::rainFactor{DEFAULT_RAIN_OIL_INTERVAL_FACTOR};                       //! Streckenfaktor bei Regen
+  float Preferences::crossFactor{DEFAULT_CROSS_OIL_INTERVAL_FACTOR};                     //! Streckenfaktor beim crossen
+  float Preferences::speedProgression{DEFAULT_SPEED_PROGRESSION_FACTOR};                 //! Mehr öl bei höherer Geschwindigkeit
   int Preferences::rainSensorThreshold{static_cast<int>(DEFAULT_THRESHOLD_RAIN_SENSOR)}; //! Sensor Schwellwert
 
   const std::string &Preferences::getVersion()
@@ -128,68 +128,68 @@ namespace Prefs
     return Preferences::ap_passwd;
   }
 
-  void Preferences::setPulsePerRound(double _val)
+  void Preferences::setPulsePerRound(float _val)
   {
     Preferences::pulsePerRound = _val;
-    Preferences::setDoubleValue(PULSE_PER_WEEL_ROUND_STR, _val);
+    Preferences::setFloatValue(PULSE_PER_WEEL_ROUND_STR, _val);
   }
 
-  double Preferences::getPulsePerRound()
+  float Preferences::getPulsePerRound()
   {
     return Preferences::pulsePerRound;
   }
 
-  void Preferences::setCircumFerence(double _val)
+  void Preferences::setCircumFerence(float _val)
   {
     Preferences::circumFerence = _val;
-    Preferences::setDoubleValue(WHEEL_CIRCUM_FERENCE_STR, _val);
+    Preferences::setFloatValue(WHEEL_CIRCUM_FERENCE_STR, _val);
   }
 
-  double Preferences::getCircumFerence()
+  float Preferences::getCircumFerence()
   {
     return Preferences::circumFerence;
   }
 
-  void Preferences::setOilInterval(double _val)
+  void Preferences::setOilInterval(float _val)
   {
     Preferences::oilInterval = _val;
-    Preferences::setDoubleValue(OIL_INTERVAL_STR, _val);
+    Preferences::setFloatValue(OIL_INTERVAL_STR, _val);
   }
 
-  double Preferences::getOilInterval()
+  float Preferences::getOilInterval()
   {
     return Preferences::oilInterval;
   }
 
-  void Preferences::setRainFactor(double _val)
+  void Preferences::setRainFactor(float _val)
   {
     Preferences::rainFactor = _val;
-    Preferences::setDoubleValue(RAIN_OIL_INTERVAL_FACTOR_STR, _val);
+    Preferences::setFloatValue(RAIN_OIL_INTERVAL_FACTOR_STR, _val);
   }
 
-  double Preferences::getRainFactor()
+  float Preferences::getRainFactor()
   {
     return Preferences::rainFactor;
   }
 
-  void Preferences::setCrossFactor(double _val)
+  void Preferences::setCrossFactor(float _val)
   {
     Preferences::crossFactor = _val;
-    Preferences::setDoubleValue(CROSS_OIL_INTERVAL_FACTOR_STR, _val);
+    Preferences::setFloatValue(CROSS_OIL_INTERVAL_FACTOR_STR, _val);
   }
 
-  double Preferences::getCrossFactor()
+  float Preferences::getCrossFactor()
   {
     return Preferences::crossFactor;
   }
 
-  void Preferences::setSpeedProgression(double _val)
+  void Preferences::setSpeedProgression(float _val)
   {
     Preferences::speedProgression = _val;
-    Preferences::setDoubleValue(SPEED_PROGRESSION_FACTOR_STR, _val);
+    Preferences::setFloatValue(SPEED_PROGRESSION_FACTOR_STR, _val);
   }
 
-  double Preferences::getSpeedProgression()
+  float Preferences::getSpeedProgression()
   {
     return Preferences::speedProgression;
   }
@@ -219,17 +219,17 @@ namespace Prefs
     // AP Passwort
     Preferences::setStringValue(AP_PASSWORD_STR, DEFAULT_AP_PASSWORD);
     // pulses per round
-    Preferences::setDoubleValue(PULSE_PER_WEEL_ROUND_STR, DEFAULT_PULSE_PER_WEEL_ROUND);
+    Preferences::setFloatValue(PULSE_PER_WEEL_ROUND_STR, DEFAULT_PULSE_PER_WEEL_ROUND);
     // Radumfang
-    Preferences::setDoubleValue(WHEEL_CIRCUM_FERENCE_STR, DEFAULT_WHEEL_CIRCUM_FERENCE);
+    Preferences::setFloatValue(WHEEL_CIRCUM_FERENCE_STR, DEFAULT_WHEEL_CIRCUM_FERENCE);
     // Öl interval
-    Preferences::setDoubleValue(OIL_INTERVAL_STR, DEFAULT_OIL_INTERVAL);
+    Preferences::setFloatValue(OIL_INTERVAL_STR, DEFAULT_OIL_INTERVAL);
     // Faktor für Regen
-    Preferences::setDoubleValue(RAIN_OIL_INTERVAL_FACTOR_STR, DEFAULT_RAIN_OIL_INTERVAL_FACTOR);
+    Preferences::setFloatValue(RAIN_OIL_INTERVAL_FACTOR_STR, DEFAULT_RAIN_OIL_INTERVAL_FACTOR);
     // Cross Faktor
-    Preferences::setDoubleValue(CROSS_OIL_INTERVAL_FACTOR_STR, DEFAULT_CROSS_OIL_INTERVAL_FACTOR);
+    Preferences::setFloatValue(CROSS_OIL_INTERVAL_FACTOR_STR, DEFAULT_CROSS_OIL_INTERVAL_FACTOR);
     // Speed progression
-    Preferences::setDoubleValue(SPEED_PROGRESSION_FACTOR_STR, DEFAULT_SPEED_PROGRESSION_FACTOR);
+    Preferences::setFloatValue(SPEED_PROGRESSION_FACTOR_STR, DEFAULT_SPEED_PROGRESSION_FACTOR);
     // sensor schwellwert
     Preferences::setIntValue(THRESHOLD_RAIN_SENSOR_STR, DEFAULT_THRESHOLD_RAIN_SENSOR);
     //
@@ -254,19 +254,19 @@ namespace Prefs
     Preferences::version = Preferences::getIntValue(VERSION_STR, -1);
     Preferences::ssid = Preferences::getStringValue(SSID_STR);
     Preferences::ap_passwd = Preferences::getStringValue(AP_PASSWORD_STR);
-    Preferences::pulsePerRound = Preferences::getDoubleValue(PULSE_PER_WEEL_ROUND_STR, DEFAULT_PULSE_PER_WEEL_ROUND);
-    Preferences::circumFerence = Preferences::getDoubleValue(WHEEL_CIRCUM_FERENCE_STR, DEFAULT_WHEEL_CIRCUM_FERENCE);
-    Preferences::oilInterval = Preferences::getDoubleValue(OIL_INTERVAL_STR, DEFAULT_OIL_INTERVAL);
-    Preferences::rainFactor = Preferences::getDoubleValue(RAIN_OIL_INTERVAL_FACTOR_STR, DEFAULT_RAIN_OIL_INTERVAL_FACTOR);
-    Preferences::crossFactor = Preferences::getDoubleValue(CROSS_OIL_INTERVAL_FACTOR_STR, DEFAULT_CROSS_OIL_INTERVAL_FACTOR);
-    Preferences::speedProgression = Preferences::getDoubleValue(SPEED_PROGRESSION_FACTOR_STR, DEFAULT_SPEED_PROGRESSION_FACTOR);
+    Preferences::pulsePerRound = Preferences::getFloatValue(PULSE_PER_WEEL_ROUND_STR, DEFAULT_PULSE_PER_WEEL_ROUND);
+    Preferences::circumFerence = Preferences::getFloatValue(WHEEL_CIRCUM_FERENCE_STR, DEFAULT_WHEEL_CIRCUM_FERENCE);
+    Preferences::oilInterval = Preferences::getFloatValue(OIL_INTERVAL_STR, DEFAULT_OIL_INTERVAL);
+    Preferences::rainFactor = Preferences::getFloatValue(RAIN_OIL_INTERVAL_FACTOR_STR, DEFAULT_RAIN_OIL_INTERVAL_FACTOR);
+    Preferences::crossFactor = Preferences::getFloatValue(CROSS_OIL_INTERVAL_FACTOR_STR, DEFAULT_CROSS_OIL_INTERVAL_FACTOR);
+    Preferences::speedProgression = Preferences::getFloatValue(SPEED_PROGRESSION_FACTOR_STR, DEFAULT_SPEED_PROGRESSION_FACTOR);
     Preferences::rainSensorThreshold = static_cast<uint32_t>(Preferences::getIntValue(THRESHOLD_RAIN_SENSOR_STR, DEFAULT_THRESHOLD_RAIN_SENSOR));
     ESP_LOGD(tag, "%s: read all preferences...done", __func__);
   }
 
   int16_t Preferences::getPulsesFor100Meters()
   {
-    double val100Meters = (100.0 / circumFerence) * pulsePerRound;
+    float val100Meters = (100.0 / circumFerence) * pulsePerRound;
     int16_t count = static_cast<int16_t>(std::ceil(val100Meters));
     ESP_LOGI(tag, "%s: ==== pulses for 100 meters: <%06d>", __func__, count);
     return count;
@@ -274,9 +274,9 @@ namespace Prefs
 
   int16_t Preferences::getPulsesFor10Meters()
   {
-    double val10Meters = (10.0 / circumFerence) * pulsePerRound;
+    float val10Meters = (10.0 / circumFerence) * pulsePerRound;
     int16_t count = static_cast<int16_t>(std::ceil(val10Meters));
-    ESP_LOGI(tag, "%s: ==== pulses for 5 meters: <%06d>", __func__, count);
+    ESP_LOGI(tag, "%s: ==== pulses for 10 meters: <%06d>", __func__, count);
     return (count >= 1) ? count : 1;
   }
 
@@ -288,16 +288,16 @@ namespace Prefs
     // ich suche die Halbimpuszeit * 2
     // also (pulsePerMeter * speed * 2) hoch -1
     // Faktor 1000.0 bedeutet millisekunden Berechnung
-    double pulsLength = 1000.0 / ((pulsePerRound / circumFerence) * 70.0 * 2.0);
+    float pulsLength = 1000.0 / ((pulsePerRound / circumFerence) * 70.0 * 2.0);
     //
     // Die Zählerfrequenz  zum Filtern ins 80 MHz
     // also muss der Filterwert kleiner gleich pulsLength sein.
     //
-    double pulsSystem = 1000.0 / 80000000;
+    float pulsSystem = 1000.0 / 80000000;
     //
     // wie viele Pulse für pulsLengt
     //
-    double pulseCount = std::floor(pulsLength / pulsSystem);
+    float pulseCount = std::floor(pulsLength / pulsSystem);
     //
     // entweder korrrekter Wert oder der fast Maximale
     //
@@ -382,13 +382,13 @@ namespace Prefs
     return false;
   }
 
-  double Preferences::getDoubleValue(const char *_name, double _defaultValue)
+  float Preferences::getFloatValue(const char *_name, float _defaultValue)
   {
     esp_err_t err;
-    double val;
+    float val;
     size_t size = sizeof(val);
     //
-    ESP_LOGD(tag, "%s: read double value <%s>...", __func__, _name);
+    ESP_LOGD(tag, "%s: read float value <%s>...", __func__, _name);
     if (!Preferences::isInit)
       return (_defaultValue);
     err = nvs_get_blob(Preferences::nvs_handle, _name, &val, &size);
@@ -400,20 +400,20 @@ namespace Prefs
       ESP_LOGE(tag, "%s: value <%s> is not initialized yet", __func__, _name);
       return (_defaultValue);
     default:
-      ESP_LOGE(tag, "%s: error while reading double value <%s>", __func__, _name);
+      ESP_LOGE(tag, "%s: error while reading float value <%s>", __func__, _name);
       return (_defaultValue);
     }
     return (_defaultValue);
   }
 
-  bool Preferences::setDoubleValue(const char *_name, double _val)
+  bool Preferences::setFloatValue(const char *_name, float _val)
   {
     esp_err_t err;
     //
     if (!Preferences::isInit)
       return false;
     err = nvs_set_blob(Preferences::nvs_handle, _name, &_val, sizeof(_val));
-    ESP_LOGD(tag, "%s: write double <%s> value <%.2f>...", __func__, _name, _val);
+    ESP_LOGD(tag, "%s: write float <%s> value <%.2f>...", __func__, _name, _val);
     if (err == ESP_OK)
       return true;
     return false;

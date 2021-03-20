@@ -4,13 +4,14 @@
 namespace ChOiler
 {
   const char *MainWorker::tag{"MainWorker"}; //! tag fürs debug logging
-  std::vector<esp32s2::deltaTimeTenMeters_us> MainWorker::speedVec(Prefs::SPEED_HISTORY_LEN);
+  std::list<esp32s2::deltaTimeTenMeters_us> MainWorker::speedList(Prefs::SPEED_HISTORY_LEN);
 
   void MainWorker::init()
   {
     using namespace Prefs;
 
     printf("controller ist starting, version %s...\n\n", Preferences::getVersion().c_str());
+    MainWorker::speedList.clear();
     //
     // lese die Einstellungen aus dem NVM
     //
@@ -56,26 +57,28 @@ namespace ChOiler
       // vector wie queue benutzern, aber ich kann std::queue nicht nehmen
       // da ich wahlfrei zugriff haben will
       //
-      res = xQueueReceive(esp32s2::EspCtrl::speedQueue, &dtime_us, pdMS_TO_TICKS(5));
+      res = xQueueReceive(esp32s2::EspCtrl::speedQueue, &dtime_us, pdMS_TO_TICKS(15));
       {
         if (res == pdTRUE)
         {
-          if (MainWorker::speedVec.size() > Prefs::SPEED_HISTORY_LEN - 1)
+          while (MainWorker::speedList.size() > Prefs::SPEED_HISTORY_LEN - 1)
           {
             // am Ende entfernen
-            MainWorker::speedVec.pop_back();
+            MainWorker::speedList.pop_back();
           }
           // am Anfang einfuegen
-          MainWorker::speedVec.insert(MainWorker::speedVec.begin(), dtime_us);
+          MainWorker::speedList.push_front(dtime_us);
         }
       }
-
       //
       // zurückgelegte Wegstrecke berechnen
       //
       res = xQueueReceive(esp32s2::EspCtrl::pathLenQueue, &evt, pdMS_TO_TICKS(50));
       if (res == pdTRUE)
       {
+        //
+        // wenn in der queue ein ergebnis stand
+        //
         pcnt_get_counter_value(PCNT_UNIT_0, &count);
         ESP_LOGI(tag, "Event 100 meters path done: unit%d; cnt: %d", evt.unit, evt.value);
       }
@@ -104,43 +107,75 @@ namespace ChOiler
     //
     // ungefähr alle 2 Sekunden Berechnen
     //
-    uint64_t timeNow = esp_timer_get_time();
-
-    //
     // Durchschnitt über die letzten 4 Sekunden
     // jeder Zeitstempel ist für 10 Meter Strecke
     // die Durchschnittsgeschwindigkeit ist also max über
     // 10 * Prefs::SPEED_HISTORY_LEN
     //
-    float distance = 0UL;
-    float deltaTimeSum = 0UL;
-    for (auto it = MainWorker::speedVec.begin(); it != MainWorker::speedVec.end();)
+    uint64_t lastTimeStamp{0ULL};
+    float distance_sum = 0.0F;
+    float deltaTimeSum_sec = 0.0F;
+    float averageSpeed = 0.0;
+    int computedCount = 0;
+    for (auto it = MainWorker::speedList.begin(); it != MainWorker::speedList.end();)
     {
       //
-      // aelter als 4 Sekunden?
+      // zuerst veraltete Einträge finden und entfernen
+      // diff in ms berechnen und merken
       //
-      uint64_t timeDiff_us = timeNow - *it;
-      if (timeDiff_us > (4 * 1000000))
+      uint64_t logDeltaTimeStamp_ms = (esp_timer_get_time() - *it) >> 10;
+      //
+      // mehr als Prefs::HISTORY_MAX_TIME_MS Milisekunden her, also veraltet?
+      //
+      if (logDeltaTimeStamp_ms > Prefs::HISTORY_MAX_TIME_MS)
       {
-        it = MainWorker::speedVec.erase(it, MainWorker::speedVec.end());
+        // zu alt
+        // iterator wird neu gesetzt, alles nach dem gelöscht
+        //
+        it = MainWorker::speedList.erase(it, MainWorker::speedList.end());
         continue;
       }
       //
-      // summiere Wegstrecke und zugehhörige Zeit
+      // gibt es einen früheren Zeitstempel auf den ich Bezug nehmen kann?
       //
-      distance += 10.0;
-      deltaTimeSum += static_cast<float>(timeDiff_us / 1000000.0);
+      if (lastTimeStamp == 0ULL)
+      {
+        //
+        // nein, dann muss ich diesen hier setzten
+        //
+        lastTimeStamp = *it;
+        ++it;
+        continue;
+      }
+      //
+      // jetzt die Zeitdifferrenz errechnen
+      //
+      // logDeltaTimeStamp_ms = (lastTimeStamp - *it) >> 10;
+      uint32_t deltaTime_ms = static_cast<uint32_t>((lastTimeStamp - *it) >> 10);
+      //
+      // jetzt habe ich eine zahl < history ms, weil die zu alten loesche ich oben
+      // hier völlig zum schätzen der Geschwindigkeit, Korrekturfaktor ist rund 0.95
+      //
+      float timeDiff_sec = (static_cast<float>(deltaTime_ms) / 1000.0F) * 0.95F;
+      //
+      // summiere Wegstrecke und zugehhörige Zeit
+      // die Zeit dann als Sekunden / float
+      distance_sum += 10.0F;
+      deltaTimeSum_sec += timeDiff_sec;
+      ++computedCount;
+      lastTimeStamp = *it;
       ++it;
     }
-    float averageSpeed = 0.0;
     //
     // berechne Durchschnittliche Geschwindigkeit für die letzten Sekunden
     //
-    if (deltaTimeSum > 0.1)
+    if (deltaTimeSum_sec > 0.001)
     {
-      averageSpeed = distance / deltaTimeSum;
+      // distance durch zeit...
+      ESP_LOGD(tag, "distance: %3.3f m time: %3.6f sec", distance_sum, deltaTimeSum_sec);
+      averageSpeed = distance_sum / deltaTimeSum_sec;
     }
-    ESP_LOGD(tag, "computed average speed: %03.2f m/s == %03.2f km/h, vector count: %03d...", averageSpeed, averageSpeed * 3.6, speedVec.size());
+    ESP_LOGD(tag, "computed average speed: %03.2f m/s == %03.2f km/h, computed: %03d history entrys...", averageSpeed, averageSpeed * 3.6, computedCount);
   }
 
 } // namespace ChOiler
