@@ -1,5 +1,5 @@
 #include "MainWork.hpp"
-#include <vector>
+#include "AppStati.hpp"
 
 namespace ChOiler
 {
@@ -12,6 +12,7 @@ namespace ChOiler
 
     printf("controller ist starting, version %s...\n\n", Preferences::getVersion().c_str());
     MainWorker::speedList.clear();
+    esp32s2::AppStati::setAppMode(esp32s2::opMode::AWAKE);
     //
     // lese die Einstellungen aus dem NVM
     //
@@ -20,22 +21,30 @@ namespace ChOiler
     // initialisiere die Hardware
     //
     esp32s2::EspCtrl::init();
+    esp32s2::LedControl::init();
     ESP_LOGD(tag, "init done.");
   }
 
   void MainWorker::run()
   {
+    uint64_t runTime = esp_timer_get_time() + 1500000ULL;
     ESP_LOGD(tag, "%s: loop start...", __func__);
+    //
+    // das Startsignal leuchten
+    //
+    while (esp_timer_get_time() < runTime)
+    {
+      esp32s2::LedControl::showAttention();
+      vTaskDelay(1);
+    }
+    vTaskDelay(pdMS_TO_TICKS(100));
+    esp32s2::LedControl::allOff();
+    ESP_LOGD(tag, "%s: loop start...OK", __func__);
     //
     // für immer :-)
     //
-    while (true)
-    {
-      //
-      // switch mode, ->mode normal....
-      //
-      MainWorker::defaultLoop();
-    }
+    esp32s2::AppStati::setAppMode(esp32s2::opMode::NORMAL);
+    MainWorker::defaultLoop();
   }
 
   void MainWorker::defaultLoop()
@@ -84,6 +93,11 @@ namespace ChOiler
       }
 
       //
+      // finde raus ob da was manipuliert wurde
+      //
+      MainWorker::buttonStati();
+
+      //
       // ungefähr alle 2 Sekunden Berechnen
       //
       if ((esp_timer_get_time() & 0x1f0000) == 0)
@@ -99,6 +113,26 @@ namespace ChOiler
             computed = false;
         }
       }
+    }
+  }
+
+  void MainWorker::buttonStati()
+  {
+    using namespace esp32s2;
+
+    if (AppStati::functionSwitchAction)
+    {
+      //AppStati::functionSwitchDown = (level == 1) ? false : true;
+      //AppStati::lastFunctionSwitchAction = esp_timer_get_time();
+    }
+
+    if (AppStati::rainSwitchAction)
+    {
+      //
+      // Was ist passiert? Level 0 bedeutet Knopf gedrückt
+      //
+      // AppStati::rainSwitchDown = (level == 1) ? false : true;
+      // AppStati::lastRainSwitchAction = esp_timer_get_time();
     }
   }
 

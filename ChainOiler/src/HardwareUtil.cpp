@@ -1,15 +1,18 @@
 #include "HardwareUtil.hpp"
 #include "ProjectDefaults.hpp"
 #include "AppPreferences.hpp"
+#include "LedControl.hpp"
 #include <cmath>
 
 namespace esp32s2
 {
-  xQueueHandle EspCtrl::pathLenQueue = nullptr;                              //! handle fuer queue
-  xQueueHandle EspCtrl::speedQueue = nullptr;                                //! handle fuer queue
+  xQueueHandle EspCtrl::pathLenQueue = nullptr; //! handle fuer queue
+  xQueueHandle EspCtrl::speedQueue = nullptr;   //! handle fuer queue
+  const uint8_t EspCtrl::isr_control{1};        //! Marker für die ISR
+  const uint8_t EspCtrl::isr_rain{2};           //! Marker für die ISR
+
   const char *EspCtrl::tag{"EspCtrl"};                                       //! tag fürs debug logging
   esp_sleep_wakeup_cause_t EspCtrl::wakeupCause{ESP_SLEEP_WAKEUP_UNDEFINED}; //! der Grund des Erwachens
-  esp_timer_handle_t EspCtrl::timerHandle{nullptr};                          //! timer handle
 
   /**
    * Initialisieere die Hardware
@@ -51,19 +54,18 @@ namespace esp32s2
       //
       // Der Tachoimpuls hat geweckt
       //
-      printf("TODO: restore counters from sram...");
+      printf("TODO: TACHO WAKEUP restore counters from sram...");
     }
     else
     {
       //
       // Kompletter Neustart
       //
-      printf("TODO: restore counters from NVS...");
+      printf("TODO: POWER_ON_WAKEUP restore counters from NVS...");
     }
     EspCtrl::initGPIOPorts();
     EspCtrl::initTachoPulseCounters();
     EspCtrl::initADC();
-    EspCtrl::initTimer();
   }
 
   /**
@@ -79,15 +81,6 @@ namespace esp32s2
     // GPIO Konfigurieren
     //
     ESP_LOGD(tag, "%s: init GPIO...", __func__);
-    //
-    // LED
-    //
-    gpio_config_t config_led = {.pin_bit_mask = BIT64(LED_REED_CONTROL) | BIT64(LED_CONTROL) | BIT64(LED_RAIN) | BIT64(LED_PUMP),
-                                .mode = GPIO_MODE_OUTPUT,
-                                .pull_up_en = GPIO_PULLUP_DISABLE,
-                                .pull_down_en = GPIO_PULLDOWN_DISABLE,
-                                .intr_type = GPIO_INTR_DISABLE};
-    gpio_config(&config_led);
     //
     // Ausgabesignale Digital
     //
@@ -108,19 +101,19 @@ namespace esp32s2
                                .intr_type = GPIO_INTR_DISABLE};
     gpio_config(&config_in);
     //
-    // Interrupt für zwei PINS einschalten
-    //
-    gpio_set_intr_type(INPUT_FUNCTION_SWITCH, GPIO_INTR_ANYEDGE);
-    gpio_set_intr_type(INPUT_RAIN_SWITCH_OPTIONAL, GPIO_INTR_ANYEDGE);
-    //
     // ISR Servive installieren
     //
     gpio_install_isr_service(0);
     //
     // Handler für die beiden Ports
     //
-    gpio_isr_handler_add(INPUT_FUNCTION_SWITCH, EspCtrl::buttonIsr, (void *)INPUT_FUNCTION_SWITCH);
-    gpio_isr_handler_add(INPUT_RAIN_SWITCH_OPTIONAL, EspCtrl::buttonIsr, (void *)INPUT_RAIN_SWITCH_OPTIONAL);
+    gpio_isr_handler_add(INPUT_FUNCTION_SWITCH, EspCtrl::buttonIsr, (void *)&EspCtrl::isr_control);
+    gpio_isr_handler_add(INPUT_RAIN_SWITCH_OPTIONAL, EspCtrl::buttonIsr, (void *)&EspCtrl::isr_rain);
+    //
+    // Interrupt für zwei PINS einschalten
+    //
+    gpio_set_intr_type(INPUT_FUNCTION_SWITCH, GPIO_INTR_ANYEDGE);
+    gpio_set_intr_type(INPUT_RAIN_SWITCH_OPTIONAL, GPIO_INTR_ANYEDGE);
     return true;
   }
 
@@ -141,29 +134,6 @@ namespace esp32s2
     adc1_config_channel_atten(INPUT_ADC_RAIN_00, ADC_ATTEN_DB_11 /*ADC_ATTEN_DB_0*/);
     adc1_config_channel_atten(INPUT_ADC_RAIN_01, ADC_ATTEN_DB_11 /*ADC_ATTEN_DB_0*/);
     ESP_LOGD(tag, "%s: init ADC...done", __func__);
-    return true;
-  }
-
-  bool EspCtrl::initTimer()
-  {
-    //
-    // timer für Punpe starten
-    //
-    const esp_timer_create_args_t appTimerArgs =
-        {
-            .callback = &EspCtrl::timerCallback,
-            .arg = nullptr,
-            .dispatch_method = ESP_TIMER_TASK,
-            .name = "app_timer"};
-    //
-    // timer erzeugen
-    //
-    ESP_ERROR_CHECK(esp_timer_create(&appTimerArgs, &EspCtrl::timerHandle));
-    //
-    // timer starten, microsekunden ( 20 ms soll es)
-    //
-    ESP_ERROR_CHECK(esp_timer_start_periodic(EspCtrl::timerHandle, 20000));
-    //
     return true;
   }
 
@@ -189,26 +159,6 @@ namespace esp32s2
     // Wiederbelebung erst durch Tachoimpuls
     //
     esp_deep_sleep_start();
-  }
-
-  void EspCtrl::timerCallback(void *)
-  {
-    static volatile bool haveSwitchedOn = false;
-
-    if (haveSwitchedOn)
-    {
-      haveSwitchedOn = false;
-      // Aus
-      gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 0);
-      // set LED ON
-    }
-    else if (AppStati::pumpCycles > 0)
-    {
-      haveSwitchedOn = true;
-      --AppStati::pumpCycles;
-      // an
-      gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 1);
-    }
   }
 
   /**
@@ -367,33 +317,11 @@ namespace esp32s2
   */
   void IRAM_ATTR EspCtrl::speedCountISR(void *)
   {
-    //static volatile uint64_t lastTimestamp = 0ULL; // initiale zeit
     uint64_t currentTimeStamp = esp_timer_get_time();
-    //deltaTimeTenMeters_ms deltaTime_ms{0};
-    //
-    // Differenz in Microsekunden
-    //
-    //if (currentTimeStamp > lastTimestamp)
-    //{
-    //  // berechnen und merken
-    //  uint64_t logDeltaTimeStamp_ms = (currentTimeStamp - lastTimestamp) >> 10;
-    //  if (logDeltaTimeStamp_ms > std::numeric_limits<deltaTimeTenMeters_ms>::max())
-    //  {
-    //    // zu gross, also max setzten
-    //    deltaTime_ms = std::numeric_limits<deltaTimeTenMeters_ms>::max();
-    //  }
-    //  else
-    //  {
-    //    // in ms umrechnen und sichern
-    //    deltaTime_ms = static_cast<deltaTimeTenMeters_ms>(logDeltaTimeStamp_ms);
-    //  }
-    //  lastTimestamp = currentTimeStamp;
-    //
     int task_awoken = pdFALSE;
     //
     // die Daten in die Queue speichern
     //
-    // pcnt_get_event_value(PCNT_UNIT_0, PCNT_EVT_THRES_0, &value);
     if (uxQueueMessagesWaiting(EspCtrl::speedQueue) < Prefs::QUEUE_LEN_TACHO)
     {
       xQueueSendFromISR(EspCtrl::speedQueue, &currentTimeStamp, &task_awoken);
@@ -402,34 +330,35 @@ namespace esp32s2
         portYIELD_FROM_ISR();
       }
     }
-    //}
   }
 
   void IRAM_ATTR EspCtrl::buttonIsr(void *arg)
   {
     using namespace Prefs;
 
-    gpio_num_t *gpio_num = static_cast<gpio_num_t *>(arg);
+    uint8_t *_num = static_cast<uint8_t *>(arg);
     int level;
 
-    switch (*gpio_num)
+    switch (*_num)
     {
-    case Prefs::INPUT_FUNCTION_SWITCH:
+    case 1:
       level = gpio_get_level(Prefs::INPUT_FUNCTION_SWITCH);
       //
       // Was ist passiert? Level 0 bedeutet Knopf gedrückt
       //
       AppStati::functionSwitchDown = (level == 1) ? false : true;
       AppStati::lastFunctionSwitchAction = esp_timer_get_time();
+      AppStati::functionSwitchAction = true;
       break;
 
-    case Prefs::INPUT_RAIN_SWITCH_OPTIONAL:
+    case 2:
       level = gpio_get_level(Prefs::INPUT_RAIN_SWITCH_OPTIONAL);
       //
       // Was ist passiert? Level 0 bedeutet Knopf gedrückt
       //
       AppStati::rainSwitchDown = (level == 1) ? false : true;
       AppStati::lastRainSwitchAction = esp_timer_get_time();
+      AppStati::rainSwitchAction = true;
       break;
     default:
       break;

@@ -4,7 +4,7 @@
 
 namespace Prefs
 {
-  const char *Preferences::serialStr = "20210320-162743-build-0347";
+  const char *Preferences::serialStr = "20210320-211937-build-0372";
   const std::string Preferences::serialString = std::string(Preferences::serialStr);
   const char *Preferences::tag{"Preferences"};                                           //! tag fürs debug logging
   nvs_handle_t Preferences::nvs_handle{0};                                               //! handle für NVS

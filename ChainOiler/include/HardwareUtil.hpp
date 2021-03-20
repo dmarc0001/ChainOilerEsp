@@ -42,7 +42,8 @@ namespace esp32s2
   private:
     static const char *tag;
     static esp_sleep_wakeup_cause_t wakeupCause;
-    static esp_timer_handle_t timerHandle;
+    static const uint8_t isr_control;
+    static const uint8_t isr_rain;
 
   protected:
     static void init();
@@ -59,11 +60,9 @@ namespace esp32s2
     static bool initGPIOPorts();
     static bool initTachoPulseCounters();
     static bool initADC();
-    static bool initTimer();
     static void IRAM_ATTR tachoOilerCountISR(void *);
     static void IRAM_ATTR speedCountISR(void *);
     static void IRAM_ATTR buttonIsr(void *);
-    static void timerCallback(void *);
   };
 
 } // namespace esp32s2
