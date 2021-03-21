@@ -24,10 +24,10 @@ namespace ChOiler
     // initialisiere die Hardware
     //
     gpio_install_isr_service(0); // gloabal einmalig für GPIO
-    esp32s2::TachoControl::init();
     esp32s2::ButtonControl::init();
     esp32s2::LedControl::init();
     esp32s2::PumpControl::init();
+    esp32s2::TachoControl::init();
     esp32s2::RainSensorControl::init();
     ESP_LOGD(tag, "init done.");
   }
@@ -43,7 +43,7 @@ namespace ChOiler
     uint64_t runTime = esp_timer_get_time() + 1500000ULL;
     bool computed = false;
     //
-    ESP_LOGD(tag, "%s: run start...", __func__);
+    ESP_LOGI(tag, "%s: run start...", __func__);
     //
     // das Startsignal leuchten
     //
@@ -76,23 +76,24 @@ namespace ChOiler
       default:
         break;
       }
-    }
-    //
-    // ungefähr alle 2 Sekunden Berechnen
-    // und wenn nicht AP Mode
-    //
-    if (((esp_timer_get_time() & 0x1f0000) == 0) &&
-        Preferences::getAppMode() != opMode::APMODE)
-    {
-      if (!computed)
+
+      //
+      // ungefähr alle 2 Sekunden Berechnen
+      // und wenn nicht AP Mode
+      //
+      if (((esp_timer_get_time() & 0x1f0000) == 0) &&
+          Preferences::getAppMode() != opMode::APMODE)
       {
-        computed = true;
-        MainWorker::computeAvgSpeed();
-      }
-      else
-      {
-        if (computed)
-          computed = false;
+        if (!computed)
+        {
+          computed = true;
+          MainWorker::computeAvgSpeed();
+        }
+        else
+        {
+          if (computed)
+            computed = false;
+        }
       }
     }
   }
