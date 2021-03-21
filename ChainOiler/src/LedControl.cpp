@@ -90,6 +90,7 @@ namespace esp32s2
 
   void LedControl::timerCallback(void *)
   {
+    using namespace Prefs;
     static volatile bool haveSwitchedOn = false;
 
     if (haveSwitchedOn)
@@ -99,10 +100,10 @@ namespace esp32s2
       gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 0);
       // set LED ON
     }
-    else if (AppStati::pumpCycles > 0)
+    else if (Preferences::pumpCycles > 0)
     {
       haveSwitchedOn = true;
-      --AppStati::pumpCycles;
+      --Preferences::pumpCycles;
       // an
       gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 1);
     }

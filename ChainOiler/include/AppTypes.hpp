@@ -2,7 +2,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
-namespace esp32s2
+namespace Prefs
 {
 
   //! Typ des Tastendrucks (Kein, kurz,lang)

@@ -18,6 +18,7 @@
 #include "AppTypes.hpp"
 #include "HardwareUtil.hpp"
 #include "LedControl.hpp"
+#include "ButtonControl.hpp"
 
 namespace ChOiler
 {
@@ -34,7 +35,7 @@ namespace ChOiler
   public:
     static void init();            //! initialisiert Prferenzen und Hardware
     static void run();             //! da geht es los
-    static void defaultLoop();     //! schleife in der der Controller läuft, normale Betriebsart
+    static void tachoCompute();    //! berechne Tacho Geschichten
     static void buttonStati();     //! guck was die Buttons machen
     static void computeAvgSpeed(); //! berechne Durchschnitt für max 4 Sekunden
   };

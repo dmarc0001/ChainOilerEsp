@@ -6,11 +6,8 @@
 
 namespace esp32s2
 {
-  xQueueHandle EspCtrl::pathLenQueue = nullptr; //! handle fuer queue
-  xQueueHandle EspCtrl::speedQueue = nullptr;   //! handle fuer queue
-  const uint8_t EspCtrl::isr_control{1};        //! Marker für die ISR
-  const uint8_t EspCtrl::isr_rain{2};           //! Marker für die ISR
-
+  xQueueHandle EspCtrl::pathLenQueue = nullptr;                              //! handle fuer queue
+  xQueueHandle EspCtrl::speedQueue = nullptr;                                //! handle fuer queue
   const char *EspCtrl::tag{"EspCtrl"};                                       //! tag fürs debug logging
   esp_sleep_wakeup_cause_t EspCtrl::wakeupCause{ESP_SLEEP_WAKEUP_UNDEFINED}; //! der Grund des Erwachens
 
@@ -93,8 +90,7 @@ namespace esp32s2
     //
     //  Tacho und Knopf (Knopf-GPIO_INTR_ANYEDGE)
     //
-    /*gpio_config_t config_in = {.pin_bit_mask = BIT64(INPUT_TACHO) | BIT64(INPUT_FUNCTION_SWITCH),*/
-    gpio_config_t config_in = {.pin_bit_mask = BIT64(INPUT_FUNCTION_SWITCH) | BIT64(INPUT_TACHO) | BIT64(INPUT_RAIN_SWITCH_OPTIONAL),
+    gpio_config_t config_in = {.pin_bit_mask = BIT64(INPUT_TACHO),
                                .mode = GPIO_MODE_INPUT,
                                .pull_up_en = GPIO_PULLUP_ENABLE,
                                .pull_down_en = GPIO_PULLDOWN_DISABLE,
@@ -102,18 +98,18 @@ namespace esp32s2
     gpio_config(&config_in);
     //
     // ISR Servive installieren
-    //
-    gpio_install_isr_service(0);
+    // verschoben in main
+    // gpio_install_isr_service(0);
     //
     // Handler für die beiden Ports
     //
-    gpio_isr_handler_add(INPUT_FUNCTION_SWITCH, EspCtrl::buttonIsr, (void *)&EspCtrl::isr_control);
-    gpio_isr_handler_add(INPUT_RAIN_SWITCH_OPTIONAL, EspCtrl::buttonIsr, (void *)&EspCtrl::isr_rain);
+    // gpio_isr_handler_add(INPUT_FUNCTION_SWITCH, EspCtrl::buttonIsr, (void *)&EspCtrl::isr_control);
+    // gpio_isr_handler_add(INPUT_RAIN_SWITCH_OPTIONAL, EspCtrl::buttonIsr, (void *)&EspCtrl::isr_rain);
     //
     // Interrupt für zwei PINS einschalten
     //
-    gpio_set_intr_type(INPUT_FUNCTION_SWITCH, GPIO_INTR_ANYEDGE);
-    gpio_set_intr_type(INPUT_RAIN_SWITCH_OPTIONAL, GPIO_INTR_ANYEDGE);
+    // gpio_set_intr_type(INPUT_FUNCTION_SWITCH, GPIO_INTR_ANYEDGE);
+    // gpio_set_intr_type(INPUT_RAIN_SWITCH_OPTIONAL, GPIO_INTR_ANYEDGE);
     return true;
   }
 
@@ -329,39 +325,6 @@ namespace esp32s2
       {
         portYIELD_FROM_ISR();
       }
-    }
-  }
-
-  void IRAM_ATTR EspCtrl::buttonIsr(void *arg)
-  {
-    using namespace Prefs;
-
-    uint8_t *_num = static_cast<uint8_t *>(arg);
-    int level;
-
-    switch (*_num)
-    {
-    case 1:
-      level = gpio_get_level(Prefs::INPUT_FUNCTION_SWITCH);
-      //
-      // Was ist passiert? Level 0 bedeutet Knopf gedrückt
-      //
-      AppStati::functionSwitchDown = (level == 1) ? false : true;
-      AppStati::lastFunctionSwitchAction = esp_timer_get_time();
-      AppStati::functionSwitchAction = true;
-      break;
-
-    case 2:
-      level = gpio_get_level(Prefs::INPUT_RAIN_SWITCH_OPTIONAL);
-      //
-      // Was ist passiert? Level 0 bedeutet Knopf gedrückt
-      //
-      AppStati::rainSwitchDown = (level == 1) ? false : true;
-      AppStati::lastRainSwitchAction = esp_timer_get_time();
-      AppStati::rainSwitchAction = true;
-      break;
-    default:
-      break;
     }
   }
 

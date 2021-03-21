@@ -4,7 +4,7 @@
 
 namespace Prefs
 {
-  const char *Preferences::serialStr = "20210320-211823-build-0371";
+  const char *Preferences::serialStr = "20210321-145356-build-0404";
   const std::string Preferences::serialString = std::string(Preferences::serialStr);
   const char *Preferences::tag{"Preferences"};                                           //! tag fürs debug logging
   nvs_handle_t Preferences::nvs_handle{0};                                               //! handle für NVS
@@ -19,6 +19,11 @@ namespace Prefs
   float Preferences::crossFactor{DEFAULT_CROSS_OIL_INTERVAL_FACTOR};                     //! Streckenfaktor beim crossen
   float Preferences::speedProgression{DEFAULT_SPEED_PROGRESSION_FACTOR};                 //! Mehr öl bei höherer Geschwindigkeit
   int Preferences::rainSensorThreshold{static_cast<int>(DEFAULT_THRESHOLD_RAIN_SENSOR)}; //! Sensor Schwellwert
+  volatile uint64_t Preferences::lastTachoPulse{0};                                      //! wann traten die letzten Tachoinformationen auf
+  volatile fClick Preferences::controlSwitchAction{fClick::NONE};                        //! welche Aktion des buttons liegt an
+  volatile fClick Preferences::rainSwitchAction{fClick::NONE};                           //! welche aktion des buttons liegt an
+  volatile uint8_t Preferences::pumpCycles{0};                                           //! wie viele pumpenzyklen sollen erfolgen(setzten startet pumpe)
+  opMode Preferences::appOpMode{opMode::AWAKE};                                          //! In welchem Zustand ist das Programm
 
   const std::string &Preferences::getVersion()
   {
@@ -302,6 +307,41 @@ namespace Prefs
     // entweder korrrekter Wert oder der fast Maximale
     //
     return pulseCount > 1022 ? 1023 : static_cast<uint16_t>(pulseCount);
+  }
+
+  opMode Preferences::getAppMode()
+  {
+    return Preferences::appOpMode;
+  }
+
+  void Preferences::setAppMode(opMode _mode)
+  {
+    //
+    // crossmode: Strecke anpassen
+    // normalmode: Strecke anpassen
+    // regenmode: Strecke anpassen
+    //
+    Preferences::appOpMode = _mode;
+  }
+
+  fClick Preferences::getRainSwitchAction()
+  {
+    return Preferences::rainSwitchAction;
+  }
+
+  void Preferences::setRainSwitchAction(fClick _stat)
+  {
+    Preferences::rainSwitchAction = _stat;
+  }
+
+  fClick Preferences::getControlSwitchAction()
+  {
+    return Preferences::controlSwitchAction;
+  }
+
+  void Preferences::setControlSwitchAction(fClick _stat)
+  {
+    Preferences::controlSwitchAction = _stat;
   }
 
   //###########################################################################

@@ -51,16 +51,16 @@ namespace Prefs
   constexpr gpio_num_t OUTPUT_RAIN_SW_01 = GPIO_NUM_42;         //! Schaltet Regensensor 01
   constexpr gpio_num_t OUTPUT_RAIN_SW_02 = GPIO_NUM_41;         //! Schaltet Regensensor 02
   constexpr gpio_num_t INPUT_TACHO = GPIO_NUM_4;                //! Tachoimpuls / Reed Kontakt
-  constexpr gpio_num_t INPUT_FUNCTION_SWITCH = GPIO_NUM_5;      //! Funktionstaster Cross/WLAN
+  constexpr gpio_num_t INPUT_CONTROL_SWITCH = GPIO_NUM_5;       //! Funktionstaster Cross/WLAN
   constexpr gpio_num_t INPUT_RAIN_SWITCH_OPTIONAL = GPIO_NUM_6; //! optionaler Regentaster (TODO:)
   constexpr adc1_channel_t INPUT_ADC_RAIN_00 = ADC1_CHANNEL_0;  //! Eingang Analogschnittstelle GPIO01- PIN01
   constexpr adc1_channel_t INPUT_ADC_RAIN_01 = ADC1_CHANNEL_2;  //! Eingang Analogschnittstelle GPIO03 - PIN03
   //
-  // Wie lange dauert das entprellen in Millisekunden
+  // Wie lange dauert das entprellen in Microsekunden
   //
-  constexpr uint64_t DEBOUNCE_TIME_MS = 100;       //! Millisekunden zum entprellen
-  constexpr uint64_t longClickTimeMs = 4000;       //! Milisekunden fuer Langen Click (WiFi ON)
-  constexpr uint64_t TIME_TO_DEEP_SLEEP = 20000UL; // Zeit bis zum Sleep
+  constexpr uint64_t DEBOUNCE_TIME_US = 100 * 1000;       //! Microsekunden zum entprellen
+  constexpr uint64_t LONG_CLICK_TIME_US = 4000 * 1000;    //! Mikrosekunden fuer Langen Click (WiFi ON)
+  constexpr uint64_t TIME_TO_DEEP_SLEEP = 20000 * 1000UL; //! Zeit bis zum Sleep
   //
   // intervalle beim blinken in Microsekunden
   //

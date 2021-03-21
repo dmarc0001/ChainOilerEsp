@@ -1,5 +1,4 @@
 #include "MainWork.hpp"
-#include "AppStati.hpp"
 
 namespace ChOiler
 {
@@ -12,7 +11,7 @@ namespace ChOiler
 
     printf("controller ist starting, version %s...\n\n", Preferences::getVersion().c_str());
     MainWorker::speedList.clear();
-    esp32s2::AppStati::setAppMode(esp32s2::opMode::AWAKE);
+    Preferences::setAppMode(opMode::AWAKE);
     //
     // lese die Einstellungen aus dem NVM
     //
@@ -20,15 +19,21 @@ namespace ChOiler
     //
     // initialisiere die Hardware
     //
+    gpio_install_isr_service(0); // gloabal einmalig für GPIO
     esp32s2::EspCtrl::init();
+    esp32s2::ButtonControl::init();
     esp32s2::LedControl::init();
     ESP_LOGD(tag, "init done.");
   }
 
   void MainWorker::run()
   {
+    using namespace Prefs;
+
     uint64_t runTime = esp_timer_get_time() + 1500000ULL;
-    ESP_LOGD(tag, "%s: loop start...", __func__);
+    bool computed = false;
+    //
+    ESP_LOGD(tag, "%s: run start...", __func__);
     //
     // das Startsignal leuchten
     //
@@ -39,100 +44,122 @@ namespace ChOiler
     }
     vTaskDelay(pdMS_TO_TICKS(100));
     esp32s2::LedControl::allOff();
-    ESP_LOGD(tag, "%s: loop start...OK", __func__);
+    Preferences::setAppMode(opMode::NORMAL);
     //
+    // hier geth es dann richtig los
     // für immer :-)
     //
-    esp32s2::AppStati::setAppMode(esp32s2::opMode::NORMAL);
-    MainWorker::defaultLoop();
-  }
-
-  void MainWorker::defaultLoop()
-  {
-    //
-    // test der Funktionen
-    //
-    esp32s2::pcnt_evt_t evt;
-    esp32s2::deltaTimeTenMeters_us dtime_us;
-    int16_t count = 0;
-    portBASE_TYPE res;
-
-    bool computed = false;
-
+    ESP_LOGD(tag, "%s: loop start...", __func__);
     while (true)
     {
-      //
-      // Geschwindigkeitsdaten aus der Queue in den Speed-History-Buffer
-      // vector wie queue benutzern, aber ich kann std::queue nicht nehmen
-      // da ich wahlfrei zugriff haben will
-      //
-      res = xQueueReceive(esp32s2::EspCtrl::speedQueue, &dtime_us, pdMS_TO_TICKS(15));
+      switch (Preferences::getAppMode())
       {
-        if (res == pdTRUE)
-        {
-          while (MainWorker::speedList.size() > Prefs::SPEED_HISTORY_LEN - 1)
-          {
-            // am Ende entfernen
-            MainWorker::speedList.pop_back();
-          }
-          // am Anfang einfuegen
-          MainWorker::speedList.push_front(dtime_us);
-        }
+      case opMode::NORMAL:
+        MainWorker::tachoCompute();
+        MainWorker::buttonStati();
+        break;
+
+      case opMode::CROSS:
+      case opMode::RAIN:
+      case opMode::TEST:
+      case opMode::APMODE:
+      default:
+        break;
       }
-      //
-      // zurückgelegte Wegstrecke berechnen
-      //
-      res = xQueueReceive(esp32s2::EspCtrl::pathLenQueue, &evt, pdMS_TO_TICKS(50));
+    }
+    //
+    // ungefähr alle 2 Sekunden Berechnen
+    // und wenn nicht AP Mode
+    //
+    if (((esp_timer_get_time() & 0x1f0000) == 0) &&
+        Preferences::getAppMode() != opMode::APMODE)
+    {
+      if (!computed)
+      {
+        computed = true;
+        MainWorker::computeAvgSpeed();
+      }
+      else
+      {
+        if (computed)
+          computed = false;
+      }
+    }
+  }
+
+  void MainWorker::tachoCompute()
+  {
+    using namespace esp32s2;
+
+    pcnt_evt_t evt;
+    deltaTimeTenMeters_us dtime_us;
+    portBASE_TYPE res;
+    //int16_t count = 0;
+    //
+    // Geschwindigkeitsdaten aus der Queue in den Speed-History-Buffer
+    // vector wie queue benutzern, aber ich kann std::queue nicht nehmen
+    // da ich wahlfrei zugriff haben will
+    //
+    res = xQueueReceive(EspCtrl::speedQueue, &dtime_us, pdMS_TO_TICKS(15));
+    {
       if (res == pdTRUE)
       {
-        //
-        // wenn in der queue ein ergebnis stand
-        //
-        pcnt_get_counter_value(PCNT_UNIT_0, &count);
-        ESP_LOGI(tag, "Event 100 meters path done: unit%d; cnt: %d", evt.unit, evt.value);
-      }
-
-      //
-      // finde raus ob da was manipuliert wurde
-      //
-      MainWorker::buttonStati();
-
-      //
-      // ungefähr alle 2 Sekunden Berechnen
-      //
-      if ((esp_timer_get_time() & 0x1f0000) == 0)
-      {
-        if (!computed)
+        while (MainWorker::speedList.size() > Prefs::SPEED_HISTORY_LEN - 1)
         {
-          computed = true;
-          MainWorker::computeAvgSpeed();
+          // am Ende entfernen
+          MainWorker::speedList.pop_back();
         }
-        else
-        {
-          if (computed)
-            computed = false;
-        }
+        // am Anfang einfuegen
+        MainWorker::speedList.push_front(dtime_us);
       }
+    }
+    //
+    // zurückgelegte Wegstrecke berechnen
+    //
+    res = xQueueReceive(EspCtrl::pathLenQueue, &evt, pdMS_TO_TICKS(50));
+    if (res == pdTRUE)
+    {
+      //
+      // wenn in der queue ein ergebnis stand
+      //
+      //pcnt_get_counter_value(PCNT_UNIT_0, &count);
+      ESP_LOGI(tag, "Event 100 meters path done: unit%d; cnt: %d", evt.unit, evt.value);
     }
   }
 
   void MainWorker::buttonStati()
   {
     using namespace esp32s2;
+    using namespace Prefs;
 
-    if (AppStati::functionSwitchAction)
+    if (ButtonControl::controlDownSince() > 0ULL)
     {
-      //AppStati::functionSwitchDown = (level == 1) ? false : true;
-      //AppStati::lastFunctionSwitchAction = esp_timer_get_time();
+      //
+      // contol blinken
+      //
+    }
+    if (Preferences::getControlSwitchAction() != fClick::NONE)
+    {
+      if (Preferences::getControlSwitchAction() == fClick::SHORT)
+      {
+        ESP_LOGI(tag, "CONTROL Button short down");
+        // Crossmode hin und her schalten
+      }
+      else if (Preferences::getControlSwitchAction() == fClick::LONG)
+      {
+        ESP_LOGI(tag, "CONTROL Button long down");
+      }
+      Preferences::setControlSwitchAction(fClick::NONE);
     }
 
-    if (AppStati::rainSwitchAction)
+    if (Preferences::getRainSwitchAction() != fClick::NONE)
     {
       //
       // Was ist passiert? Level 0 bedeutet Knopf gedrückt
       //
-      // AppStati::rainSwitchDown = (level == 1) ? false : true;
-      // AppStati::lastRainSwitchAction = esp_timer_get_time();
+      ESP_LOGI(tag, "RAIN  Button down");
+      // TODO: was damit anstellen
+      Preferences::setRainSwitchAction(fClick::NONE);
     }
   }
 

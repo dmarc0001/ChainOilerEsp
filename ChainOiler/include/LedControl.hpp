@@ -4,7 +4,7 @@
 #include <driver/ledc.h>
 #include <esp_log.h>
 #include "ProjectDefaults.hpp"
-#include "AppStati.hpp"
+#include "AppPreferences.hpp"
 
 namespace esp32s2
 {

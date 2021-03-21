@@ -18,7 +18,6 @@
 #include <esp_attr.h>
 #include <esp_timer.h>
 #include <esp_log.h>
-#include "AppStati.hpp"
 
 namespace ChOiler
 {
@@ -42,8 +41,6 @@ namespace esp32s2
   private:
     static const char *tag;
     static esp_sleep_wakeup_cause_t wakeupCause;
-    static const uint8_t isr_control;
-    static const uint8_t isr_rain;
 
   protected:
     static void init();
@@ -62,7 +59,6 @@ namespace esp32s2
     static bool initADC();
     static void IRAM_ATTR tachoOilerCountISR(void *);
     static void IRAM_ATTR speedCountISR(void *);
-    static void IRAM_ATTR buttonIsr(void *);
   };
 
 } // namespace esp32s2
