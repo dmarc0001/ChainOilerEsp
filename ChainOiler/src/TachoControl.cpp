@@ -6,6 +6,10 @@
 
 namespace esp32s2
 {
+  /**
+   * @brief instanziere und initialisiere die statischen Variablen
+   * 
+   */
   xQueueHandle TachoControl::pathLenQueue = nullptr;                              //! handle fuer queue
   xQueueHandle TachoControl::speedQueue = nullptr;                                //! handle fuer queue
   const char *TachoControl::tag{"EspCtrl"};                                       //! tag fürs debug logging
@@ -18,18 +22,22 @@ namespace esp32s2
   {
     using namespace Prefs;
     //
-    ESP_LOGD(tag, "%s: init hardware...", __func__);
+    ESP_LOGI(tag, "init hardware...");
+    //
+    // Queue initialisieren
+    //
+    pathLenQueue = xQueueCreate(QUEUE_LEN_DISTANCE, sizeof(pcnt_evt_t));
+    speedQueue = xQueueCreate(QUEUE_LEN_TACHO, sizeof(deltaTimeTenMeters_us));
     //
     // warum geweckt/resettet
     //
     TachoControl::processStartupCause();
-
     //
     // Tacho initialisieren
     //
-    ESP_LOGD(tag, "%s: init GPIO...", __func__);
+    ESP_LOGD(tag, "init tacho input...");
     //
-    //  Tacho und Knopf (Knopf-GPIO_INTR_ANYEDGE)
+    //  Tacho  Eingang
     //
     gpio_config_t config_in = {.pin_bit_mask = BIT64(INPUT_TACHO),
                                .mode = GPIO_MODE_INPUT,
@@ -42,27 +50,10 @@ namespace esp32s2
     // verschoben in main
     // gpio_install_isr_service(0);
     //
-    // Handler für die beiden Ports
-    //
-    // gpio_isr_handler_add(INPUT_FUNCTION_SWITCH, EspCtrl::buttonIsr, (void *)&EspCtrl::isr_control);
-    // gpio_isr_handler_add(INPUT_RAIN_SWITCH_OPTIONAL, EspCtrl::buttonIsr, (void *)&EspCtrl::isr_rain);
-    //
-    // Interrupt für zwei PINS einschalten
-    //
-    // gpio_set_intr_type(INPUT_FUNCTION_SWITCH, GPIO_INTR_ANYEDGE);
-    // gpio_set_intr_type(INPUT_RAIN_SWITCH_OPTIONAL, GPIO_INTR_ANYEDGE);
-    //
     pcnt_unit_t unit0 = PCNT_UNIT_0;
     pcnt_unit_t unit1 = PCNT_UNIT_1;
+    ESP_LOGD(tag, "init pulse counter unit0, channel 0...");
     int16_t pulsesFor100Meters = Preferences::getPulsesFor100Meters();
-    int16_t pulsesFor10Meters = Preferences::getPulsesFor10Meters();
-    //
-    // Queue initialisieren
-    //
-    pathLenQueue = xQueueCreate(QUEUE_LEN_DISTANCE, sizeof(pcnt_evt_t));
-    ESP_LOGD(tag, "%s: init pulse counter unit0, channel 0...", __func__);
-    speedQueue = xQueueCreate(QUEUE_LEN_TACHO, sizeof(deltaTimeTenMeters_us));
-    ESP_LOGD(tag, "%s: init pulse counter unit1, channel 0...", __func__);
     //
     // Pulszähler Wegstrecke initialisieren
     //
@@ -82,7 +73,10 @@ namespace esp32s2
     // initialisieren der unit
     //
     ESP_ERROR_CHECK(pcnt_unit_config(&pcnt_config_w));
-    ESP_LOGD(tag, "%s: init pulse counter unit0, channel 0...done", __func__);
+    ESP_LOGD(tag, "init pulse counter unit0, channel 0...done");
+    //
+    ESP_LOGD(tag, "init pulse counter unit1, channel 0...");
+    int16_t pulsesFor10Meters = Preferences::getPulsesFor10Meters();
     //
     // Pulszähler Tacho initialisieren
     //
@@ -102,18 +96,17 @@ namespace esp32s2
     // initialisieren der unit
     //
     ESP_ERROR_CHECK(pcnt_unit_config(&pcnt_config_s));
-    ESP_LOGD(tag, "%s: init pulse counter unit1, channel 0...done", __func__);
+    ESP_LOGD(tag, "init pulse counter unit1, channel 0...done");
     //
     // Configure and enable the input filter
     // 1800 zyklen sind bei 80 mhz 22 us
     // also wird alles ignoriert was kürzer ist
     //
-    ESP_LOGD(tag, "%s: init unit0 pulse filter: filter value: %d, PPR: %.2f...", __func__, Preferences::getMinimalPulseLength(), Preferences::getPulsePerRound());
+    ESP_LOGD(tag, "init unit0 pulse filter: filter value: %d, PPR: %.2f...", Preferences::getMinimalPulseLength(), Preferences::getPulsePerRound());
     pcnt_set_filter_value(unit0, Preferences::getMinimalPulseLength());
-    //pcnt_set_filter_value(unit0, 1023);
     pcnt_filter_enable(unit0);
     //
-    ESP_LOGD(tag, "%s: init unbi1 pulse filter: filter value: %d, PPR: %.2f...", __func__, Preferences::getMinimalPulseLength(), Preferences::getPulsePerRound());
+    ESP_LOGD(tag, "init unbi1 pulse filter: filter value: %d, PPR: %.2f...", Preferences::getMinimalPulseLength(), Preferences::getPulsePerRound());
     pcnt_set_filter_value(unit1, Preferences::getMinimalPulseLength());
     pcnt_filter_enable(unit1);
     //
@@ -141,7 +134,6 @@ namespace esp32s2
     pcnt_isr_service_install(0);
     pcnt_isr_handler_add(unit0, TachoControl::tachoOilerCountISR, nullptr);
     pcnt_isr_handler_add(unit1, TachoControl::speedCountISR, nullptr);
-
     //
     // alles ist initialisiert, starte die Counter
     //
@@ -150,6 +142,10 @@ namespace esp32s2
     ESP_LOGD(tag, "%s: init pulse counter unit0/unit1...done", __func__);
   }
 
+  /**
+   * @brief stellt den Grund des Neustarts fest und leitet evtl Aktionen ein
+   * 
+   */
   void TachoControl::processStartupCause()
   {
     TachoControl::wakeupCause = esp_sleep_get_wakeup_cause();
@@ -193,7 +189,7 @@ namespace esp32s2
   }
 
   /**
-  * @brief Messe die gefahrene Entfernung
+  * @brief Benachrichtige bei gewünschter Entfernung (hier 100 Meter)
   * 
   */
   void IRAM_ATTR TachoControl::tachoOilerCountISR(void *)

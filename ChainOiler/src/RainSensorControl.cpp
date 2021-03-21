@@ -2,8 +2,16 @@
 
 namespace esp32s2
 {
+  /**
+   * @brief instanziere und initialisiere statische variable
+   * 
+   */
   const char *RainSensorControl::tag{"RainSensorControl"};
 
+  /**
+   * @brief initialisiere die Hardware für Regensensor
+   * 
+   */
   void RainSensorControl::init()
   {
     using namespace Prefs;
@@ -11,7 +19,7 @@ namespace esp32s2
     //
     // GPIO Konfigurieren
     //
-    ESP_LOGD(tag, "%s: init rain sensor...", __func__);
+    ESP_LOGI(tag, "init rain sensor...");
     //
     // Ausgabesignale Digital
     //
@@ -27,18 +35,18 @@ namespace esp32s2
     // Setzte Auflösung auf 13 Bit
     // TODO: 0.1 uF an ADC
     //
-    ESP_LOGD(tag, "%s: init ADC...", __func__);
+    ESP_LOGD(tag, "init ADC...");
     adc1_config_width(ADC_WIDTH_BIT_13);
     //
     // Dämpfung für Meßbereich einstellen
     //
     adc1_config_channel_atten(INPUT_ADC_RAIN_00, ADC_ATTEN_DB_11 /*ADC_ATTEN_DB_0*/);
     adc1_config_channel_atten(INPUT_ADC_RAIN_01, ADC_ATTEN_DB_11 /*ADC_ATTEN_DB_0*/);
-    ESP_LOGD(tag, "%s: init ...done", __func__);
+    ESP_LOGD(tag, "init ...done");
   }
 
   /**
-   * Regensensor wert zurück geben
+   * Regensensor Wert zurück geben
    */
   rain_value_t RainSensorControl::getRainValues()
   {

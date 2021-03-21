@@ -2,8 +2,12 @@
 
 namespace ChOiler
 {
-  const char *MainWorker::tag{"MainWorker"}; //! tag fürs debug logging
-  std::list<esp32s2::deltaTimeTenMeters_us> MainWorker::speedList(Prefs::SPEED_HISTORY_LEN);
+  /**
+   * @brief instanzieren und initialisieren der stsatischen Variablen
+   * 
+   */
+  const char *MainWorker::tag{"MainWorker"};                       //! tag fürs debug logging
+  std::list<esp32s2::deltaTimeTenMeters_us> MainWorker::speedList; //! erzeuge leere Liste
 
   /**
    * @brief initialisiere das Programm

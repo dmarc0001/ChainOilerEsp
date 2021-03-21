@@ -3,18 +3,26 @@
 
 namespace esp32s2
 {
-  const char *LedControl::tag{"LedControl"}; //! tag fürs debug logging
-  uint64_t LedControl::lastChanged{0ULL};
-  uint64_t LedControl::pumpLedSwitchedOn{false};
+  /**
+   * @brief instanzieren und initialisieren der statischen variablen
+   * 
+   */
+  const char *LedControl::tag{"LedControl"};           //! tag fürs debug logging
+  uint64_t LedControl::lastChanged{0ULL};              //! letzte Änderung
+  uint64_t LedControl::pumpLedSwitchedOn{false};       //! ist die Pumpen LED noch an?
   esp_timer_handle_t LedControl::timerHandle{nullptr}; //! timer handle
 
+  /**
+   * @brief initialisierung der Hardware für die LED
+   * 
+   */
   void LedControl::init()
   {
     using namespace Prefs;
     //
     // GPIO Konfigurieren
     //
-    ESP_LOGD(tag, "%s: init GPIO for LED...", __func__);
+    ESP_LOGI(tag, "init hardware for LED...");
     //
     // LED
     //
@@ -25,9 +33,13 @@ namespace esp32s2
                                 .intr_type = GPIO_INTR_DISABLE};
     gpio_config(&config_led);
     LedControl::startTimer();
-    ESP_LOGD(tag, "%s: init GPIO for LED...done", __func__);
+    ESP_LOGD(tag, "init hardware for LED...done");
   }
 
+  /**
+   * @brief eigene Timer routine für die Steuerung der LED
+   * 
+   */
   void LedControl::startTimer()
   {
     //
@@ -50,6 +62,10 @@ namespace esp32s2
     //
   }
 
+  /**
+   * @brief Alle LED ausschalten
+   * 
+   */
   void LedControl::allOff()
   {
     gpio_set_level(Prefs::LED_CONTROL, 0);
@@ -57,6 +73,10 @@ namespace esp32s2
     gpio_set_level(Prefs::LED_PUMP, 0);
   }
 
+  /**
+   * @brief blinken mit allen LED (z.B. beim Booten)
+   * 
+   */
   void LedControl::showAttention()
   {
     static bool attentionLEDIsOn = false;
@@ -80,14 +100,28 @@ namespace esp32s2
     }
   }
 
+  /**
+   * @brief schalte Regen LED an/aus
+   * 
+   * @param _set 
+   */
   void LedControl::setRainLED(bool _set)
   {
   }
 
+  /**
+   * @brief schalte Pumpen LED
+   * 
+   * @param _set 
+   */
   void LedControl::setPumpLED(bool _set)
   {
   }
 
+  /**
+   * @brief Callback für den Timer (100 ms)
+   * 
+   */
   void LedControl::timerCallback(void *)
   {
     using namespace Prefs;

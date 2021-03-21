@@ -1,19 +1,29 @@
 #include "ButtonControl.hpp"
+#include <esp_log.h>
 
 namespace esp32s2
 {
-  const uint8_t ButtonControl::isr_control{1}; //! Marker für die ISR
-  const uint8_t ButtonControl::isr_rain{2};    //! Marker für die ISR
-  volatile int ButtonControl::controlSwitchDown{false};
-  volatile uint64_t ButtonControl::lastControlSwitchAction{0ULL};
-  volatile int ButtonControl::rainSwitchDown{false};
-  volatile uint64_t ButtonControl::lastRainSwitchAction{0ULL};
-  const char *ButtonControl::tag{"ButtonControl"}; //! tag fürs debug logging
+  /**
+   * @brief statische Variablen instanzieren und initialisieren
+   * 
+   */
+  const gpio_num_t ButtonControl::isr_control{Prefs::INPUT_CONTROL_SWITCH};    //! Marker für die ISR
+  const gpio_num_t ButtonControl::isr_rain{Prefs::INPUT_RAIN_SWITCH_OPTIONAL}; //! Marker für die ISR
+  volatile int ButtonControl::controlSwitchDown{false};                        //! ist der Controll Taster gedrückt
+  volatile uint64_t ButtonControl::lastControlSwitchAction{0ULL};              //! wann war das letzte Control Tasten Ereignis
+  volatile int ButtonControl::rainSwitchDown{false};                           //! der Regentaster ist gedrückt
+  volatile uint64_t ButtonControl::lastRainSwitchAction{0ULL};                 //! wann war die letzte Regentaster Aktion
+  const char *ButtonControl::tag{"ButtonControl"};                             //! tag fürs debug logging
 
+  /**
+   * @brief initialisiere Hardware für die Schalter 
+   * 
+   */
   void ButtonControl::init()
   {
     using namespace Prefs;
 
+    ESP_LOGI(tag, "init button control hardware...");
     //
     //  Tacho und Knopf (Knopf-GPIO_INTR_ANYEDGE)
     //
@@ -28,13 +38,14 @@ namespace esp32s2
     //
     gpio_isr_handler_add(INPUT_CONTROL_SWITCH, ButtonControl::buttonIsr, (void *)&ButtonControl::isr_control);
     gpio_isr_handler_add(INPUT_RAIN_SWITCH_OPTIONAL, ButtonControl::buttonIsr, (void *)&ButtonControl::isr_rain);
-    //
-    // Interrupt für zwei PINS einschalten
-    //
-    // gpio_set_intr_type(INPUT_CONTROL_SWITCH, GPIO_INTR_ANYEDGE);
-    // gpio_set_intr_type(INPUT_RAIN_SWITCH_OPTIONAL, GPIO_INTR_ANYEDGE);
+    ESP_LOGD(tag, "init button control hardware...done");
   }
 
+  /**
+   * @brief wie lange ist der Control schalter seit SHORT schon gedrückt
+   * 
+   * @return uint64_t 
+   */
   uint64_t ButtonControl::controlDownSince()
   {
     //
@@ -51,17 +62,22 @@ namespace esp32s2
     return (0ULL);
   }
 
+  /**
+   * @brief ISR für Schalter Betätigungen
+   * 
+   * @param arg 
+   */
   void IRAM_ATTR ButtonControl::buttonIsr(void *arg)
   {
     using namespace Prefs;
 
-    uint8_t *_num = static_cast<uint8_t *>(arg);
+    gpio_num_t *_num = static_cast<gpio_num_t *>(arg);
     uint64_t now = esp_timer_get_time();
     int level;
 
     switch (*_num)
     {
-    case 1:
+    case Prefs::INPUT_CONTROL_SWITCH:
       level = gpio_get_level(Prefs::INPUT_CONTROL_SWITCH);
       //
       // Was ist passiert? Level 1 bedeutet Knopf gelöst
@@ -89,7 +105,7 @@ namespace esp32s2
       ButtonControl::lastControlSwitchAction = now;
       break;
 
-    case 2:
+    case Prefs::INPUT_RAIN_SWITCH_OPTIONAL:
       level = gpio_get_level(Prefs::INPUT_RAIN_SWITCH_OPTIONAL);
       //
       // Was ist passiert? Level 0 bedeutet Knopf gedrückt

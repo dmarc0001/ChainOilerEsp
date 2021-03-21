@@ -12,8 +12,8 @@ namespace esp32s2
   {
   private:
     static const char *tag;
-    static const uint8_t isr_control;                 //! Kennung für Control taster
-    static const uint8_t isr_rain;                    //! Kennung für Regentaster
+    static const gpio_num_t isr_control;              //! Kennung für Control taster
+    static const gpio_num_t isr_rain;                 //! Kennung für Regentaster
     static volatile int controlSwitchDown;            //! ist der Knopf gedrückt?
     static volatile uint64_t lastControlSwitchAction; //! wann war die letzte Änderung?
     static volatile int rainSwitchDown;               //! ist der Knopf gedrückt?
