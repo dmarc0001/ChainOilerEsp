@@ -5,13 +5,19 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "nvs.h"
+#include "AppTypes.hpp"
+
+namespace esp32s2
+{
+  class LedControl; //! forward deklaration für friend
+}
 
 namespace Prefs
 {
-
   class Preferences
   {
   private:
+    // statisch
     static const char *tag;                //! Kennzeichnung fürs debug
     static const char *serialStr;          //! Seriennummer
     static const std::string serialString; //! Seriennummer als string
@@ -27,8 +33,17 @@ namespace Prefs
     static float crossFactor;              //! Faktor für öl beim crossen
     static float speedProgression;         //! Mehr öl bei höherer Geschwindigkeit
     static int rainSensorThreshold;        //! Schwellwert des Regensensors
+  protected:
+    static opMode appOpMode;                    //! In welchem Zustand ist das Programm
+    static float currentSpeedMeterPerSec;       //! aktuele Geschwindigkeit
+    static float currentRouteLenPastOil;        //! Wegstrecke nach dem Ölen
+    static volatile uint64_t lastTachoPulse;    //! wann war der letzte Puls (deep sleep)
+    static volatile fClick controlSwitchAction; //! ist ein Ereignis?
+    static volatile fClick rainSwitchAction;    //! ist ein ereignis?
+    static volatile uint8_t pumpCycles;         //! Anzahl der Pumenstösse, setzten aktiviert die Pumpe
 
   public:
+    friend esp32s2::LedControl;                    //! ein Freund
     static const std::string &getVersion();        //! Versionsstring zurückgeben
     static void init();                            //! das (statische) Objekt initialisieren
     static void close();                           //! Objekt schließen
@@ -57,6 +72,17 @@ namespace Prefs
     static int16_t getPulsesFor10Meters();         //! impulse per 10 Meter, für Tacho
     static uint16_t getMinimalPulseLength();       //! die kleinste Pulslänge in meiner Konfiguration
     static uint32_t getCounterPulsesForInterval(); //! wie viele impuse zum erreichen der strecke
+    static opMode getAppMode();                    //! gib Operationsmode zurück
+    static void setAppMode(opMode);                //! setzte Opertationsmode
+    static fClick getRainSwitchAction();           //! war eine Aktion
+    static void setRainSwitchAction(fClick);       //! setzte Aktion
+    static fClick getControlSwitchAction();        //! war eine Control switch aktion
+    static void setControlSwitchAction(fClick);    //! setzte Control Switch Aktion
+    static void setCurrentSpeed(float);            //! setze aktuelle Geschwindigkeit
+    static float getCurrentSpeed();                //! erfrage aktuelle Geschwindigkeit
+    static void setRouteLenPastOil(float);         //! setze die Strecke nach dem Ölen
+    static void addRouteLenPastOil(float);         //! füge Strecke nach dem Ölen hinzu
+    static float getRouteLenPastOil();             //! gib die Strecke seit dem letzen Ölen zurück
 
   private:
     static int32_t getIntValue(const char *, int32_t);      //! lese einen 32 Bit INT wert aus dem Speicher

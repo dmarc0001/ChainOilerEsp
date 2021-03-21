@@ -14,8 +14,13 @@
 #include "driver/uart.h"
 #include "esp_log.h"
 #include "ProjectDefaults.hpp"
-#include "HardwareUtil.hpp"
 #include "AppPreferences.hpp"
+#include "AppTypes.hpp"
+#include "TachoControl.hpp"
+#include "LedControl.hpp"
+#include "ButtonControl.hpp"
+#include "PumpControl.hpp"
+#include "RainSensorControl.hpp"
 
 namespace ChOiler
 {
@@ -32,8 +37,11 @@ namespace ChOiler
   public:
     static void init();            //! initialisiert Prferenzen und Hardware
     static void run();             //! da geht es los
-    static void defaultLoop();     //! schleife in der der Controller läuft, normale Betriebsart
+    static void tachoCompute();    //! berechne Tacho Geschichten
+    static void buttonStati();     //! guck was die Buttons machen
     static void computeAvgSpeed(); //! berechne Durchschnitt für max 4 Sekunden
+  private:
+    void goDeepSleep(); //! schlaf schön
   };
 
 } // namespace ChOiler
