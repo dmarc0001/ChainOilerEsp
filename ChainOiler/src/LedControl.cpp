@@ -9,8 +9,10 @@ namespace esp32s2
    */
   const char *LedControl::tag{"LedControl"};           //! tag fürs debug logging
   uint64_t LedControl::lastChanged{0ULL};              //! letzte Änderung
-  uint64_t LedControl::pumpLedSwitchedOn{false};       //! ist die Pumpen LED noch an?
+  uint64_t LedControl::pumpLedSwitchOffTime{0ULL};     //! ist die Pumpen LED noch an?
+  uint64_t LedControl::nextControlLedFlash{0ULL};      //! das nächste mal Blitzen
   esp_timer_handle_t LedControl::timerHandle{nullptr}; //! timer handle
+  uint8_t LedControl::ledState{0};                     //! Status der LED
 
   /**
    * @brief initialisierung der Hardware für die LED
@@ -107,6 +109,16 @@ namespace esp32s2
    */
   void LedControl::setRainLED(bool _set)
   {
+    if (_set)
+    {
+      ledState |= Prefs::whichLed::WICH_LED_RAIN;
+      gpio_set_level(Prefs::LED_RAIN, 1);
+    }
+    else
+    {
+      ledState &= ~Prefs::whichLed::WICH_LED_RAIN;
+      gpio_set_level(Prefs::LED_RAIN, 0);
+    }
   }
 
   /**
@@ -116,6 +128,38 @@ namespace esp32s2
    */
   void LedControl::setPumpLED(bool _set)
   {
+    if (_set)
+    {
+      // wann soll das Leuchten aufhören?
+      LedControl::pumpLedSwitchOffTime = esp_timer_get_time() + Prefs::Preferences::getPumpLedTimeout();
+      ledState |= Prefs::whichLed::WICH_LED_PUMP;
+      gpio_set_level(Prefs::LED_PUMP, 1);
+    }
+    else
+    {
+      LedControl::pumpLedSwitchOffTime = 0ULL;
+      ledState &= ~Prefs::whichLed::WICH_LED_PUMP;
+      gpio_set_level(Prefs::LED_PUMP, 0);
+    }
+  }
+
+  /**
+   * @brief schalte control LED
+   * 
+   * @param _set 
+   */
+  void LedControl::setContolLed(bool _set)
+  {
+    if (_set)
+    {
+      ledState |= Prefs::whichLed::WICH_LED_CONTROL;
+      gpio_set_level(Prefs::LED_CONTROL, 1);
+    }
+    else
+    {
+      ledState &= ~Prefs::whichLed::WICH_LED_CONTROL;
+      gpio_set_level(Prefs::LED_CONTROL, 0);
+    }
   }
 
   /**
@@ -124,22 +168,57 @@ namespace esp32s2
    */
   void LedControl::timerCallback(void *)
   {
-    using namespace Prefs;
-    static volatile bool haveSwitchedOn = false;
 
-    if (haveSwitchedOn)
+    using namespace Prefs;
+
+    //
+    // pumpen LED Nachlauf beendet?
+    //
+    if (LedControl::pumpLedSwitchOffTime > 0ULL)
     {
-      haveSwitchedOn = false;
-      // Aus
-      gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 0);
-      // set LED ON
+      if (esp_timer_get_time() > LedControl::pumpLedSwitchOffTime)
+      {
+        LedControl::setPumpLED(false);
+      }
     }
-    else if (Preferences::pumpCycles > 0)
+    //
+    // je nach Zustand arbeiten
+    //
+    switch (Preferences::getAppMode())
     {
-      haveSwitchedOn = true;
-      --Preferences::pumpCycles;
-      // an
-      gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 1);
+    case opMode::NORMAL:
+      LedControl::normalMode();
+      break;
+    default:
+      break;
+    }
+  }
+
+  /**
+   * @brief Timer routine im mormalen Mode
+   * 
+   */
+  void LedControl::normalMode()
+  {
+    //
+    // das blitzen der control LED als Zeichen das es läuft
+    if (esp_timer_get_time() > LedControl::nextControlLedFlash)
+    {
+      // da muss was passieren
+      if (ledState & Prefs::whichLed::WICH_LED_CONTROL)
+      {
+        // ist on soll off
+        ESP_LOGD(tag, "Control LED off");
+        LedControl::setContolLed(0);
+        LedControl::nextControlLedFlash = esp_timer_get_time() + Prefs::BLINK_LED_CONTROL_NORMAL_OFF;
+      }
+      else
+      {
+        // ist off soll on
+        ESP_LOGD(tag, "Control LED on");
+        LedControl::setContolLed(1);
+        LedControl::nextControlLedFlash = esp_timer_get_time() + Prefs::BLINK_LED_CONTROL_NORMAL_ON;
+      }
     }
   }
 

@@ -39,7 +39,7 @@ namespace Prefs
   constexpr char THRESHOLD_RAIN_SENSOR_STR[] = "rain_threshold";   //! Regensensor Schwellwert
   constexpr uint32_t DEFAULT_THRESHOLD_RAIN_SENSOR = 512;          //! Schwellenwert für Regen TODO: Hysterese zum Abschalten
   constexpr char PUMP_LED_LITHGING_TIME_STR[] = "pump_led_time";   //! Zeit für die Aktivitätsanzeige
-  constexpr uint32_t DEFAULT_PUMP_LED_LITHGING_TIME = 300;         //! Leuchtzeit der Pumpen-LED
+  constexpr uint32_t DEFAULT_PUMP_LED_LITHGING_TIME = 300 * 1000;  //! Leuchtzeit der Pumpen-LED
   //
   // Ein-/Ausgänge GPIO, nicht konfigurierbar
   //

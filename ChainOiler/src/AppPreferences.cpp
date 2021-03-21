@@ -4,7 +4,7 @@
 
 namespace Prefs
 {
-  const char *Preferences::serialStr = "20210321-171652-build-0422";
+  const char *Preferences::serialStr = "20210321-184525-build-0431";
   const std::string Preferences::serialString = std::string(Preferences::serialStr);
   const char *Preferences::tag{"Preferences"};                                           //! tag fürs debug logging
   nvs_handle_t Preferences::nvs_handle{0};                                               //! handle für NVS
@@ -19,6 +19,7 @@ namespace Prefs
   float Preferences::crossFactor{DEFAULT_CROSS_OIL_INTERVAL_FACTOR};                     //! Streckenfaktor beim crossen
   float Preferences::speedProgression{DEFAULT_SPEED_PROGRESSION_FACTOR};                 //! Mehr öl bei höherer Geschwindigkeit
   int Preferences::rainSensorThreshold{static_cast<int>(DEFAULT_THRESHOLD_RAIN_SENSOR)}; //! Sensor Schwellwert
+  uint32_t Preferences::pumpLedTimeout{DEFAULT_PUMP_LED_LITHGING_TIME};                  //! wie lange leuchtet die LED nach
   volatile uint64_t Preferences::lastTachoPulse{0};                                      //! wann traten die letzten Tachoinformationen auf
   volatile fClick Preferences::controlSwitchAction{fClick::NONE};                        //! welche Aktion des buttons liegt an
   volatile fClick Preferences::rainSwitchAction{fClick::NONE};                           //! welche aktion des buttons liegt an
@@ -311,6 +312,27 @@ namespace Prefs
   }
 
   /**
+   * @brief schreibe timeout für pumpen LED in us
+   * 
+   * @param _tm 
+   */
+  void Preferences::setPumpLedTimeout(uint32_t _tm)
+  {
+    Preferences::pumpLedTimeout = _tm;
+    Preferences::setIntValue(PUMP_LED_LITHGING_TIME_STR, _tm);
+  }
+
+  /**
+   * @brief lese timeout für pumpen LED in us
+   * 
+   * @return uint32_t 
+   */
+  uint32_t Preferences::getPumpLedTimeout()
+  {
+    return Preferences::pumpLedTimeout;
+  }
+
+  /**
    * @brief erzeuge/schreibe Voreinstellungen
    * 
    */
@@ -341,6 +363,8 @@ namespace Prefs
     Preferences::setFloatValue(SPEED_PROGRESSION_FACTOR_STR, DEFAULT_SPEED_PROGRESSION_FACTOR);
     // sensor schwellwert
     Preferences::setIntValue(THRESHOLD_RAIN_SENSOR_STR, DEFAULT_THRESHOLD_RAIN_SENSOR);
+    // Pumpen nachleuchten
+    Preferences::setIntValue(PUMP_LED_LITHGING_TIME_STR, DEFAULT_PUMP_LED_LITHGING_TIME);
     //
     // Commit written values.
     // After setting any values, nvs_commit() must be called to ensure changes are written
@@ -374,6 +398,7 @@ namespace Prefs
     Preferences::crossFactor = Preferences::getFloatValue(CROSS_OIL_INTERVAL_FACTOR_STR, DEFAULT_CROSS_OIL_INTERVAL_FACTOR);
     Preferences::speedProgression = Preferences::getFloatValue(SPEED_PROGRESSION_FACTOR_STR, DEFAULT_SPEED_PROGRESSION_FACTOR);
     Preferences::rainSensorThreshold = static_cast<uint32_t>(Preferences::getIntValue(THRESHOLD_RAIN_SENSOR_STR, DEFAULT_THRESHOLD_RAIN_SENSOR));
+    Preferences::pumpLedTimeout = static_cast<uint32_t>(Preferences::getIntValue(PUMP_LED_LITHGING_TIME_STR, DEFAULT_PUMP_LED_LITHGING_TIME));
     ESP_LOGD(tag, "read all preferences...done");
   }
 
