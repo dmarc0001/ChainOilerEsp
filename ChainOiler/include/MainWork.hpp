@@ -16,9 +16,11 @@
 #include "ProjectDefaults.hpp"
 #include "AppPreferences.hpp"
 #include "AppTypes.hpp"
-#include "HardwareUtil.hpp"
+#include "TachoControl.hpp"
 #include "LedControl.hpp"
 #include "ButtonControl.hpp"
+#include "PumpControl.hpp"
+#include "RainSensorControl.hpp"
 
 namespace ChOiler
 {
@@ -38,6 +40,8 @@ namespace ChOiler
     static void tachoCompute();    //! berechne Tacho Geschichten
     static void buttonStati();     //! guck was die Buttons machen
     static void computeAvgSpeed(); //! berechne Durchschnitt für max 4 Sekunden
+  private:
+    void goDeepSleep(); //! schlaf schön
   };
 
 } // namespace ChOiler

@@ -5,6 +5,10 @@ namespace ChOiler
   const char *MainWorker::tag{"MainWorker"}; //! tag fürs debug logging
   std::list<esp32s2::deltaTimeTenMeters_us> MainWorker::speedList(Prefs::SPEED_HISTORY_LEN);
 
+  /**
+   * @brief initialisiere das Programm
+   * 
+   */
   void MainWorker::init()
   {
     using namespace Prefs;
@@ -20,12 +24,18 @@ namespace ChOiler
     // initialisiere die Hardware
     //
     gpio_install_isr_service(0); // gloabal einmalig für GPIO
-    esp32s2::EspCtrl::init();
+    esp32s2::TachoControl::init();
     esp32s2::ButtonControl::init();
     esp32s2::LedControl::init();
+    esp32s2::PumpControl::init();
+    esp32s2::RainSensorControl::init();
     ESP_LOGD(tag, "init done.");
   }
 
+  /**
+   * @brief Hauptschleife des Programmes
+   * 
+   */
   void MainWorker::run()
   {
     using namespace Prefs;
@@ -87,6 +97,10 @@ namespace ChOiler
     }
   }
 
+  /**
+   * @brief berechne Durchschnittsgeschwindigkeit der letzten Sekunden
+   * 
+   */
   void MainWorker::tachoCompute()
   {
     using namespace esp32s2;
@@ -100,7 +114,7 @@ namespace ChOiler
     // vector wie queue benutzern, aber ich kann std::queue nicht nehmen
     // da ich wahlfrei zugriff haben will
     //
-    res = xQueueReceive(EspCtrl::speedQueue, &dtime_us, pdMS_TO_TICKS(15));
+    res = xQueueReceive(TachoControl::speedQueue, &dtime_us, pdMS_TO_TICKS(15));
     {
       if (res == pdTRUE)
       {
@@ -116,17 +130,22 @@ namespace ChOiler
     //
     // zurückgelegte Wegstrecke berechnen
     //
-    res = xQueueReceive(EspCtrl::pathLenQueue, &evt, pdMS_TO_TICKS(50));
+    res = xQueueReceive(TachoControl::pathLenQueue, &evt, pdMS_TO_TICKS(50));
     if (res == pdTRUE)
     {
       //
       // wenn in der queue ein ergebnis stand
       //
       //pcnt_get_counter_value(PCNT_UNIT_0, &count);
-      ESP_LOGI(tag, "Event 100 meters path done: unit%d; cnt: %d", evt.unit, evt.value);
+      ESP_LOGI(tag, "Event %d meters path done: unit%d; cnt: %d", evt.meters, evt.unit, evt.value);
+      Prefs::Preferences::addRouteLenPastOil(evt.meters);
     }
   }
 
+  /**
+   * @brief prüfe ob sich bei den tasten etwas getan hat
+   * 
+   */
   void MainWorker::buttonStati()
   {
     using namespace esp32s2;
@@ -163,6 +182,10 @@ namespace ChOiler
     }
   }
 
+  /**
+   * @brief Berechne Durchschnittsgeschwindigkeit der letzten Prefs::HISTORY_MAX_TIME_MS Microsekunden
+   * 
+   */
   void MainWorker::computeAvgSpeed()
   {
     //
@@ -235,8 +258,34 @@ namespace ChOiler
       // distance durch zeit...
       ESP_LOGD(tag, "distance: %3.3f m time: %3.6f sec", distance_sum, deltaTimeSum_sec);
       averageSpeed = distance_sum / deltaTimeSum_sec;
+      Prefs::Preferences::setCurrentSpeed(averageSpeed);
     }
     ESP_LOGD(tag, "computed average speed: %03.2f m/s == %03.2f km/h, computed: %03d history entrys...", averageSpeed, averageSpeed * 3.6, computedCount);
+  }
+
+  /**
+   * gehe in den Tiefen Schlaf
+   */
+  void MainWorker::goDeepSleep()
+  {
+    //
+    // Tachoimpuls soll wechen
+    //
+    esp_sleep_enable_ext0_wakeup(Prefs::INPUT_TACHO, 1); // 1 == HIGH
+    ESP_LOGD(tag, "%s: controller is going to deep sleep...", __func__);
+    printf("deep sleep...");
+    Prefs::Preferences::close();
+    for (int i = 5; i > 0; --i)
+    {
+      ESP_LOGD(tag, "%s: sleep in %02d secounds...", __func__, i);
+      vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+    esp32s2::LedControl::allOff();
+    printf("..Good night.\n");
+    //
+    // Wiederbelebung erst durch Tachoimpuls
+    //
+    esp_deep_sleep_start();
   }
 
 } // namespace ChOiler

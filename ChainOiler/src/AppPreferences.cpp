@@ -4,7 +4,7 @@
 
 namespace Prefs
 {
-  const char *Preferences::serialStr = "20210321-145736-build-0405";
+  const char *Preferences::serialStr = "20210321-155648-build-0412";
   const std::string Preferences::serialString = std::string(Preferences::serialStr);
   const char *Preferences::tag{"Preferences"};                                           //! tag fürs debug logging
   nvs_handle_t Preferences::nvs_handle{0};                                               //! handle für NVS
@@ -24,6 +24,8 @@ namespace Prefs
   volatile fClick Preferences::rainSwitchAction{fClick::NONE};                           //! welche aktion des buttons liegt an
   volatile uint8_t Preferences::pumpCycles{0};                                           //! wie viele pumpenzyklen sollen erfolgen(setzten startet pumpe)
   opMode Preferences::appOpMode{opMode::AWAKE};                                          //! In welchem Zustand ist das Programm
+  float Preferences::currentSpeedMeterPerSec{0.0F};                                      //! aktuelle Geschwindigkeit
+  float Preferences::currentRouteLenPastOil{0.0F};                                       //! Wegstrecke nach dem Ölen
 
   const std::string &Preferences::getVersion()
   {
@@ -342,6 +344,31 @@ namespace Prefs
   void Preferences::setControlSwitchAction(fClick _stat)
   {
     Preferences::controlSwitchAction = _stat;
+  }
+
+  void Preferences::setCurrentSpeed(float _spd)
+  {
+    Preferences::currentSpeedMeterPerSec = _spd;
+  }
+
+  float Preferences::getCurrentSpeed()
+  {
+    return Preferences::currentSpeedMeterPerSec;
+  }
+
+  void Preferences::setRouteLenPastOil(float _routeLen)
+  {
+    Preferences::currentRouteLenPastOil = _routeLen;
+  }
+
+  void Preferences::addRouteLenPastOil(float _routeLen)
+  {
+    Preferences::currentRouteLenPastOil += _routeLen;
+  }
+
+  float Preferences::getRouteLenPastOil()
+  {
+    return Preferences::currentRouteLenPastOil;
   }
 
   //###########################################################################

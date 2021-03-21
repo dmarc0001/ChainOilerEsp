@@ -12,7 +12,6 @@
 #include <driver/rtc_io.h>
 #include <driver/uart.h>
 #include <driver/pcnt.h>
-#include <driver/ledc.h>
 #include <driver/adc.h>
 #include <esp_sleep.h>
 #include <esp_attr.h>
@@ -26,17 +25,17 @@ namespace ChOiler
 
 namespace esp32s2
 {
-  using rain_value_t = std::pair<int, int>;
   using pcnt_evt_t = struct
   {
     // pulse counter queue structur
     pcnt_unit_t unit;         //! the PCNT unit that originated an interrupt
     pcnt_evt_type_t evt_type; //! INT type
     int16_t value;            //! value
+    uint16_t meters;          //! anzahl Meter
   };
   using deltaTimeTenMeters_us = uint64_t; //! zeitstempel für 10 Meter
 
-  class EspCtrl
+  class TachoControl
   {
   private:
     static const char *tag;
@@ -49,14 +48,10 @@ namespace esp32s2
 
   public:
     friend class ChOiler::MainWorker;
-    static rain_value_t getRainValues();
     static esp_sleep_wakeup_cause_t getWakeupCause() { return wakeupCause; };
-    static void goDeepSleep();
 
   private:
-    static bool initGPIOPorts();
-    static bool initTachoPulseCounters();
-    static bool initADC();
+    static void processStartupCause();
     static void IRAM_ATTR tachoOilerCountISR(void *);
     static void IRAM_ATTR speedCountISR(void *);
   };

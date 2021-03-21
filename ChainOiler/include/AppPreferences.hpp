@@ -35,6 +35,8 @@ namespace Prefs
     static int rainSensorThreshold;        //! Schwellwert des Regensensors
   protected:
     static opMode appOpMode;                    //! In welchem Zustand ist das Programm
+    static float currentSpeedMeterPerSec;       //! aktuele Geschwindigkeit
+    static float currentRouteLenPastOil;        //! Wegstrecke nach dem Ölen
     static volatile uint64_t lastTachoPulse;    //! wann war der letzte Puls (deep sleep)
     static volatile fClick controlSwitchAction; //! ist ein Ereignis?
     static volatile fClick rainSwitchAction;    //! ist ein ereignis?
@@ -76,6 +78,11 @@ namespace Prefs
     static void setRainSwitchAction(fClick);       //! setzte Aktion
     static fClick getControlSwitchAction();        //! war eine Control switch aktion
     static void setControlSwitchAction(fClick);    //! setzte Control Switch Aktion
+    static void setCurrentSpeed(float);            //! setze aktuelle Geschwindigkeit
+    static float getCurrentSpeed();                //! erfrage aktuelle Geschwindigkeit
+    static void setRouteLenPastOil(float);         //! setze die Strecke nach dem Ölen
+    static void addRouteLenPastOil(float);         //! füge Strecke nach dem Ölen hinzu
+    static float getRouteLenPastOil();             //! gib die Strecke seit dem letzen Ölen zurück
 
   private:
     static int32_t getIntValue(const char *, int32_t);      //! lese einen 32 Bit INT wert aus dem Speicher
