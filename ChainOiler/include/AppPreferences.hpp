@@ -34,6 +34,7 @@ namespace Prefs
     static float speedProgression;         //! Mehr öl bei höherer Geschwindigkeit
     static int rainSensorThreshold;        //! Schwellwert des Regensensors
     static uint32_t pumpLedTimeout;        //! wiel lange leuchtet die LED nach?
+    static bool isAttentionFlag;           //! ankündigung/Achtung Flag
   protected:
     static opMode appOpMode;                    //! In welchem Zustand ist das Programm
     static float currentSpeedMeterPerSec;       //! aktuele Geschwindigkeit
@@ -86,6 +87,8 @@ namespace Prefs
     static void setRouteLenPastOil(float);         //! setze die Strecke nach dem Ölen
     static void addRouteLenPastOil(float);         //! füge Strecke nach dem Ölen hinzu
     static float getRouteLenPastOil();             //! gib die Strecke seit dem letzen Ölen zurück
+    static void setAttentionFlag(bool);            //! setzte das Achtung Flag
+    static bool getAttentionFlag();                //! lese das Achtung Flag
 
   private:
     static int32_t getIntValue(const char *, int32_t);      //! lese einen 32 Bit INT wert aus dem Speicher

@@ -158,20 +158,42 @@ namespace ChOiler
 
     if (ButtonControl::controlDownSince() > 0ULL)
     {
-      //
-      // contol blinken
-      //
+      if (!Preferences::getAttentionFlag())
+      {
+        Preferences::setAttentionFlag(true);
+      }
     }
+    else if (Preferences::getAttentionFlag())
+    {
+      Preferences::setAttentionFlag(false);
+    }
+    //
     if (Preferences::getControlSwitchAction() != fClick::NONE)
     {
       if (Preferences::getControlSwitchAction() == fClick::SHORT)
       {
-        ESP_LOGI(tag, "CONTROL Button short down");
+        ESP_LOGD(tag, "CONTROL Button short down");
+        //
+        // im CROSS mode geht nur zu AP oder Normal Mode
+        // REGEN ist bei CROSS deaktiviert
+        //
+        if (Preferences::getAppMode() == opMode::CROSS)
+        {
+          ESP_LOGD(tag, "set NORMAL mode");
+          Preferences::setAppMode(opMode::NORMAL);
+        }
+        else
+        {
+          ESP_LOGD(tag, "set CROSS mode");
+          Preferences::setAppMode(opMode::CROSS);
+        }
         // Crossmode hin und her schalten
       }
       else if (Preferences::getControlSwitchAction() == fClick::LONG)
       {
         ESP_LOGI(tag, "CONTROL Button long down");
+        ESP_LOGD(tag, "set ACCESS POINT mode");
+        Preferences::setAppMode(opMode::CROSS);
       }
       Preferences::setControlSwitchAction(fClick::NONE);
     }
@@ -181,7 +203,16 @@ namespace ChOiler
       //
       // Was ist passiert? Level 0 bedeutet Knopf gedrückt
       //
-      ESP_LOGI(tag, "RAIN  Button down");
+      if (Preferences::getAppMode() == opMode::NORMAL)
+      {
+        ESP_LOGD(tag, "set RAIN mode");
+        Preferences::setAppMode(opMode::RAIN);
+      }
+      else if (Preferences::getAppMode() == opMode::RAIN)
+      {
+        ESP_LOGD(tag, "set NORMAL mode from RAIN");
+        Preferences::setAppMode(opMode::NORMAL);
+      }
       // TODO: was damit anstellen
       Preferences::setRainSwitchAction(fClick::NONE);
     }

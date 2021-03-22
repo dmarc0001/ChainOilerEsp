@@ -54,7 +54,7 @@ namespace esp32s2
     //
     if (controlSwitchDown == 0)
     {
-      if (esp_timer_get_time() > (ButtonControl::lastControlSwitchAction + Prefs::DEBOUNCE_TIME_US))
+      if (esp_timer_get_time() > (ButtonControl::lastControlSwitchAction + Prefs::LONG_CLICK_TIME_US))
       {
         return ButtonControl::lastControlSwitchAction;
       }

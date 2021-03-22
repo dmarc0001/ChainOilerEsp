@@ -22,7 +22,7 @@ namespace Prefs
     LONG
   };
 
-  //! Betriebsart des Ölers (normal, regen, cross, accesspoint, test)
+  //! Betriebsart des Ölers (aufwecken,normal,normal mit Achtung,regen, cross, accesspoint, test)
   enum opMode : uint8_t
   {
     AWAKE,

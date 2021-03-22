@@ -4,7 +4,7 @@
 
 namespace Prefs
 {
-  const char *Preferences::serialStr = "20210321-184525-build-0431";
+  const char *Preferences::serialStr = "20210322-105655-build-0445";
   const std::string Preferences::serialString = std::string(Preferences::serialStr);
   const char *Preferences::tag{"Preferences"};                                           //! tag fürs debug logging
   nvs_handle_t Preferences::nvs_handle{0};                                               //! handle für NVS
@@ -27,6 +27,7 @@ namespace Prefs
   opMode Preferences::appOpMode{opMode::AWAKE};                                          //! In welchem Zustand ist das Programm
   float Preferences::currentSpeedMeterPerSec{0.0F};                                      //! aktuelle Geschwindigkeit
   float Preferences::currentRouteLenPastOil{0.0F};                                       //! Wegstrecke nach dem Ölen
+  bool Preferences::isAttentionFlag{false};                                              //! Flag für Ankündigung/Achtung (soll blinken auslösen)
 
   /**
    * @brief gib version als string zurück
@@ -575,6 +576,27 @@ namespace Prefs
   float Preferences::getRouteLenPastOil()
   {
     return Preferences::currentRouteLenPastOil;
+  }
+
+  /**
+   * @brief setzte das Achtung-Flag
+   * 
+   * @param _flag 
+   */
+  void Preferences::setAttentionFlag(bool _flag)
+  {
+    Preferences::isAttentionFlag = _flag;
+  }
+
+  /**
+   * @brief lese das achtung flag
+   * 
+   * @return true 
+   * @return false 
+   */
+  bool Preferences::getAttentionFlag()
+  {
+    return Preferences::isAttentionFlag;
   }
 
   //###########################################################################

@@ -12,7 +12,7 @@ namespace esp32s2
   uint64_t LedControl::pumpLedSwitchOffTime{0ULL};     //! ist die Pumpen LED noch an?
   uint64_t LedControl::nextControlLedFlash{0ULL};      //! das nächste mal Blitzen
   esp_timer_handle_t LedControl::timerHandle{nullptr}; //! timer handle
-  uint8_t LedControl::ledState{0};                     //! Status der LED
+  uint8_t LedControl::ledStateField{0};                //! Status der LED
 
   /**
    * @brief initialisierung der Hardware für die LED
@@ -111,12 +111,12 @@ namespace esp32s2
   {
     if (_set)
     {
-      ledState |= Prefs::whichLed::WICH_LED_RAIN;
+      ledStateField |= Prefs::whichLed::WICH_LED_RAIN;
       gpio_set_level(Prefs::LED_RAIN, 1);
     }
     else
     {
-      ledState &= ~Prefs::whichLed::WICH_LED_RAIN;
+      ledStateField &= ~Prefs::whichLed::WICH_LED_RAIN;
       gpio_set_level(Prefs::LED_RAIN, 0);
     }
   }
@@ -132,13 +132,13 @@ namespace esp32s2
     {
       // wann soll das Leuchten aufhören?
       LedControl::pumpLedSwitchOffTime = esp_timer_get_time() + Prefs::Preferences::getPumpLedTimeout();
-      ledState |= Prefs::whichLed::WICH_LED_PUMP;
+      ledStateField |= Prefs::whichLed::WICH_LED_PUMP;
       gpio_set_level(Prefs::LED_PUMP, 1);
     }
     else
     {
       LedControl::pumpLedSwitchOffTime = 0ULL;
-      ledState &= ~Prefs::whichLed::WICH_LED_PUMP;
+      ledStateField &= ~Prefs::whichLed::WICH_LED_PUMP;
       gpio_set_level(Prefs::LED_PUMP, 0);
     }
   }
@@ -148,16 +148,16 @@ namespace esp32s2
    * 
    * @param _set 
    */
-  void LedControl::setContolLed(bool _set)
+  void LedControl::setContolLED(bool _set)
   {
     if (_set)
     {
-      ledState |= Prefs::whichLed::WICH_LED_CONTROL;
+      ledStateField |= Prefs::whichLed::WICH_LED_CONTROL;
       gpio_set_level(Prefs::LED_CONTROL, 1);
     }
     else
     {
-      ledState &= ~Prefs::whichLed::WICH_LED_CONTROL;
+      ledStateField &= ~Prefs::whichLed::WICH_LED_CONTROL;
       gpio_set_level(Prefs::LED_CONTROL, 0);
     }
   }
@@ -168,9 +168,7 @@ namespace esp32s2
    */
   void LedControl::timerCallback(void *)
   {
-
     using namespace Prefs;
-
     //
     // pumpen LED Nachlauf beendet?
     //
@@ -187,7 +185,19 @@ namespace esp32s2
     switch (Preferences::getAppMode())
     {
     case opMode::NORMAL:
-      LedControl::normalMode();
+      LedControl::processControlLEDFlash(opMode::NORMAL);
+      LedControl::processLEDNormalMode();
+      break;
+    case opMode::CROSS:
+      LedControl::processControlLEDFlash(opMode::CROSS);
+      LedControl::processLEDCrossMode();
+      break;
+    case opMode::RAIN:
+      LedControl::processControlLEDFlash(opMode::CROSS);
+      LedControl::processLEDRainMode();
+      break;
+    case opMode::APMODE:
+      LedControl::processLEDApMode();
       break;
     default:
       break;
@@ -198,26 +208,123 @@ namespace esp32s2
    * @brief Timer routine im mormalen Mode
    * 
    */
-  void LedControl::normalMode()
+  void LedControl::processLEDNormalMode()
   {
     //
-    // das blitzen der control LED als Zeichen das es läuft
+    // control led durch blinken gesetzt
+    // regen hier AUS
+    //
+    if (ledStateField & Prefs::whichLed::WICH_LED_RAIN)
+    {
+      LedControl::setRainLED(0);
+    }
+  }
+
+  /**
+   * @brief zyklisch alle 100 ms in CROSS Mode
+   * 
+   */
+  void LedControl::processLEDCrossMode()
+  {
+    //
+    // control led durch blinken gesetzt
+    // regen hier aus
+    //
+    if (ledStateField & Prefs::whichLed::WICH_LED_RAIN)
+    {
+      LedControl::setRainLED(0);
+    }
+  }
+
+  /**
+   * @brief zyklisch alle 100 ms in RAIN Mode
+   * 
+   */
+  void LedControl::processLEDRainMode()
+  {
+    //
+    // control led durch blinken gesetzt
+    // regen LED hier AN
+    //
+    if (!(ledStateField & Prefs::whichLed::WICH_LED_RAIN))
+    {
+      LedControl::setRainLED(1);
+    }
+  }
+
+  /**
+   * @brief zyklisch alle 100 ms in AccesPoint Mode
+   * 
+   */
+  void LedControl::processLEDApMode()
+  {
+    using namespace Prefs;
+    //
+    // das blitzen der control und Regen LED im wechsel als Zeichen das es läuft
+    //
     if (esp_timer_get_time() > LedControl::nextControlLedFlash)
     {
       // da muss was passieren
-      if (ledState & Prefs::whichLed::WICH_LED_CONTROL)
+      if (ledStateField & Prefs::whichLed::WICH_LED_CONTROL)
       {
         // ist on soll off
-        ESP_LOGD(tag, "Control LED off");
-        LedControl::setContolLed(0);
-        LedControl::nextControlLedFlash = esp_timer_get_time() + Prefs::BLINK_LED_CONTROL_NORMAL_OFF;
+        // ESP_LOGD(tag, "Control LED off, Rain LED on");
+        LedControl::setContolLED(0);
+        LedControl::setRainLED(1);
+        LedControl::nextControlLedFlash = esp_timer_get_time() + Prefs::BLINK_LED_CONTROL_AP_OFF;
       }
       else
       {
         // ist off soll on
-        ESP_LOGD(tag, "Control LED on");
-        LedControl::setContolLed(1);
-        LedControl::nextControlLedFlash = esp_timer_get_time() + Prefs::BLINK_LED_CONTROL_NORMAL_ON;
+        // ESP_LOGD(tag, "Control LED on, Rain LED of");
+        LedControl::setContolLED(1);
+        LedControl::setRainLED(0);
+        LedControl::nextControlLedFlash = esp_timer_get_time() + Prefs::BLINK_LED_CONTROL_AP_ON;
+      }
+    }
+  }
+
+  /**
+   * @brief zyklisch alle 100 ms zum blinken der Controll LED in normal und crossmode
+   * 
+   * @param _mode 
+   */
+  void LedControl::processControlLEDFlash(Prefs::opMode _mode)
+  {
+    using namespace Prefs;
+    //
+    // das blitzen der control LED als Zeichen das es läuft
+    //
+    if (esp_timer_get_time() > LedControl::nextControlLedFlash)
+    {
+      // da muss was passieren
+      if (ledStateField & Prefs::whichLed::WICH_LED_CONTROL)
+      {
+        // ist on soll off
+        // ESP_LOGD(tag, "Control LED off");
+        LedControl::setContolLED(0);
+        if (Prefs::Preferences::getAttentionFlag())
+        {
+          LedControl::nextControlLedFlash = esp_timer_get_time() + Prefs::BLINK_LED_ATTENTION_OFF;
+        }
+        else if (_mode == opMode::NORMAL || _mode == opMode::RAIN)
+          LedControl::nextControlLedFlash = esp_timer_get_time() + Prefs::BLINK_LED_CONTROL_NORMAL_OFF;
+        else
+          LedControl::nextControlLedFlash = esp_timer_get_time() + Prefs::BLINK_LED_CONTROL_NORMAL_ON;
+      }
+      else
+      {
+        // ist off soll on
+        // ESP_LOGD(tag, "Control LED on");
+        LedControl::setContolLED(1);
+        if (Prefs::Preferences::getAttentionFlag())
+        {
+          LedControl::nextControlLedFlash = esp_timer_get_time() + Prefs::BLINK_LED_ATTENTION_ON;
+        }
+        else if (_mode == opMode::NORMAL || _mode == opMode::RAIN)
+          LedControl::nextControlLedFlash = esp_timer_get_time() + Prefs::BLINK_LED_CONTROL_NORMAL_ON;
+        else
+          LedControl::nextControlLedFlash = esp_timer_get_time() + Prefs::BLINK_LED_CONTROL_NORMAL_OFF;
       }
     }
   }
