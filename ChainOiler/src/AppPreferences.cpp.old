@@ -4,7 +4,7 @@
 
 namespace Prefs
 {
-  const char *Preferences::serialStr = "20210321-171541-build-0421";
+  const char *Preferences::serialStr = "20210322-104838-build-0444";
   const std::string Preferences::serialString = std::string(Preferences::serialStr);
   const char *Preferences::tag{"Preferences"};                                           //! tag fürs debug logging
   nvs_handle_t Preferences::nvs_handle{0};                                               //! handle für NVS
@@ -19,6 +19,7 @@ namespace Prefs
   float Preferences::crossFactor{DEFAULT_CROSS_OIL_INTERVAL_FACTOR};                     //! Streckenfaktor beim crossen
   float Preferences::speedProgression{DEFAULT_SPEED_PROGRESSION_FACTOR};                 //! Mehr öl bei höherer Geschwindigkeit
   int Preferences::rainSensorThreshold{static_cast<int>(DEFAULT_THRESHOLD_RAIN_SENSOR)}; //! Sensor Schwellwert
+  uint32_t Preferences::pumpLedTimeout{DEFAULT_PUMP_LED_LITHGING_TIME};                  //! wie lange leuchtet die LED nach
   volatile uint64_t Preferences::lastTachoPulse{0};                                      //! wann traten die letzten Tachoinformationen auf
   volatile fClick Preferences::controlSwitchAction{fClick::NONE};                        //! welche Aktion des buttons liegt an
   volatile fClick Preferences::rainSwitchAction{fClick::NONE};                           //! welche aktion des buttons liegt an
@@ -26,6 +27,7 @@ namespace Prefs
   opMode Preferences::appOpMode{opMode::AWAKE};                                          //! In welchem Zustand ist das Programm
   float Preferences::currentSpeedMeterPerSec{0.0F};                                      //! aktuelle Geschwindigkeit
   float Preferences::currentRouteLenPastOil{0.0F};                                       //! Wegstrecke nach dem Ölen
+  bool Preferences::isAttentionFlag{false};                                              //! Flag für Ankündigung/Achtung (soll blinken auslösen)
 
   /**
    * @brief gib version als string zurück
@@ -311,6 +313,27 @@ namespace Prefs
   }
 
   /**
+   * @brief schreibe timeout für pumpen LED in us
+   * 
+   * @param _tm 
+   */
+  void Preferences::setPumpLedTimeout(uint32_t _tm)
+  {
+    Preferences::pumpLedTimeout = _tm;
+    Preferences::setIntValue(PUMP_LED_LITHGING_TIME_STR, _tm);
+  }
+
+  /**
+   * @brief lese timeout für pumpen LED in us
+   * 
+   * @return uint32_t 
+   */
+  uint32_t Preferences::getPumpLedTimeout()
+  {
+    return Preferences::pumpLedTimeout;
+  }
+
+  /**
    * @brief erzeuge/schreibe Voreinstellungen
    * 
    */
@@ -320,7 +343,7 @@ namespace Prefs
     //
     // debuggen
     //
-    ESP_LOGD(tag, "%s: make default propertys...", __func__);
+    ESP_LOGD(tag, "make default propertys...");
     // Version
     Preferences::setIntValue(VERSION_STR, currentPrefsVersion);
     // SSID
@@ -341,17 +364,19 @@ namespace Prefs
     Preferences::setFloatValue(SPEED_PROGRESSION_FACTOR_STR, DEFAULT_SPEED_PROGRESSION_FACTOR);
     // sensor schwellwert
     Preferences::setIntValue(THRESHOLD_RAIN_SENSOR_STR, DEFAULT_THRESHOLD_RAIN_SENSOR);
+    // Pumpen nachleuchten
+    Preferences::setIntValue(PUMP_LED_LITHGING_TIME_STR, DEFAULT_PUMP_LED_LITHGING_TIME);
     //
     // Commit written values.
     // After setting any values, nvs_commit() must be called to ensure changes are written
     // to flash storage. Implementations may write to storage at other times,
     // but this is not guaranteed.
     //
-    ESP_LOGD(tag, "%s: make default propertys...done", __func__);
-    ESP_LOGD(tag, "%s: commit updates in NVS...", __func__);
+    ESP_LOGD(tag, "make default propertys...done");
+    ESP_LOGD(tag, "commit updates in NVS...");
     err = nvs_commit(Preferences::nvs_handle);
     ESP_ERROR_CHECK(err);
-    ESP_LOGD(tag, "%s: commit updates in NVS...done", __func__);
+    ESP_LOGD(tag, "commit updates in NVS...done");
   }
 
   /**
@@ -363,7 +388,7 @@ namespace Prefs
     //
     // alle Einstellugnen einlesen
     //
-    ESP_LOGD(tag, "%s: read all preferences...", __func__);
+    ESP_LOGD(tag, "read all preferences...");
     Preferences::version = Preferences::getIntValue(VERSION_STR, -1);
     Preferences::ssid = Preferences::getStringValue(SSID_STR);
     Preferences::ap_passwd = Preferences::getStringValue(AP_PASSWORD_STR);
@@ -374,7 +399,8 @@ namespace Prefs
     Preferences::crossFactor = Preferences::getFloatValue(CROSS_OIL_INTERVAL_FACTOR_STR, DEFAULT_CROSS_OIL_INTERVAL_FACTOR);
     Preferences::speedProgression = Preferences::getFloatValue(SPEED_PROGRESSION_FACTOR_STR, DEFAULT_SPEED_PROGRESSION_FACTOR);
     Preferences::rainSensorThreshold = static_cast<uint32_t>(Preferences::getIntValue(THRESHOLD_RAIN_SENSOR_STR, DEFAULT_THRESHOLD_RAIN_SENSOR));
-    ESP_LOGD(tag, "%s: read all preferences...done", __func__);
+    Preferences::pumpLedTimeout = static_cast<uint32_t>(Preferences::getIntValue(PUMP_LED_LITHGING_TIME_STR, DEFAULT_PUMP_LED_LITHGING_TIME));
+    ESP_LOGD(tag, "read all preferences...done");
   }
 
   /**
@@ -386,7 +412,7 @@ namespace Prefs
   {
     float val100Meters = (100.0 / circumFerence) * pulsePerRound;
     int16_t count = static_cast<int16_t>(std::ceil(val100Meters));
-    ESP_LOGI(tag, "%s: ==== pulses for 100 meters: <%06d>", __func__, count);
+    ESP_LOGI(tag, "==== pulses for 100 meters: <%06d>", count);
     return count;
   }
 
@@ -399,7 +425,7 @@ namespace Prefs
   {
     float val10Meters = (10.0 / circumFerence) * pulsePerRound;
     int16_t count = static_cast<int16_t>(std::ceil(val10Meters));
-    ESP_LOGI(tag, "%s: ==== pulses for 10 meters: <%06d>", __func__, count);
+    ESP_LOGI(tag, "==== pulses for 10 meters: <%06d>", count);
     return (count >= 1) ? count : 1;
   }
 
@@ -552,6 +578,27 @@ namespace Prefs
     return Preferences::currentRouteLenPastOil;
   }
 
+  /**
+   * @brief setzte das Achtung-Flag
+   * 
+   * @param _flag 
+   */
+  void Preferences::setAttentionFlag(bool _flag)
+  {
+    Preferences::isAttentionFlag = _flag;
+  }
+
+  /**
+   * @brief lese das achtung flag
+   * 
+   * @return true 
+   * @return false 
+   */
+  bool Preferences::getAttentionFlag()
+  {
+    return Preferences::isAttentionFlag;
+  }
+
   //###########################################################################
   //###########################################################################
   //#### private functions                                                 ####
@@ -569,7 +616,7 @@ namespace Prefs
   {
     esp_err_t err;
     int32_t val; // value will default to 0, if not set yet in NVS
-    ESP_LOGD(tag, "%s: read int32 value <%s>...", __func__, _name);
+    ESP_LOGD(tag, "read int32 value <%s>...", _name);
     if (!Preferences::isInit)
       return (defaultVal);
     err = nvs_get_i32(Preferences::nvs_handle, _name, &val);
@@ -578,10 +625,10 @@ namespace Prefs
     case ESP_OK:
       return (val);
     case ESP_ERR_NVS_NOT_FOUND:
-      ESP_LOGE(tag, "%s: value <%s> is not initialized yet", __func__, _name);
+      ESP_LOGE(tag, "value <%s> is not initialized yet", _name);
       return (defaultVal);
     default:
-      ESP_LOGE(tag, "%s: error while reading value <%s>", __func__, _name);
+      ESP_LOGE(tag, "error while reading value <%s>", _name);
       return (defaultVal);
     }
     return (defaultVal);
@@ -601,7 +648,7 @@ namespace Prefs
     if (!Preferences::isInit)
       return false;
     err = nvs_set_i32(Preferences::nvs_handle, _name, _val);
-    ESP_LOGD(tag, "%s: write int32 name <%s> value <%06d>...", __func__, _name, _val);
+    ESP_LOGD(tag, "write int32 name <%s> value <%06d>...", _name, _val);
     if (err == ESP_OK)
       return true;
     return false;
@@ -620,7 +667,7 @@ namespace Prefs
     char resultArray[64];
     size_t size = sizeof(resultArray);
 
-    ESP_LOGD(tag, "%s: read string value <%s>...", __func__, _name);
+    ESP_LOGD(tag, "read string value <%s>...", _name);
     if (!Preferences::isInit)
       return (nullptr);
     err = nvs_get_str(Preferences::nvs_handle, _name, &(resultArray[0]), &size);
@@ -630,10 +677,10 @@ namespace Prefs
       retVal = std::string(&(resultArray[0]));
       return (retVal);
     case ESP_ERR_NVS_NOT_FOUND:
-      ESP_LOGE(tag, "%s: value <%s> is not initialized yet", __func__, _name);
+      ESP_LOGE(tag, "value <%s> is not initialized yet", _name);
       return (nullptr);
     default:
-      ESP_LOGE(tag, "%s: error while reading string value <%s>", __func__, _name);
+      ESP_LOGE(tag, "error while reading string value <%s>", _name);
       return (nullptr);
     }
     return (nullptr);
@@ -653,7 +700,7 @@ namespace Prefs
     if (!Preferences::isInit)
       return false;
     err = nvs_set_str(Preferences::nvs_handle, _name, _val);
-    ESP_LOGD(tag, "%s: write string name <%s> value <%s>...", __func__, _name, _val);
+    ESP_LOGD(tag, "write string name <%s> value <%s>...", _name, _val);
     if (err == ESP_OK)
       return true;
     return false;
@@ -672,7 +719,7 @@ namespace Prefs
     float val;
     size_t size = sizeof(val);
     //
-    ESP_LOGD(tag, "%s: read float value <%s>...", __func__, _name);
+    ESP_LOGD(tag, "read float value <%s>...", _name);
     if (!Preferences::isInit)
       return (_defaultValue);
     err = nvs_get_blob(Preferences::nvs_handle, _name, &val, &size);
@@ -681,10 +728,10 @@ namespace Prefs
     case ESP_OK:
       return (val);
     case ESP_ERR_NVS_NOT_FOUND:
-      ESP_LOGE(tag, "%s: value <%s> is not initialized yet", __func__, _name);
+      ESP_LOGE(tag, "value <%s> is not initialized yet", _name);
       return (_defaultValue);
     default:
-      ESP_LOGE(tag, "%s: error while reading float value <%s>", __func__, _name);
+      ESP_LOGE(tag, "error while reading float value <%s>", _name);
       return (_defaultValue);
     }
     return (_defaultValue);
@@ -705,7 +752,7 @@ namespace Prefs
     if (!Preferences::isInit)
       return false;
     err = nvs_set_blob(Preferences::nvs_handle, _name, &_val, sizeof(_val));
-    ESP_LOGD(tag, "%s: write float <%s> value <%.2f>...", __func__, _name, _val);
+    ESP_LOGD(tag, "write float <%s> value <%.2f>...", _name, _val);
     if (err == ESP_OK)
       return true;
     return false;
