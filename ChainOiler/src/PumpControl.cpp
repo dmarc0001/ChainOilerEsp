@@ -1,5 +1,6 @@
 #include "PumpControl.hpp"
 #include "esp_log.h"
+#include <esp_err.h>
 
 namespace esp32s2
 {
@@ -8,6 +9,7 @@ namespace esp32s2
    * 
    */
   const char *PumpControl::tag{"PumpControl"};
+  esp_timer_handle_t PumpControl::timerHandle{nullptr}; //! timer handle
 
   /**
    * @brief initialisiere die Hardware für die Pumpe
@@ -30,8 +32,34 @@ namespace esp32s2
                                 .intr_type = GPIO_INTR_DISABLE};
     gpio_config(&config_out);
     //
-    // TODO: HArtware Timer für 20ms
-    //
+    PumpControl::startTimer();
     ESP_LOGD(tag, "init pump hardware...OK");
   }
+
+  void PumpControl::startTimer()
+  {
+    //
+    // timer für Punpe starten
+    //
+    const esp_timer_create_args_t appTimerArgs =
+        {
+            .callback = &PumpControl::timerCallback,
+            .arg = nullptr,
+            .dispatch_method = ESP_TIMER_TASK,
+            .name = "led_timer"};
+    //
+    // timer erzeugen
+    //
+    ESP_ERROR_CHECK(esp_timer_create(&appTimerArgs, &PumpControl::timerHandle));
+    //
+    // timer starten, microsekunden ( 20 ms soll es)
+    //
+    ESP_ERROR_CHECK(esp_timer_start_periodic(PumpControl::timerHandle, 20000));
+    //
+  }
+
+  void PumpControl::timerCallback(void *)
+  {
+    // TODO: pumpe max 20 ms on
+    }
 }

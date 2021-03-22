@@ -11,11 +11,14 @@ namespace esp32s2
   {
   private:
     static const char *tag;
+    static esp_timer_handle_t timerHandle;
 
   public:
     static void init();
 
   private:
+    static void startTimer();
+    void timerCallback(void *);
     PumpControl(){};
   };
 }
