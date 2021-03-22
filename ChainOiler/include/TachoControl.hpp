@@ -38,22 +38,25 @@ namespace esp32s2
   class TachoControl
   {
   private:
-    static const char *tag;
-    static esp_sleep_wakeup_cause_t wakeupCause;
+    static const char *tag;                      //! TExtmarkierung fürs debugging
+    static esp_sleep_wakeup_cause_t wakeupCause; //! der Grund für den bootvorgang
+    static bool isInit;                          //! hardware initialisiert?
 
   protected:
-    static void init();
-    static xQueueHandle pathLenQueue;
-    static xQueueHandle speedQueue;
+    static xQueueHandle pathLenQueue; //! queue für Wegstreckenmeldungen
+    static xQueueHandle speedQueue;   //! queue für Geschwindigkeitsmessung
 
   public:
-    friend class ChOiler::MainWorker;
-    static esp_sleep_wakeup_cause_t getWakeupCause() { return wakeupCause; };
+    static void init();                                                       //! initialisiere die Hardware/software
+    static void pause();                                                      //! halte das zählen an
+    static void resume();                                                     //! weiter machen
+    friend class ChOiler::MainWorker;                                         //! Freund darf hier rummachen
+    static esp_sleep_wakeup_cause_t getWakeupCause() { return wakeupCause; }; //! Grund fürs booten nennen
 
   private:
-    static void processStartupCause();
-    static void IRAM_ATTR tachoOilerCountISR(void *);
-    static void IRAM_ATTR speedCountISR(void *);
+    static void processStartupCause();                //! bearbeite Sachen beim startup
+    static void IRAM_ATTR tachoOilerCountISR(void *); //! ISR zum messen der Wegstrecke
+    static void IRAM_ATTR speedCountISR(void *);      //! ISR zum messen der Geschwindigkeit
   };
 
 } // namespace esp32s2

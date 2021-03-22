@@ -41,7 +41,9 @@ namespace ChOiler
     static void buttonStati();     //! guck was die Buttons machen
     static void computeAvgSpeed(); //! berechne Durchschnitt für max 4 Sekunden
   private:
-    void goDeepSleep(); //! schlaf schön
+    static void goDeepSleep();               //! schlaf schön
+    static void switchToAccessPointMode();   //! AP Mode einschalten
+    static void switchFromAccessPointMode(); //! AP Mode aus zum Normal
   };
 
 } // namespace ChOiler

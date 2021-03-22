@@ -33,7 +33,7 @@ namespace Prefs
     static float crossFactor;              //! Faktor für öl beim crossen
     static float speedProgression;         //! Mehr öl bei höherer Geschwindigkeit
     static int rainSensorThreshold;        //! Schwellwert des Regensensors
-    static uint32_t pumpLedTimeout;        //! wiel lange leuchtet die LED nach?
+    static uint64_t pumpLedTimeout;        //! wiel lange leuchtet die LED nach?
     static bool isAttentionFlag;           //! ankündigung/Achtung Flag
   protected:
     static opMode appOpMode;                    //! In welchem Zustand ist das Programm
@@ -70,8 +70,8 @@ namespace Prefs
     static float getSpeedProgression();            //! lese den Faktor bei Geschwindigkeit
     static void setSensorThreshold(int);           //! setzte sen Schwelenwert des Regensensors
     static int getSensorThreshold();               //! lese Schwellenwert des Regensensors
-    static void setPumpLedTimeout(uint32_t);       //! setzte nachleuchten der pumpen LED
-    static uint32_t getPumpLedTimeout();           //! wie lange leuchtet die Pumpen LED nach
+    static void setPumpLedTimeout(uint64_t);       //! setzte nachleuchten der pumpen LED
+    static uint64_t getPumpLedTimeout();           //! wie lange leuchtet die Pumpen LED nach
     static int16_t getPulsesFor100Meters();        //! gib impulse per 100 Meter, errechnet aus den Parametern
     static int16_t getPulsesFor10Meters();         //! impulse per 10 Meter, für Tacho
     static uint16_t getMinimalPulseLength();       //! die kleinste Pulslänge in meiner Konfiguration
