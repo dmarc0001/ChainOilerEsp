@@ -43,7 +43,7 @@ namespace Prefs
   //
   // Ein-/Ausgänge GPIO, nicht konfigurierbar
   //
-  constexpr gpio_num_t LED_REED_CONTROL = GPIO_NUM_26;          //! Kontrolle für Tacho und Reed Impuls
+  constexpr gpio_num_t LED_REED_CONTROL = GPIO_NUM_21;          //! Kontrolle für Tacho und Reed Impuls
   constexpr gpio_num_t LED_CONTROL = GPIO_NUM_33;               //! LED für Kontrolle, WLAN, CROSS
   constexpr gpio_num_t LED_RAIN = GPIO_NUM_34;                  //! Regen Betriebsanzeige
   constexpr gpio_num_t LED_PUMP = GPIO_NUM_35;                  //! Aktivitätsanzeige Pumpe
