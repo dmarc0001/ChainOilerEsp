@@ -19,27 +19,27 @@ namespace Prefs
   //
   // Konfigurierbare Parameter und deren keys
   //
-  constexpr char VERSION_STR[] = "prefs_version";                  //! Name fuer Version
-  constexpr char SSID_STR[] = "ap_ssid";                           //! SSID name für WLAN-Accesspoint
-  constexpr char DEFAULT_SSID[] = "CHAINOILER";                    //! SSID für WLAN-Accesspoint
-  constexpr char AP_PASSWORD_STR[] = "ap_password";                //! Passwort für WLAN
-  constexpr char DEFAULT_AP_PASSWORD[] = "password";               //! Passwort für WLAN
-  constexpr char PULSE_PER_WEEL_ROUND_STR[] = "pulse_per_round";   //! Impulse per Radumdrehung
-  constexpr double DEFAULT_PULSE_PER_WEEL_ROUND = 109.0;           //! Defaultwert für Reed, Honda Africa Twin 109
-  constexpr char WHEEL_CIRCUM_FERENCE_STR[] = "curcum_ference";    //! Radumfang
-  constexpr double DEFAULT_WHEEL_CIRCUM_FERENCE = 1.81;            //! Default Umfang Hinterrad
-  constexpr char OIL_INTERVAL_STR[] = "oil_interval";              //! Öl interval in Metern
-  constexpr double DEFAULT_OIL_INTERVAL = 4000.0;                  //! Schmierinterval 4000 Meter
-  constexpr char RAIN_OIL_INTERVAL_FACTOR_STR[] = "rain_factor";   //! Streckenfaktor bei Regen
-  constexpr double DEFAULT_RAIN_OIL_INTERVAL_FACTOR = 1.4;         //! wieviel mal gegenüber normal schmieren
-  constexpr char CROSS_OIL_INTERVAL_FACTOR_STR[] = "cross_factor"; //! Streckenfaktor bei cross
-  constexpr double DEFAULT_CROSS_OIL_INTERVAL_FACTOR = 6.0;        //! wieviel mal öfter beim Crossen schmieren
-  constexpr char SPEED_PROGRESSION_FACTOR_STR[] = "speed_progres"; //! Geschwindigkeits regression
-  constexpr double DEFAULT_SPEED_PROGRESSION_FACTOR = -0.76;       //! der Faktor für die Berechnung der Progression
-  constexpr char THRESHOLD_RAIN_SENSOR_STR[] = "rain_threshold";   //! Regensensor Schwellwert
-  constexpr uint32_t DEFAULT_THRESHOLD_RAIN_SENSOR = 512;          //! Schwellenwert für Regen TODO: Hysterese zum Abschalten
-  constexpr char PUMP_LED_LITHGING_TIME_STR[] = "pump_led_time";   //! Zeit für die Aktivitätsanzeige
-  constexpr uint32_t DEFAULT_PUMP_LED_LITHGING_TIME = 300 * 1000;  //! Leuchtzeit der Pumpen-LED
+  constexpr char VERSION_STR[] = "prefs_version";                    //! Name fuer Version
+  constexpr char SSID_STR[] = "ap_ssid";                             //! SSID name für WLAN-Accesspoint
+  constexpr char DEFAULT_SSID[] = "CHAINOILER";                      //! SSID für WLAN-Accesspoint
+  constexpr char AP_PASSWORD_STR[] = "ap_password";                  //! Passwort für WLAN
+  constexpr char DEFAULT_AP_PASSWORD[] = "password";                 //! Passwort für WLAN
+  constexpr char PULSE_PER_WEEL_ROUND_STR[] = "pulse_per_round";     //! Impulse per Radumdrehung
+  constexpr double DEFAULT_PULSE_PER_WEEL_ROUND = 109.0;             //! Defaultwert für Reed, Honda Africa Twin 109
+  constexpr char WHEEL_CIRCUM_FERENCE_STR[] = "curcum_ference";      //! Radumfang
+  constexpr double DEFAULT_WHEEL_CIRCUM_FERENCE = 1.81;              //! Default Umfang Hinterrad
+  constexpr char OIL_INTERVAL_STR[] = "oil_interval";                //! Öl interval in Metern
+  constexpr double DEFAULT_OIL_INTERVAL = 4000.0;                    //! Schmierinterval 4000 Meter
+  constexpr char RAIN_OIL_INTERVAL_FACTOR_STR[] = "rain_factor";     //! Streckenfaktor bei Regen
+  constexpr double DEFAULT_RAIN_OIL_INTERVAL_FACTOR = 1.4;           //! wieviel mal gegenüber normal schmieren
+  constexpr char CROSS_OIL_INTERVAL_FACTOR_STR[] = "cross_factor";   //! Streckenfaktor bei cross
+  constexpr double DEFAULT_CROSS_OIL_INTERVAL_FACTOR = 6.0;          //! wieviel mal öfter beim Crossen schmieren
+  constexpr char SPEED_PROGRESSION_FACTOR_STR[] = "speed_progres";   //! Geschwindigkeits regression
+  constexpr double DEFAULT_SPEED_PROGRESSION_FACTOR = -0.76;         //! der Faktor für die Berechnung der Progression
+  constexpr char THRESHOLD_RAIN_SENSOR_STR[] = "rain_threshold";     //! Regensensor Schwellwert
+  constexpr uint32_t DEFAULT_THRESHOLD_RAIN_SENSOR = 512;            //! Schwellenwert für Regen TODO: Hysterese zum Abschalten
+  constexpr char PUMP_LED_LITHGING_TIME_STR[] = "pump_led_time";     //! Zeit für die Aktivitätsanzeige
+  constexpr uint64_t DEFAULT_PUMP_LED_LITHGING_TIME = 300 * 1000ULL; //! Leuchtzeit der Pumpen-LED
   //
   // Ein-/Ausgänge GPIO, nicht konfigurierbar
   //
@@ -58,24 +58,24 @@ namespace Prefs
   //
   // Wie lange dauert das entprellen in Microsekunden
   //
-  constexpr uint64_t DEBOUNCE_TIME_US = 100 * 1000;       //! Microsekunden zum entprellen
-  constexpr uint64_t LONG_CLICK_TIME_US = 4000 * 1000;    //! Mikrosekunden fuer Langen Click (WiFi ON)
-  constexpr uint64_t TIME_TO_DEEP_SLEEP = 20000 * 1000UL; //! Zeit bis zum Sleep
+  constexpr uint64_t DEBOUNCE_TIME_US = 10 * 1000ULL;      //! Microsekunden zum entprellen
+  constexpr uint64_t LONG_CLICK_TIME_US = 3500 * 1000ULL;  //! Mikrosekunden fuer Langen Click (WiFi ON)
+  constexpr uint64_t TIME_TO_DEEP_SLEEP = 20000 * 1000ULL; //! Zeit bis zum Sleep
   //
   // intervalle beim blinken in Microsekunden
   //
-  constexpr uint64_t BLINK_LED_CONTROL_NORMAL_OFF = 3000 * 1000;
-  constexpr uint64_t BLINK_LED_CONTROL_NORMAL_ON = 10 * 1000;
-  constexpr uint64_t BLINK_LED_CONTROL_CROSS_OFF = 100 * 1000;
-  constexpr uint64_t BLINK_LED_CONTROL_CROSS_ON = 4000 * 1000;
-  constexpr uint64_t BLINK_LED_CONTROL_AP_OFF = 100 * 1000;
-  constexpr uint64_t BLINK_LED_CONTROL_AP_ON = 1000 * 1000;
-  constexpr uint64_t BLINK_LED_CONTROL_TEST_OFF = 60 * 1000;
-  constexpr uint64_t BLINK_LED_CONTROL_TEST_ON = 60 * 1000;
-  constexpr uint64_t BLINK_LED_ATTENTION_OFF = 35 * 1000;
-  constexpr uint64_t BLINK_LED_ATTENTION_ON = 35 * 1000;
-  constexpr uint64_t BLINK_LED_AWAKE_OFF = 150 * 1000;
-  constexpr uint64_t BLINK_LED_AWAKE_ON = 80 * 1000;
+  constexpr uint64_t BLINK_LED_CONTROL_NORMAL_OFF = 3000 * 1000ULL;
+  constexpr uint64_t BLINK_LED_CONTROL_NORMAL_ON = 10 * 1000ULL;
+  constexpr uint64_t BLINK_LED_CONTROL_CROSS_OFF = 100 * 1000ULL;
+  constexpr uint64_t BLINK_LED_CONTROL_CROSS_ON = 4000 * 1000ULL;
+  constexpr uint64_t BLINK_LED_CONTROL_AP_OFF = 100 * 1000ULL;
+  constexpr uint64_t BLINK_LED_CONTROL_AP_ON = 1000 * 1000ULL;
+  constexpr uint64_t BLINK_LED_CONTROL_TEST_OFF = 60 * 1000ULL;
+  constexpr uint64_t BLINK_LED_CONTROL_TEST_ON = 60 * 1000ULL;
+  constexpr uint64_t BLINK_LED_ATTENTION_OFF = 35 * 1000ULL;
+  constexpr uint64_t BLINK_LED_ATTENTION_ON = 35 * 1000ULL;
+  constexpr uint64_t BLINK_LED_AWAKE_OFF = 150 * 1000ULL;
+  constexpr uint64_t BLINK_LED_AWAKE_ON = 80 * 1000ULL;
   //
   // Konstanten
   //

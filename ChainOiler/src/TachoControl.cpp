@@ -13,6 +13,7 @@ namespace esp32s2
   xQueueHandle TachoControl::pathLenQueue = nullptr;                              //! handle fuer queue
   xQueueHandle TachoControl::speedQueue = nullptr;                                //! handle fuer queue
   const char *TachoControl::tag{"EspCtrl"};                                       //! tag fürs debug logging
+  bool TachoControl::isInit{false};                                               //! wurde hard/Software initialisiert?
   esp_sleep_wakeup_cause_t TachoControl::wakeupCause{ESP_SLEEP_WAKEUP_UNDEFINED}; //! der Grund des Erwachens
 
   /**
@@ -139,7 +140,8 @@ namespace esp32s2
     //
     pcnt_counter_resume(unit0);
     pcnt_counter_resume(unit1);
-    ESP_LOGD(tag, "%s: init pulse counter unit0/unit1...done", __func__);
+    ESP_LOGD(tag, "init pulse counter unit0/unit1...done");
+    TachoControl::isInit = true;
   }
 
   /**
@@ -185,6 +187,34 @@ namespace esp32s2
       // Kompletter Neustart
       //
       printf("TODO: POWER_ON_WAKEUP restore counters from NVS...");
+    }
+  }
+
+  void TachoControl::pause()
+  {
+    if (TachoControl::isInit)
+    {
+      //
+      // Counter pausieren und neu initialisieren
+      //
+      pcnt_counter_pause(PCNT_UNIT_0);
+      pcnt_counter_pause(PCNT_UNIT_1);
+      pcnt_counter_clear(PCNT_UNIT_0);
+      pcnt_counter_clear(PCNT_UNIT_1);
+    }
+  }
+
+  void TachoControl::resume()
+  {
+    if (TachoControl::isInit)
+    {
+      //
+      // alles ist initialisiert, starte die Counter
+      //
+      pcnt_counter_clear(PCNT_UNIT_0);
+      pcnt_counter_clear(PCNT_UNIT_1);
+      pcnt_counter_resume(PCNT_UNIT_0);
+      pcnt_counter_resume(PCNT_UNIT_1);
     }
   }
 

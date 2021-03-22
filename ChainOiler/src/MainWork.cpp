@@ -45,7 +45,6 @@ namespace ChOiler
     using namespace Prefs;
 
     uint64_t runTime = esp_timer_get_time() + 1500000ULL;
-    bool computed = false;
     //
     ESP_LOGI(tag, "%s: run start...", __func__);
     //
@@ -64,19 +63,27 @@ namespace ChOiler
     // für immer :-)
     //
     ESP_LOGD(tag, "%s: loop start...", __func__);
+    runTime = esp_timer_get_time() + 2000000ULL;
     while (true)
     {
       switch (Preferences::getAppMode())
       {
       case opMode::NORMAL:
-        MainWorker::tachoCompute();
-        MainWorker::buttonStati();
-        break;
-
       case opMode::CROSS:
       case opMode::RAIN:
+        MainWorker::buttonStati();
+        MainWorker::tachoCompute();
+        break;
       case opMode::TEST:
+        MainWorker::buttonStati();
+        vTaskDelay(pdMS_TO_TICKS(100));
+        ESP_LOGD(tag, "TESTMODE...");
+        break;
       case opMode::APMODE:
+        MainWorker::buttonStati();
+        vTaskDelay(pdMS_TO_TICKS(400));
+        ESP_LOGD(tag, "ACCESSPOINT MODE, WAIT");
+        break;
       default:
         break;
       }
@@ -85,20 +92,15 @@ namespace ChOiler
       // ungefähr alle 2 Sekunden Berechnen
       // und wenn nicht AP Mode
       //
-      if (((esp_timer_get_time() & 0x1f0000) == 0) &&
-          Preferences::getAppMode() != opMode::APMODE)
+      if (Preferences::getAppMode() != opMode::APMODE)
       {
-        if (!computed)
+        if (esp_timer_get_time() > runTime)
         {
-          computed = true;
           MainWorker::computeAvgSpeed();
-        }
-        else
-        {
-          if (computed)
-            computed = false;
+          runTime = esp_timer_get_time() + 2000000ULL;
         }
       }
+      taskYIELD();
     }
   }
 
@@ -113,13 +115,12 @@ namespace ChOiler
     pcnt_evt_t evt;
     deltaTimeTenMeters_us dtime_us;
     portBASE_TYPE res;
-    //int16_t count = 0;
     //
     // Geschwindigkeitsdaten aus der Queue in den Speed-History-Buffer
     // vector wie queue benutzern, aber ich kann std::queue nicht nehmen
     // da ich wahlfrei zugriff haben will
     //
-    res = xQueueReceive(TachoControl::speedQueue, &dtime_us, pdMS_TO_TICKS(15));
+    res = xQueueReceive(TachoControl::speedQueue, &dtime_us, pdMS_TO_TICKS(10));
     {
       if (res == pdTRUE)
       {
@@ -128,14 +129,14 @@ namespace ChOiler
           // am Ende entfernen
           MainWorker::speedList.pop_back();
         }
-        // am Anfang einfuegen
+        // das Neue am Anfang einfuegen
         MainWorker::speedList.push_front(dtime_us);
       }
     }
     //
     // zurückgelegte Wegstrecke berechnen
     //
-    res = xQueueReceive(TachoControl::pathLenQueue, &evt, pdMS_TO_TICKS(50));
+    res = xQueueReceive(TachoControl::pathLenQueue, &evt, pdMS_TO_TICKS(10));
     if (res == pdTRUE)
     {
       //
@@ -156,6 +157,9 @@ namespace ChOiler
     using namespace esp32s2;
     using namespace Prefs;
 
+    //
+    // Control switch gedrückt länger als LONG ?
+    //
     if (ButtonControl::controlDownSince() > 0ULL)
     {
       if (!Preferences::getAttentionFlag())
@@ -168,13 +172,27 @@ namespace ChOiler
       Preferences::setAttentionFlag(false);
     }
     //
+    // gibt es eine Aktion des Control Switch?
+    //
     if (Preferences::getControlSwitchAction() != fClick::NONE)
     {
+      //
+      // Kurzer Klick an CONTROL
+      //
       if (Preferences::getControlSwitchAction() == fClick::SHORT)
       {
         ESP_LOGD(tag, "CONTROL Button short down");
+        LedControl::allOff();
+        if (Preferences::getAppMode() == opMode::APMODE)
+        {
+          // unschalten in Normal
+          MainWorker::switchFromAccessPointMode();
+          // button löschen
+          Preferences::setControlSwitchAction(fClick::NONE);
+          return;
+        }
         //
-        // im CROSS mode geht nur zu AP oder Normal Mode
+        // im CROSS/NORMAL mode geht nur hinund her via SHORT
         // REGEN ist bei CROSS deaktiviert
         //
         if (Preferences::getAppMode() == opMode::CROSS)
@@ -187,24 +205,33 @@ namespace ChOiler
           ESP_LOGD(tag, "set CROSS mode");
           Preferences::setAppMode(opMode::CROSS);
         }
-        // Crossmode hin und her schalten
       }
+      //
+      // langer Klick an CONTROL
+      //
       else if (Preferences::getControlSwitchAction() == fClick::LONG)
       {
         ESP_LOGI(tag, "CONTROL Button long down");
         ESP_LOGD(tag, "set ACCESS POINT mode");
-        Preferences::setAppMode(opMode::CROSS);
+        LedControl::allOff();
+        MainWorker::switchToAccessPointMode();
       }
+      //
+      // als erledigt markieren
+      //
       Preferences::setControlSwitchAction(fClick::NONE);
     }
-
+    //
+    // gibt es eine Aktion des Regenschalters?
+    //
     if (Preferences::getRainSwitchAction() != fClick::NONE)
     {
       //
-      // Was ist passiert? Level 0 bedeutet Knopf gedrückt
+      // Es gab ein Ereignis
       //
       if (Preferences::getAppMode() == opMode::NORMAL)
       {
+        // von NORMAL darf es zu regen gehen, von CROSS nicht
         ESP_LOGD(tag, "set RAIN mode");
         Preferences::setAppMode(opMode::RAIN);
       }
@@ -213,7 +240,7 @@ namespace ChOiler
         ESP_LOGD(tag, "set NORMAL mode from RAIN");
         Preferences::setAppMode(opMode::NORMAL);
       }
-      // TODO: was damit anstellen
+      // Taste löschen
       Preferences::setRainSwitchAction(fClick::NONE);
     }
   }
@@ -322,6 +349,44 @@ namespace ChOiler
     // Wiederbelebung erst durch Tachoimpuls
     //
     esp_deep_sleep_start();
+  }
+
+  void MainWorker::switchToAccessPointMode()
+  {
+    using namespace Prefs;
+    using namespace esp32s2;
+
+    //
+    // wie ist der aktuelle Stand
+    //
+    if (Preferences::getAppMode() == opMode::APMODE)
+    {
+      // war schon erledigt
+      return;
+    }
+    esp32s2::TachoControl::pause();
+    Preferences::setAppMode(opMode::APMODE);
+    // TODO: Accesspoint config/starten
+    // TODO: Webserver starten
+  }
+
+  void MainWorker::switchFromAccessPointMode()
+  {
+    using namespace Prefs;
+    using namespace esp32s2;
+
+    //
+    // wie ist der aktuelle Stand
+    //
+    if (Preferences::getAppMode() != opMode::APMODE)
+    {
+      // war schon erledigt
+      return;
+    }
+    // TODO: Webserver beenden/entfernen
+    // TODO: Accesspoint beenden
+    esp32s2::TachoControl::resume();
+    Preferences::setAppMode(opMode::NORMAL);
   }
 
 } // namespace ChOiler

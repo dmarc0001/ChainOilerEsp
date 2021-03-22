@@ -73,6 +73,8 @@ namespace esp32s2
     gpio_set_level(Prefs::LED_CONTROL, 0);
     gpio_set_level(Prefs::LED_RAIN, 0);
     gpio_set_level(Prefs::LED_PUMP, 0);
+    LedControl::nextControlLedFlash = 0ULL;
+    ledStateField &= ~(Prefs::whichLed::WICH_LED_CONTROL | Prefs::whichLed::WICH_LED_RAIN | Prefs::whichLed::WICH_LED_PUMP);
   }
 
   /**
@@ -328,5 +330,4 @@ namespace esp32s2
       }
     }
   }
-
 }
