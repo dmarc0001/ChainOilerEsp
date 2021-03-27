@@ -20,7 +20,7 @@ namespace esp32s2
     static void start();
 
   private:
-    void timerCallback(void *);
+    void static timerCallback(void *);
     PumpControl(){};
   };
 }

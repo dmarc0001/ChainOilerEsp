@@ -1,6 +1,8 @@
-#include "PumpControl.hpp"
 #include "esp_log.h"
 #include <esp_err.h>
+#include "PumpControl.hpp"
+#include "LedControl.hpp"
+#include "AppPreferences.hpp"
 
 namespace esp32s2
 {
@@ -10,7 +12,7 @@ namespace esp32s2
    */
   const char *PumpControl::tag{"PumpControl"};
   esp_timer_handle_t PumpControl::timerHandle{nullptr}; //! timer handle
-  bool PumpControl::pumpIsOn{false};
+  volatile bool PumpControl::pumpIsOn{false};
 
   /**
    * @brief initialisiere die Hardware für die Pumpe
@@ -43,7 +45,7 @@ namespace esp32s2
    */
   void PumpControl::stop()
   {
-    esp_timer_stop(&PumpControl::timerHandle);
+    esp_timer_stop(PumpControl::timerHandle);
     PumpControl::timerHandle = nullptr;
     gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 0);
     PumpControl::pumpIsOn = false;
@@ -60,7 +62,7 @@ namespace esp32s2
     //
     const esp_timer_create_args_t appTimerArgs =
         {
-            .callback = &PumpControl::timerCallback,
+            .callback = &(PumpControl::timerCallback),
             .arg = nullptr,
             .dispatch_method = ESP_TIMER_TASK,
             .name = "led_timer"};
