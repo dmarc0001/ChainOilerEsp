@@ -10,6 +10,7 @@ namespace esp32s2
    */
   const char *PumpControl::tag{"PumpControl"};
   esp_timer_handle_t PumpControl::timerHandle{nullptr}; //! timer handle
+  bool PumpControl::pumpIsOn{false};
 
   /**
    * @brief initialisiere die Hardware für die Pumpe
@@ -32,11 +33,27 @@ namespace esp32s2
                                 .intr_type = GPIO_INTR_DISABLE};
     gpio_config(&config_out);
     //
-    PumpControl::startTimer();
+    PumpControl::start();
     ESP_LOGD(tag, "init pump hardware...OK");
   }
 
-  void PumpControl::startTimer()
+  /**
+   * @brief stoppe den Timer, lösche das handle
+   * 
+   */
+  void PumpControl::stop()
+  {
+    esp_timer_stop(&PumpControl::timerHandle);
+    PumpControl::timerHandle = nullptr;
+    gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 0);
+    PumpControl::pumpIsOn = false;
+  }
+
+  /**
+   * @brief starte den Timer für die Pumpe
+   * 
+   */
+  void PumpControl::start()
   {
     //
     // timer für Punpe starten
@@ -58,8 +75,33 @@ namespace esp32s2
     //
   }
 
+  /**
+   * @brief timer ISR alle 20 ms
+   * 
+   */
   void PumpControl::timerCallback(void *)
   {
-    // TODO: pumpe max 20 ms on
+    if (PumpControl::pumpIsOn)
+    {
+      // war aktiv => deaktivieren
+      gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 0);
+      PumpControl::pumpIsOn = false;
     }
+    else
+    {
+      //
+      // pumpe war inaktiv, soll was passieren?
+      //
+      if (Prefs::Preferences::pumpCycles > 0)
+      {
+        //
+        // Punke anschalten, status markieren, Zyklen runterzählen, PUMP_LED einschalten
+        //
+        gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 1);
+        PumpControl::pumpIsOn = true;
+        --Prefs::Preferences::pumpCycles;
+        LedControl::setPumpLED(true);
+      }
+    }
+  }
 }
