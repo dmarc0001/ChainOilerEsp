@@ -9,18 +9,18 @@ namespace esp32s2
 {
   class PumpControl
   {
-  private:
+    private:
     static const char *tag;
     static esp_timer_handle_t timerHandle;
     static volatile bool pumpIsOn;
 
-  public:
+    public:
     static void init();
     static void stop();
     static void start();
+    void static timerCallback( void * );
 
-  private:
-    void static timerCallback(void *);
+    private:
     PumpControl(){};
   };
-}
+}  // namespace esp32s2

@@ -16,11 +16,6 @@
 #include "ProjectDefaults.hpp"
 #include "AppPreferences.hpp"
 #include "AppTypes.hpp"
-#include "TachoControl.hpp"
-#include "LedControl.hpp"
-#include "ButtonControl.hpp"
-#include "PumpControl.hpp"
-#include "RainSensorControl.hpp"
 
 namespace ChOiler
 {
@@ -29,21 +24,28 @@ namespace ChOiler
    */
   class MainWorker
   {
-  private:
-    static const char *tag;                                     //! Kennzeichnung fürs debug
-    static std::list<esp32s2::deltaTimeTenMeters_us> speedList; // Vector für Tachoauswertung
+    private:
+    static const char *tag;                                        //! Kennzeichnung fürs debug
+    static esp_sleep_wakeup_cause_t wakeupCause;                   //! der Grund für den bootvorgang
+    static std::list< esp32s2::deltaTimeTenMeters_us > speedList;  // Vector für Tachoauswertung
 
-  protected:
-  public:
-    static void init();            //! initialisiert Prferenzen und Hardware
-    static void run();             //! da geht es los
-    static void tachoCompute();    //! berechne Tacho Geschichten
-    static void buttonStati();     //! guck was die Buttons machen
-    static void computeAvgSpeed(); //! berechne Durchschnitt für max 4 Sekunden
-  private:
-    static void goDeepSleep();               //! schlaf schön
-    static void switchToAccessPointMode();   //! AP Mode einschalten
-    static void switchFromAccessPointMode(); //! AP Mode aus zum Normal
+    protected:
+    public:
+    static void init();             //! initialisiert Prferenzen und Hardware
+    static void run();              //! da geht es los
+    static void tachoCompute();     //! berechne Tacho Geschichten
+    static void buttonStati();      //! guck was die Buttons machen
+    static void computeAvgSpeed();  //! berechne Durchschnitt für max 4 Sekunden
+    static esp_sleep_wakeup_cause_t getWakeupCause()
+    {
+      return wakeupCause;
+    };  //! Grund fürs booten nennen
+
+    private:
+    static void goDeepSleep();                //! schlaf schön
+    static void processStartupCause();        //! bearbeite Sachen beim startup
+    static void switchToAccessPointMode();    //! AP Mode einschalten
+    static void switchFromAccessPointMode();  //! AP Mode aus zum Normal
   };
 
-} // namespace ChOiler
+}  // namespace ChOiler
