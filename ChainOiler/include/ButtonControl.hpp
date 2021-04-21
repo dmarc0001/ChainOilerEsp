@@ -7,25 +7,25 @@
 
 namespace esp32s2
 {
-
   class ButtonControl
   {
-  private:
+    private:
     static const char *tag;
-    static const gpio_num_t isr_control;              //! Kennung für Control taster
-    static const gpio_num_t isr_rain;                 //! Kennung für Regentaster
-    static volatile int controlSwitchDown;            //! ist der Knopf gedrückt?
-    static volatile uint64_t lastControlSwitchAction; //! wann war die letzte Änderung?
-    static volatile int rainSwitchDown;               //! ist der Knopf gedrückt?
-    static volatile uint64_t lastRainSwitchAction;    //! wann war die letzte Änderung?
+    static const gpio_num_t isr_control;               //! Kennung für Control taster
+    static const gpio_num_t isr_rain;                  //! Kennung für Regentaster
+    static volatile int controlSwitchDown;             //! ist der Knopf gedrückt?
+    static volatile uint64_t lastControlSwitchAction;  //! wann war die letzte Änderung?
+    static volatile int rainSwitchDown;                //! ist der Knopf gedrückt?
+    static volatile uint64_t lastRainSwitchAction;     //! wann war die letzte Änderung?
 
-  protected:
-  public:
+    protected:
+    public:
     static void init();
-    static uint64_t controlDownSince(); //! seit wann gedrückt?
+    static void buttonStati();           //! Tastenstati und Reaktion darauf
+    static uint64_t controlDownSince();  //! seit wann gedrückt?
 
-  private:
+    private:
     ButtonControl(){};
-    static void IRAM_ATTR buttonIsr(void *);
+    static void IRAM_ATTR buttonIsr( void * );
   };
-}
+}  // namespace esp32s2

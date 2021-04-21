@@ -10,10 +10,11 @@ namespace esp32s2
    * @brief instanziere und initialisiere die statischen Variablen
    *
    */
-  xQueueHandle TachoControl::pathLenQueue = nullptr;  //! handle fuer queue
-  xQueueHandle TachoControl::speedQueue = nullptr;    //! handle fuer queue
-  const char *TachoControl::tag{ "EspCtrl" };         //! tag fürs debug logging
-  bool TachoControl::isInit{ false };                 //! wurde hard/Software initialisiert?
+  xQueueHandle TachoControl::pathLenQueue = nullptr;                  //! handle fuer queue
+  xQueueHandle TachoControl::speedQueue = nullptr;                    //! handle fuer queue
+  std::list< esp32s2::deltaTimeTenMeters_us > TachoControl::speedList;  //! erzeuge leere Liste
+  const char *TachoControl::tag{ "EspCtrl" };                         //! tag fürs debug logging
+  bool TachoControl::isInit{ false };                                 //! wurde hard/Software initialisiert?
 
   /**
    * Initialisieere die Hardware
@@ -138,6 +139,7 @@ namespace esp32s2
     pcnt_counter_resume( unit0 );
     pcnt_counter_resume( unit1 );
     ESP_LOGD( tag, "init pulse counter unit0/unit1...done" );
+    TachoControl::speedList.clear();
     TachoControl::isInit = true;
   }
 
@@ -167,6 +169,132 @@ namespace esp32s2
       pcnt_counter_resume( PCNT_UNIT_0 );
       pcnt_counter_resume( PCNT_UNIT_1 );
     }
+  }
+
+  /**
+   * @brief berechne Durchschnittsgeschwindigkeit der letzten Sekunden
+   *
+   */
+  void TachoControl::tachoCompute()
+  {
+    using namespace esp32s2;
+
+    pcnt_evt_t evt;
+    deltaTimeTenMeters_us dtime_us;
+    portBASE_TYPE res;
+    //
+    // Geschwindigkeitsdaten aus der Queue in den Speed-History-Buffer
+    // vector wie queue benutzern, aber ich kann std::queue nicht nehmen
+    // da ich wahlfrei zugriff haben will
+    //
+    res = xQueueReceive( TachoControl::speedQueue, &dtime_us, pdMS_TO_TICKS( 10 ) );
+    {
+      if ( res == pdTRUE )
+      {
+        while ( TachoControl::speedList.size() > Prefs::SPEED_HISTORY_LEN - 1 )
+        {
+          // am Ende entfernen
+          TachoControl::speedList.pop_back();
+        }
+        // das Neue am Anfang einfuegen
+        TachoControl::speedList.push_front( dtime_us );
+      }
+    }
+    //
+    // zurückgelegte Wegstrecke berechnen
+    //
+    res = xQueueReceive( TachoControl::pathLenQueue, &evt, pdMS_TO_TICKS( 10 ) );
+    if ( res == pdTRUE )
+    {
+      //
+      // wenn in der queue ein ergebnis stand
+      //
+      // pcnt_get_counter_value(PCNT_UNIT_0, &count);
+      ESP_LOGI( tag, "Event %d meters path done: unit%d; cnt: %d", evt.meters, evt.unit, evt.value );
+      Prefs::Preferences::addRouteLenPastOil( evt.meters );
+    }
+  }
+
+  /**
+   * @brief Berechne Durchschnittsgeschwindigkeit der letzten Prefs::HISTORY_MAX_TIME_MS Microsekunden
+   *
+   */
+  void TachoControl::computeAvgSpeed()
+  {
+    //
+    // ungefähr alle 2 Sekunden Berechnen
+    //
+    // Durchschnitt über die letzten 4 Sekunden
+    // jeder Zeitstempel ist für 10 Meter Strecke
+    // die Durchschnittsgeschwindigkeit ist also max über
+    // 10 * Prefs::SPEED_HISTORY_LEN
+    //
+    uint64_t lastTimeStamp{ 0ULL };
+    float distance_sum = 0.0F;
+    float deltaTimeSum_sec = 0.0F;
+    float averageSpeed = 0.0;
+    int computedCount = 0;
+    for ( auto it = TachoControl::speedList.begin(); it != TachoControl::speedList.end(); )
+    {
+      //
+      // zuerst veraltete Einträge finden und entfernen
+      // diff in ms berechnen und merken
+      //
+      uint64_t logDeltaTimeStamp_ms = ( esp_timer_get_time() - *it ) >> 10;
+      //
+      // mehr als Prefs::HISTORY_MAX_TIME_MS Milisekunden her, also veraltet?
+      //
+      if ( logDeltaTimeStamp_ms > Prefs::HISTORY_MAX_TIME_MS )
+      {
+        // zu alt
+        // iterator wird neu gesetzt, alles nach dem gelöscht
+        //
+        it = TachoControl::speedList.erase( it, TachoControl::speedList.end() );
+        continue;
+      }
+      //
+      // gibt es einen früheren Zeitstempel auf den ich Bezug nehmen kann?
+      //
+      if ( lastTimeStamp == 0ULL )
+      {
+        //
+        // nein, dann muss ich diesen hier setzten
+        //
+        lastTimeStamp = *it;
+        ++it;
+        continue;
+      }
+      //
+      // jetzt die Zeitdifferrenz errechnen
+      //
+      // logDeltaTimeStamp_ms = (lastTimeStamp - *it) >> 10;
+      uint32_t deltaTime_ms = static_cast< uint32_t >( ( lastTimeStamp - *it ) >> 10 );
+      //
+      // jetzt habe ich eine zahl < history ms, weil die zu alten loesche ich oben
+      // hier völlig zum schätzen der Geschwindigkeit, Korrekturfaktor ist rund 0.95
+      //
+      float timeDiff_sec = ( static_cast< float >( deltaTime_ms ) / 1000.0F ) * 0.95F;
+      //
+      // summiere Wegstrecke und zugehhörige Zeit
+      // die Zeit dann als Sekunden / float
+      distance_sum += 10.0F;
+      deltaTimeSum_sec += timeDiff_sec;
+      ++computedCount;
+      lastTimeStamp = *it;
+      ++it;
+    }
+    //
+    // berechne Durchschnittliche Geschwindigkeit für die letzten Sekunden
+    //
+    if ( deltaTimeSum_sec > 0.001 )
+    {
+      // distance durch zeit...
+      ESP_LOGD( tag, "distance: %3.3f m time: %3.6f sec", distance_sum, deltaTimeSum_sec );
+      averageSpeed = distance_sum / deltaTimeSum_sec;
+      Prefs::Preferences::setCurrentSpeed( averageSpeed );
+    }
+    ESP_LOGD( tag, "computed average speed: %03.2f m/s == %03.2f km/h, computed: %03d history entrys...", averageSpeed,
+              averageSpeed * 3.6, computedCount );
   }
 
   /**

@@ -25,19 +25,20 @@ namespace esp32s2
   class TachoControl
   {
     private:
-    static const char *tag;  //! TExtmarkierung fürs debugging
-    static bool isInit;      //! hardware initialisiert?
+    static const char *tag;                                        //! TExtmarkierung fürs debugging
+    static bool isInit;                                            //! hardware initialisiert?
+    static std::list< esp32s2::deltaTimeTenMeters_us > speedList;  // Vector für Tachoauswertung
 
     protected:
     static xQueueHandle pathLenQueue;  //! queue für Wegstreckenmeldungen
     static xQueueHandle speedQueue;    //! queue für Geschwindigkeitsmessung
 
     public:
-    static void init();                               //! initialisiere die Hardware/software
-    static void pause();                              //! halte das zählen an
-    static void resume();                             //! weiter machen
-    static void tachoCompute();                       //! Durchschnittsgeschwindighkeit errechnen
-    friend void ChOiler::MainWorker::tachoCompute();  //! Freund darf hier rummachen
+    static void init();             //! initialisiere die Hardware/software
+    static void pause();            //! halte das zählen an
+    static void resume();           //! weiter machen
+    static void tachoCompute();     //! bearbeite speed queue
+    static void computeAvgSpeed();  //! Durchschnittsgeschwindighkeit errechnen
 
     private:
     static void IRAM_ATTR tachoOilerCountISR( void * );  //! ISR zum messen der Wegstrecke
