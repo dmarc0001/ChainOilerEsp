@@ -11,16 +11,20 @@ namespace esp32s2
   {
     private:
     static const char *tag;
-    static esp_timer_handle_t timerHandle;
-    static volatile bool pumpIsOn;
+    static PumpControl inst;
+    esp_timer_handle_t timerHandle;
+    volatile bool pumpIsOn;
 
     public:
-    static void init();
-    static void stop();
-    static void start();
-    void static timerCallback( void * );
+    static PumpControl *getInstance();
+    ~PumpControl();
+    void stop();
+    void start();
+    PumpControl( PumpControl const & ) = delete;
+    void operator=( PumpControl const & ) = delete;
+    static void timerCallback( void * );
 
     private:
-    PumpControl(){};
+    PumpControl();
   };
 }  // namespace esp32s2

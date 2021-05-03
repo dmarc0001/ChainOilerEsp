@@ -17,6 +17,15 @@
 #include "AppPreferences.hpp"
 #include "AppTypes.hpp"
 
+namespace esp32s2
+{
+  class ButtonControl;
+  class LedControl;
+  class PumpControl;
+  class TachoControl;
+  class RainSensorControl;
+}  // namespace esp32s2
+
 namespace ChOiler
 {
   /**
@@ -25,24 +34,28 @@ namespace ChOiler
   class MainWorker
   {
     private:
-    static const char *tag;                       //! Kennzeichnung fürs debug
-    static esp_sleep_wakeup_cause_t wakeupCause;  //! der Grund für den bootvorgang
-    // static std::list< esp32s2::deltaTimeTenMeters_us > speedList;  // Vector für Tachoauswertung
+    static const char *tag;                   //! Kennzeichnung fürs debug
+    esp_sleep_wakeup_cause_t wakeupCause;     //! der Grund für den bootvorgang
+    esp32s2::ButtonControl *buttonControl;    //! Zeiger auf esp32s2::ButtonControl
+    esp32s2::LedControl *ledControl;          //! Zeiger auf esp32s2::LedControl
+    esp32s2::PumpControl *pumpControl;        //! Zeiger auf esp32s2::PumpControl
+    esp32s2::TachoControl *tachoControl;      //! Zeiger auf esp32s2::TachoControl
+    esp32s2::RainSensorControl *rainControl;  //! Zeiger auf esp32s2::RainSensorControl
 
     protected:
     public:
-    static void init();  //! initialisiert Prferenzen und Hardware
-    static void run();   //! da geht es los
-    static esp_sleep_wakeup_cause_t getWakeupCause()
+    MainWorker();  //! initialisiert Prferenzen und Hardware
+    void run();    //! da geht es los
+    esp_sleep_wakeup_cause_t getWakeupCause()
     {
       return wakeupCause;
-    };                                        //! Grund fürs booten nennen
-    static void switchToAccessPointMode();    //! AP Mode einschalten
-    static void switchFromAccessPointMode();  //! AP Mode aus zum Normal
+    };                                 //! Grund fürs booten nennen
+    void switchToAccessPointMode();    //! AP Mode einschalten
+    void switchFromAccessPointMode();  //! AP Mode aus zum Normal
 
     private:
-    static void goDeepSleep();          //! schlaf schön
-    static void processStartupCause();  //! bearbeite Sachen beim startup
+    void goDeepSleep();          //! schlaf schön
+    void processStartupCause();  //! bearbeite Sachen beim startup
   };
 
 }  // namespace ChOiler

@@ -9,22 +9,24 @@ namespace esp32s2
    * @brief statische Variablen instanzieren und initialisieren
    *
    */
-  const gpio_num_t ButtonControl::isr_control{ Prefs::INPUT_CONTROL_SWITCH };     //! Marker für die ISR
-  const gpio_num_t ButtonControl::isr_rain{ Prefs::INPUT_RAIN_SWITCH_OPTIONAL };  //! Marker für die ISR
-  volatile int ButtonControl::controlSwitchDown{ false };                         //! ist der Controll Taster gedrückt
-  volatile uint64_t ButtonControl::lastControlSwitchAction{ 0ULL };               //! wann war das letzte Control Tasten Ereignis
-  volatile int ButtonControl::rainSwitchDown{ false };                            //! der Regentaster ist gedrückt
-  volatile uint64_t ButtonControl::lastRainSwitchAction{ 0ULL };                  //! wann war die letzte Regentaster Aktion
-  const char *ButtonControl::tag{ "ButtonControl" };                              //! tag fürs debug logging
+  const char *ButtonControl::tag{ "ButtonControl" };  //! tag fürs debug logging
+
+  ButtonControl *ButtonControl::getInstance()
+  {
+    {
+      static ButtonControl inst;  // Guaranteed to be destroyed.
+      return &inst;
+    }
+  }
 
   /**
    * @brief initialisiere Hardware für die Schalter
    *
    */
-  void ButtonControl::init()
+  ButtonControl::ButtonControl()
+      : controlSwitchDown( false ), lastControlSwitchAction( 0ULL ), rainSwitchDown( false ), lastRainSwitchAction( 0ULL )
   {
     using namespace Prefs;
-
     ESP_LOGI( tag, "init button control hardware..." );
     //
     //  Tacho und Knopf (Knopf-GPIO_INTR_ANYEDGE)
@@ -38,9 +40,26 @@ namespace esp32s2
     //
     // Handler für die beiden Ports
     //
-    gpio_isr_handler_add( INPUT_CONTROL_SWITCH, ButtonControl::buttonIsr, ( void * ) &ButtonControl::isr_control );
-    gpio_isr_handler_add( INPUT_RAIN_SWITCH_OPTIONAL, ButtonControl::buttonIsr, ( void * ) &ButtonControl::isr_rain );
+    gpio_isr_handler_add( INPUT_CONTROL_SWITCH, ButtonControl::buttonIsr, ( void * ) &isr_control );
+    gpio_isr_handler_add( INPUT_RAIN_SWITCH_OPTIONAL, ButtonControl::buttonIsr, ( void * ) &isr_rain );
     ESP_LOGD( tag, "init button control hardware...done" );
+  }
+
+  /**
+   * @brief Destroy the Button Control:: Button Control object
+   *
+   */
+  ButtonControl::~ButtonControl()
+  {
+    using namespace Prefs;
+    gpio_isr_handler_remove( INPUT_CONTROL_SWITCH );
+    gpio_isr_handler_remove( INPUT_RAIN_SWITCH_OPTIONAL );
+    gpio_config_t config_in = { .pin_bit_mask = BIT64( INPUT_CONTROL_SWITCH ) | BIT64( INPUT_RAIN_SWITCH_OPTIONAL ),
+                                .mode = GPIO_MODE_DISABLE,
+                                .pull_up_en = GPIO_PULLUP_DISABLE,
+                                .pull_down_en = GPIO_PULLDOWN_DISABLE,
+                                .intr_type = GPIO_INTR_DISABLE };
+    gpio_config( &config_in );
   }
 
   /**

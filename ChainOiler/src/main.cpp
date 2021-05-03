@@ -10,9 +10,9 @@ void app_main()
   //
   // Hardware und Speicher initialisieren
   //
-  ChOiler::MainWorker::init();
+  ChOiler::MainWorker worker;
   //
   // laufe bis in die Unendlichkeit...
   //
-  ChOiler::MainWorker::run();
+  worker.run();
 }

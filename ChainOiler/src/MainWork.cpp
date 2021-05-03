@@ -12,20 +12,25 @@ namespace ChOiler
    *
    */
   const char *MainWorker::tag{ "MainWorker" };  //! tag fürs debug logging
-  esp_sleep_wakeup_cause_t MainWorker::wakeupCause{ ESP_SLEEP_WAKEUP_UNDEFINED };  //! der Grund des Erwachens
 
   /**
-   * @brief initialisiere das Programm
+   * @brief Construct a new Main Worker:: Main Worker object
    *
    */
-  void MainWorker::init()
+  MainWorker::MainWorker()
+      : wakeupCause( ESP_SLEEP_WAKEUP_UNDEFINED )
+      , buttonControl( nullptr )
+      , ledControl( nullptr )
+      , pumpControl( nullptr )
+      , tachoControl( nullptr )
+      , rainControl( nullptr )
   {
     using namespace Prefs;
 
     //
     // warum geweckt/resettet
     //
-    MainWorker::processStartupCause();
+    processStartupCause();
     printf( "controller ist starting, version %s...\n\n", Preferences::getVersion().c_str() );
     Preferences::setAppMode( opMode::AWAKE );
     //
@@ -37,13 +42,13 @@ namespace ChOiler
     //
     gpio_install_isr_service( 0 );
     //
-    // initialisiere die Hardware
+    // Objekte erzeugen / Hardware initialisieren
     //
-    esp32s2::ButtonControl::init();
-    esp32s2::LedControl::init();
-    esp32s2::PumpControl::init();
-    esp32s2::TachoControl::init();
-    esp32s2::RainSensorControl::init();
+    buttonControl = esp32s2::ButtonControl::getInstance();
+    ledControl = esp32s2::LedControl::getInstance();
+    pumpControl = esp32s2::PumpControl::getInstance()();
+    tachoControl = esp32s2::TachoControl::getInstance()();
+    rainControl = esp32s2::RainSensorControl::getInstance()();
     ESP_LOGD( tag, "init done." );
   }
 
@@ -63,12 +68,12 @@ namespace ChOiler
     //
     while ( esp_timer_get_time() < runTime )
     {
-      esp32s2::LedControl::showAttention();
+      ledControl->showAttention();
       vTaskDelay( 1 );
     }
     vTaskDelay( pdMS_TO_TICKS( 100 ) );
     // alle LED aus
-    esp32s2::LedControl::allOff();
+    ledControl->allOff();
     Preferences::setAppMode( opMode::NORMAL );
     //
     // hier geth es dann richtig los
@@ -86,16 +91,16 @@ namespace ChOiler
         case opMode::NORMAL:
         case opMode::CROSS:
         case opMode::RAIN:
-          esp32s2::ButtonControl::buttonStati();
-          esp32s2::TachoControl::tachoCompute();
+          buttonControl->buttonStati();
+          tachoControl->tachoCompute();
           break;
         case opMode::TEST:
-          esp32s2::ButtonControl::buttonStati();
+          buttonControl->buttonStati();
           vTaskDelay( pdMS_TO_TICKS( 100 ) );
           ESP_LOGD( tag, "TESTMODE..." );
           break;
         case opMode::APMODE:
-          esp32s2::ButtonControl::buttonStati();
+          buttonControl->buttonStati();
           vTaskDelay( pdMS_TO_TICKS( 400 ) );
           ESP_LOGD( tag, "ACCESSPOINT MODE, WAIT" );
           break;
@@ -110,7 +115,7 @@ namespace ChOiler
       {
         if ( esp_timer_get_time() > runTime )
         {
-          esp32s2::TachoControl::computeAvgSpeed();
+          tachoControl->computeAvgSpeed();
           runTime = esp_timer_get_time() + 2000000ULL;
         }
       }
@@ -124,9 +129,9 @@ namespace ChOiler
    */
   void MainWorker::processStartupCause()
   {
-    MainWorker::wakeupCause = esp_sleep_get_wakeup_cause();
+    wakeupCause = esp_sleep_get_wakeup_cause();
 #ifdef DEBUG
-    switch ( MainWorker::wakeupCause )
+    switch ( wakeupCause )
     {
       case ESP_SLEEP_WAKEUP_EXT0:
         printf( "wakeup source is external RTC_IO signal\n" );
@@ -144,11 +149,11 @@ namespace ChOiler
         printf( "wakeup is ULP processor\n" );
         break;
       default:
-        printf( "wakeup is not defined, number is %d\n", MainWorker::wakeupCause );
+        printf( "wakeup is not defined, number is %d\n", wakeupCause );
         break;
     }
 #endif
-    if ( MainWorker::wakeupCause == ESP_SLEEP_WAKEUP_EXT0 )
+    if ( wakeupCause == ESP_SLEEP_WAKEUP_EXT0 )
     {
       //
       // Der Tachoimpuls hat geweckt
@@ -181,7 +186,7 @@ namespace ChOiler
       ESP_LOGD( tag, "%s: sleep in %02d secounds...", __func__, i );
       vTaskDelay( pdMS_TO_TICKS( 1000 ) );
     }
-    esp32s2::LedControl::allOff();
+    ledControl->allOff();
     printf( "..Good night.\n" );
     //
     // Wiederbelebung erst durch Tachoimpuls
@@ -202,7 +207,7 @@ namespace ChOiler
       // war schon erledigt
       return;
     }
-    esp32s2::TachoControl::pause();
+    tachoControl->pause();
     Preferences::setAppMode( opMode::APMODE );
     // TODO: Accesspoint config/starten
     // TODO: Webserver starten
@@ -223,7 +228,7 @@ namespace ChOiler
     }
     // TODO: Webserver beenden/entfernen
     // TODO: Accesspoint beenden
-    esp32s2::TachoControl::resume();
+    tachoControl->resume();
     Preferences::setAppMode( opMode::NORMAL );
   }
 

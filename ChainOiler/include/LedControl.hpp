@@ -13,29 +13,32 @@ namespace esp32s2
   {
     private:
     static const char *tag;
-    static uint64_t lastChanged;
-    static uint64_t pumpLedSwitchOffTime;
-    static uint64_t nextControlLedFlash;
-    static esp_timer_handle_t timerHandle;
-    static uint8_t ledStateField;
+    static LedControl inst;
+    uint64_t lastChanged;
+    uint64_t pumpLedSwitchOffTime;
+    uint64_t nextControlLedFlash;
+    esp_timer_handle_t timerHandle;
+    uint8_t ledStateField;
 
     public:
-    static void init();                //! init hardware
-    static void allOff();              //! alles aus
-    static void showAttention();       //! alles blinken
-    static void setContolLED( bool );  //! control led setzen/löschen
-    static void setRainLED( bool );    //! regen led setzen/löschen
-    static void setPumpLED( bool );    //! pumpen led setzen/löschen
+    static LedControl *getInstance();  //! singleton
+    ~LedControl();
+    LedControl( LedControl const & ) = delete;
+    void operator=( LedControl const & ) = delete;
+    void allOff();              //! alles aus
+    void showAttention();       //! alles blinken
+    void setContolLED( bool );  //! control led setzen/löschen
+    void setRainLED( bool );    //! regen led setzen/löschen
+    void setPumpLED( bool );    //! pumpen led setzen/löschen
 
     private:
-    static void startTimer();                             //! timer für led steuerung starten
-    static void timerCallback( void * );                  //! timer callback für led
-    static void processLEDNormalMode();                   //! timer schleife in Normalmode
-    static void processLEDCrossMode();                    //! timer schleife in Crossmode
-    static void processLEDRainMode();                     //! timer schleife in Regenmode
-    static void processLEDApMode();                       //! in AP Mode
-    static void processControlLEDFlash( Prefs::opMode );  //! blitzen in den verschiedenen Modi
-
-    LedControl(){};
+    void startTimer();                             //! timer für led steuerung starten
+    static void timerCallback( void * );           //! timer callback für led
+    void processLEDNormalMode();                   //! timer schleife in Normalmode
+    void processLEDCrossMode();                    //! timer schleife in Crossmode
+    void processLEDRainMode();                     //! timer schleife in Regenmode
+    void processLEDApMode();                       //! in AP Mode
+    void processControlLEDFlash( Prefs::opMode );  //! blitzen in den verschiedenen Modi
+    LedControl();
   };
 }  // namespace esp32s2

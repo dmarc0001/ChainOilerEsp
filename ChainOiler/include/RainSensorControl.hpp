@@ -9,18 +9,21 @@
 
 namespace esp32s2
 {
-  using rain_value_t = std::pair<int, int>;
+  using rain_value_t = std::pair< int, int >;
 
   class RainSensorControl
   {
-  private:
+    private:
     static const char *tag;
 
-  public:
-    static void init();
-    static rain_value_t getRainValues();
+    public:
+    static RainSensorControl *getInstance();
+    ~RainSensorControl();
+    RainSensorControl( RainSensorControl const & ) = delete;
+    void operator=( RainSensorControl const & ) = delete;
+    rain_value_t getRainValues();
 
-  private:
-    RainSensorControl(){};
+    private:
+    RainSensorControl();
   };
-}
+}  // namespace esp32s2
