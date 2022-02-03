@@ -4,4 +4,4 @@
 .vscode/launch.json
 .vscode/ipch
 src/*.cpp.old
-
+doc/*.pdf
