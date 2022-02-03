@@ -15,31 +15,38 @@ namespace Prefs
   // Version des Speichers bei Versionen, wenn änderungen an speicher
   // muss die Version erhöht werden und im code reagiert werden
   //
-  constexpr int32_t currentPrefsVersion = 1;
+  constexpr int32_t CURRENT_PREFS_VERSION = 1;
+  constexpr int32_t INVALID_VERSION = 999;
+  constexpr const char *PREFS_PARTITION_LABEL{"prefs"};
   //
   // Konfigurierbare Parameter und deren keys
   //
-  constexpr char VERSION_STR[] = "prefs_version";                  //! Name fuer Version
-  constexpr char SSID_STR[] = "ap_ssid";                           //! SSID name für WLAN-Accesspoint
-  constexpr char DEFAULT_SSID[] = "CHAINOILER";                    //! SSID für WLAN-Accesspoint
-  constexpr char AP_PASSWORD_STR[] = "ap_password";                //! Passwort für WLAN
-  constexpr char DEFAULT_AP_PASSWORD[] = "password";               //! Passwort für WLAN
-  constexpr char PULSE_PER_WEEL_ROUND_STR[] = "pulse_per_round";   //! Impulse per Radumdrehung
-  constexpr double DEFAULT_PULSE_PER_WEEL_ROUND = 109.0;           //! Defaultwert für Reed, Honda Africa Twin 109
-  constexpr char WHEEL_CIRCUM_FERENCE_STR[] = "curcum_ference";    //! Radumfang
-  constexpr double DEFAULT_WHEEL_CIRCUM_FERENCE = 1.81;            //! Default Umfang Hinterrad
-  constexpr char OIL_INTERVAL_STR[] = "oil_interval";              //! Öl interval in Metern
-  constexpr double DEFAULT_OIL_INTERVAL = 4000.0;                  //! Schmierinterval 4000 Meter
-  constexpr char RAIN_OIL_INTERVAL_FACTOR_STR[] = "rain_factor";   //! Streckenfaktor bei Regen
-  constexpr double DEFAULT_RAIN_OIL_INTERVAL_FACTOR = 1.4;         //! wieviel mal gegenüber normal schmieren
-  constexpr char CROSS_OIL_INTERVAL_FACTOR_STR[] = "cross_factor"; //! Streckenfaktor bei cross
-  constexpr double DEFAULT_CROSS_OIL_INTERVAL_FACTOR = 6.0;        //! wieviel mal öfter beim Crossen schmieren
-  constexpr char SPEED_PROGRESSION_FACTOR_STR[] = "speed_progres"; //! Geschwindigkeits regression
-  constexpr double DEFAULT_SPEED_PROGRESSION_FACTOR = -0.76;       //! der Faktor für die Berechnung der Progression
-  constexpr char THRESHOLD_RAIN_SENSOR_STR[] = "rain_threshold";   //! Regensensor Schwellwert
-  constexpr uint32_t DEFAULT_THRESHOLD_RAIN_SENSOR = 512;          //! Schwellenwert für Regen TODO: Hysterese zum Abschalten
-  constexpr char PUMP_LED_LITHGING_TIME_STR[] = "pump_led_time";   //! Zeit für die Aktivitätsanzeige
-  constexpr uint32_t DEFAULT_PUMP_LED_LITHGING_TIME = 300;         //! Leuchtzeit der Pumpen-LED
+  constexpr const char *PREFS_VERSION_STR{"prefs_ver"};                //! Name fuer Version
+  constexpr const char *PREFS_PARTITION{"prefs"};                      //! partition für Einstelliungen
+  constexpr const char *SSID_STR{"ap_ssid"};                           //! SSID name für WLAN-Accesspoint
+  constexpr const char *DEFAULT_SSID{"CHAINOILER"};                    //! SSID für WLAN-Accesspoint
+  constexpr const char *AP_PASSWORD_STR{"ap_password"};                //! Passwort für WLAN
+  constexpr const char *DEFAULT_AP_PASSWORD{"password"};               //! Passwort für WLAN
+  constexpr const char *AP_CHANNEL_STR{"ap_cannel"};                   //! accesspoinmt Kanal Einstellung
+  constexpr uint8_t DEFAULT_AP_CHANNEL{2};                             //! default WLAN channel
+  constexpr const char *AP_MAX_CONNECTIONS_STR{"ap_max_conns"};        //! maximale anzahl gleichzeitiger Verbindungen
+  constexpr uint8_t DEFAULT_AP_MAX_CONNECTIONS{4};                     //! maximale verbindungen
+  constexpr const char *PULSE_PER_WEEL_ROUND_STR{"pulse_per_round"};   //! Impulse per Radumdrehung
+  constexpr double DEFAULT_PULSE_PER_WEEL_ROUND = 109.0;               //! Defaultwert für Reed, Honda Africa Twin 109
+  constexpr const char *WHEEL_CIRCUM_FERENCE_STR{"curcum_ference"};    //! Radumfang
+  constexpr double DEFAULT_WHEEL_CIRCUM_FERENCE = 1.81;                //! Default Umfang Hinterrad
+  constexpr const char *OIL_INTERVAL_STR{"oil_interval"};              //! Öl interval in Metern
+  constexpr double DEFAULT_OIL_INTERVAL = 4000.0;                      //! Schmierinterval 4000 Meter
+  constexpr const char *RAIN_OIL_INTERVAL_FACTOR_STR{"rain_factor"};   //! Streckenfaktor bei Regen
+  constexpr double DEFAULT_RAIN_OIL_INTERVAL_FACTOR = 1.4;             //! wieviel mal gegenüber normal schmieren
+  constexpr const char *CROSS_OIL_INTERVAL_FACTOR_STR{"cross_factor"}; //! Streckenfaktor bei cross
+  constexpr double DEFAULT_CROSS_OIL_INTERVAL_FACTOR = 6.0;            //! wieviel mal öfter beim Crossen schmieren
+  constexpr const char *SPEED_PROGRESSION_FACTOR_STR{"speed_progres"}; //! Geschwindigkeits regression
+  constexpr double DEFAULT_SPEED_PROGRESSION_FACTOR = -0.76;           //! der Faktor für die Berechnung der Progression
+  constexpr const char *THRESHOLD_RAIN_SENSOR_STR{"rain_threshold"};   //! Regensensor Schwellwert
+  constexpr uint32_t DEFAULT_THRESHOLD_RAIN_SENSOR = 512;              //! Schwellenwert für Regen TODO: Hysterese zum Abschalten
+  constexpr const char *PUMP_LED_LITHGING_TIME_STR{"pump_led_time"};   //! Zeit für die Aktivitätsanzeige
+  constexpr uint32_t DEFAULT_PUMP_LED_LITHGING_TIME = 300;             //! Leuchtzeit der Pumpen-LED
   //
   // Ein-/Ausgänge GPIO, nicht konfigurierbar
   //
@@ -87,5 +94,5 @@ namespace Prefs
   //
   // Kommandos REST API
   //
-  constexpr char CMD_SET_RGBW[] = "set_rgbw";
+  constexpr const char *CMD_SET_RGBW{"set_rgbw"};
 } // namespace Prefs

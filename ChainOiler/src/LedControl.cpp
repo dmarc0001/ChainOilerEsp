@@ -5,7 +5,7 @@ namespace esp32s2
 {
   /**
    * @brief instanzieren und initialisieren der statischen variablen
-   * 
+   *
    */
   const char *LedControl::tag{"LedControl"};           //! tag fürs debug logging
   uint64_t LedControl::lastChanged{0ULL};              //! letzte Änderung
@@ -14,7 +14,7 @@ namespace esp32s2
 
   /**
    * @brief initialisierung der Hardware für die LED
-   * 
+   *
    */
   void LedControl::init()
   {
@@ -38,7 +38,7 @@ namespace esp32s2
 
   /**
    * @brief eigene Timer routine für die Steuerung der LED
-   * 
+   *
    */
   void LedControl::startTimer()
   {
@@ -50,7 +50,8 @@ namespace esp32s2
             .callback = &LedControl::timerCallback,
             .arg = nullptr,
             .dispatch_method = ESP_TIMER_TASK,
-            .name = "led_timer"};
+            .name = "led_timer",
+            .skip_unhandled_events = false};
     //
     // timer erzeugen
     //
@@ -64,7 +65,7 @@ namespace esp32s2
 
   /**
    * @brief Alle LED ausschalten
-   * 
+   *
    */
   void LedControl::allOff()
   {
@@ -75,7 +76,7 @@ namespace esp32s2
 
   /**
    * @brief blinken mit allen LED (z.B. beim Booten)
-   * 
+   *
    */
   void LedControl::showAttention()
   {
@@ -102,8 +103,8 @@ namespace esp32s2
 
   /**
    * @brief schalte Regen LED an/aus
-   * 
-   * @param _set 
+   *
+   * @param _set
    */
   void LedControl::setRainLED(bool _set)
   {
@@ -111,8 +112,8 @@ namespace esp32s2
 
   /**
    * @brief schalte Pumpen LED
-   * 
-   * @param _set 
+   *
+   * @param _set
    */
   void LedControl::setPumpLED(bool _set)
   {
@@ -120,7 +121,7 @@ namespace esp32s2
 
   /**
    * @brief Callback für den Timer (100 ms)
-   * 
+   *
    */
   void LedControl::timerCallback(void *)
   {

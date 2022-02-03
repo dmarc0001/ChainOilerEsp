@@ -8,7 +8,7 @@ namespace esp32s2
 {
   /**
    * @brief instanziere und initialisiere die statischen Variablen
-   * 
+   *
    */
   xQueueHandle TachoControl::pathLenQueue = nullptr;                              //! handle fuer queue
   xQueueHandle TachoControl::speedQueue = nullptr;                                //! handle fuer queue
@@ -144,7 +144,7 @@ namespace esp32s2
 
   /**
    * @brief stellt den Grund des Neustarts fest und leitet evtl Aktionen ein
-   * 
+   *
    */
   void TachoControl::processStartupCause()
   {
@@ -189,9 +189,9 @@ namespace esp32s2
   }
 
   /**
-  * @brief Benachrichtige bei gewünschter Entfernung (hier 100 Meter)
-  * 
-  */
+   * @brief Benachrichtige bei gewünschter Entfernung (hier 100 Meter)
+   *
+   */
   void IRAM_ATTR TachoControl::tachoOilerCountISR(void *)
   {
     pcnt_evt_t evt;
@@ -199,10 +199,10 @@ namespace esp32s2
     evt.meters = 100;
     int task_awoken = pdFALSE;
     /*
-    PCNT_EVT_THRES_1 = BIT(2),           //!< PCNT watch point event: threshold1 value event 
-    PCNT_EVT_THRES_0 = BIT(3),           //!< PCNT watch point event: threshold0 value event 
+    PCNT_EVT_THRES_1 = BIT(2),           //!< PCNT watch point event: threshold1 value event
+    PCNT_EVT_THRES_0 = BIT(3),           //!< PCNT watch point event: threshold0 value event
     PCNT_EVT_L_LIM = BIT(4),             //!< PCNT watch point event: Minimum counter value
-    PCNT_EVT_H_LIM = BIT(5),             //!< PCNT watch point event: Maximum counter value 
+    PCNT_EVT_H_LIM = BIT(5),             //!< PCNT watch point event: Maximum counter value
     PCNT_EVT_ZERO = BIT(6),              //!< PCNT watch point event: counter value zero event
     PCNT_EVT_MAX
     */
@@ -221,9 +221,9 @@ namespace esp32s2
   }
 
   /**
-  * @brief Messe Zeit für 10 Meter
-  * 
-  */
+   * @brief Messe Zeit für 10 Meter
+   *
+   */
   void IRAM_ATTR TachoControl::speedCountISR(void *)
   {
     uint64_t currentTimeStamp = esp_timer_get_time();
@@ -239,6 +239,32 @@ namespace esp32s2
         portYIELD_FROM_ISR();
       }
     }
+  }
+
+  /**
+   * @brief Tacho timer INT stoppen
+   * 
+   */
+  void TachoControl::pause()
+  {
+    pcnt_unit_t unit0 = PCNT_UNIT_0;
+    pcnt_unit_t unit1 = PCNT_UNIT_1;
+    pcnt_counter_pause(unit0);
+    pcnt_counter_clear(unit0);
+    pcnt_counter_pause(unit1);
+    pcnt_counter_clear(unit1);
+  }
+
+  /**
+   * @brief 
+   * 
+   */
+  void TachoControl::resume()
+  {
+    pcnt_unit_t unit0 = PCNT_UNIT_0;
+    pcnt_unit_t unit1 = PCNT_UNIT_1;
+    pcnt_counter_resume(unit0);
+    pcnt_counter_resume(unit1);
   }
 
 } // namespace esp32s2

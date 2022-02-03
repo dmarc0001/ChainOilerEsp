@@ -26,6 +26,8 @@ namespace Prefs
     static int32_t version;                //! version der einstellungen
     static std::string ssid;               //! SSID des Accesspoints
     static std::string ap_passwd;          //! Passwort des Accespoints
+    static uint8_t ap_cannel;              //! Kanal des WiFi AP
+    static uint8_t ap_max_connections;     //! maximale Verbindungen wlan AP
     static float pulsePerRound;            //! Impulse per Radumdrehung
     static float circumFerence;            //! Antriebsrad Umfang
     static float oilInterval;              //! Strecke zwischen den Ölgaben
@@ -33,6 +35,10 @@ namespace Prefs
     static float crossFactor;              //! Faktor für öl beim crossen
     static float speedProgression;         //! Mehr öl bei höherer Geschwindigkeit
     static int rainSensorThreshold;        //! Schwellwert des Regensensors
+    static uint64_t pumpLedTimeout;        //! wie lange leuchtet die LED nach
+    static bool isAttentionFlag;           //! Flag für Ankündigung/Achtung (soll blinken auslösen)
+    static portMUX_TYPE oilCycleMutex;     //! Mutex für zugriff auf Olpumpen zyklen
+
   protected:
     static opMode appOpMode;                    //! In welchem Zustand ist das Programm
     static float currentSpeedMeterPerSec;       //! aktuele Geschwindigkeit
@@ -54,6 +60,10 @@ namespace Prefs
     static void readPreferences();                 //! Einstellungen aus dem Speicher lesen
     static void setApPasswd(std::string);          //! Accesspoint Passwort setzen
     static std::string getApPasswd();              //! Accesspoint Passwort lesen
+    static uint8_t getWiFiChannel();               //! Wifi Channel aus der Einstellung
+    static void setWiFiChannel(uint8_t);           // setzte WifiChannel
+    static uint8_t getMaxConnections();            //! wie viele WLAN Verbindungen max?
+    static void setMaxConnections(uint8_t);        //! wie viele WLAN Verbindungen
     static void setPulsePerRound(float);           //! Setzte Impulse per Radumdrehung
     static float getPulsePerRound();               //! lese Impulse per Radumdrehung
     static void setCircumFerence(float);           //! setzte Radumfang
@@ -83,13 +93,22 @@ namespace Prefs
     static void setRouteLenPastOil(float);         //! setze die Strecke nach dem Ölen
     static void addRouteLenPastOil(float);         //! füge Strecke nach dem Ölen hinzu
     static float getRouteLenPastOil();             //! gib die Strecke seit dem letzen Ölen zurück
+    static uint64_t getPumpLedTimeout();           //! LED Timeout bei Meldungen
+    static void setPumpLedTimeout(uint64_t);       //! LED tiemout bei Meldungen
+    static bool getAttentionFlag();                //! gib das ACHTUNG Flag zurück
+    static void setAttentionFlag(bool);            //! die Achtung Flagge
+    static bool writePreferences();                //! schreibe Einstellungen in den NVS
+    static uint8_t getPumpCycles();                //! wie viele Pumpenzyklen sind aktuell?
+    static void addPumpCycles(uint8_t);            //! zufügen von Zyklen
+    static void setPumpCycles(uint8_t);            //! zyklen einstellen
 
   private:
-    static int32_t getIntValue(const char *, int32_t);      //! lese einen 32 Bit INT wert aus dem Speicher
-    static bool setIntValue(const char *, int32_t);         //! schreibe einen 32 Bit INT wert in den Speicher
-    static std::string getStringValue(const char *);        //! lese eine Zeichenkette aus dem Speicher
-    static bool setStringValue(const char *, const char *); //! schreibe eine Zeichenkette in den Speicher
-    static float getFloatValue(const char *, float);        //! lies einen double Wert aus dem Speicher
-    static bool setFloatValue(const char *, float);         //! schreibe einen double Wert in den Speicher
+    static int32_t getIntValue(const char *, int32_t);             //! lese einen 32 Bit INT wert aus dem Speicher
+    static bool setIntValue(const char *, int32_t);                //! schreibe einen 32 Bit INT wert in den Speicher
+    static std::string getStringValue(const char *);               //! lese eine Zeichenkette aus dem Speicher
+    static bool setStringValue(const char *, const char *);        //! schreibe eine Zeichenkette in den Speicher
+    static bool setStringValue(const char *, const std::string &); //! schreibe eine Zeichenkette in den Speicher
+    static float getFloatValue(const char *, float);               //! lies einen double Wert aus dem Speicher
+    static bool setFloatValue(const char *, float);                //! schreibe einen double Wert in den Speicher
   };
 } // namespace Prefs

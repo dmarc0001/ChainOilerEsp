@@ -49,6 +49,8 @@ namespace esp32s2
   public:
     friend class ChOiler::MainWorker;
     static esp_sleep_wakeup_cause_t getWakeupCause() { return wakeupCause; };
+    static void pause();
+    static void resume();
 
   private:
     static void processStartupCause();
