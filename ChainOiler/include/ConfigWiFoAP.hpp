@@ -15,14 +15,17 @@
 
 namespace ChOiler
 {
+  constexpr const char *WIFI_NVS_PARTITION{"nvs"};
+
   class WiFiAccessPoint
   {
     private:
     static const char *tag;
+    static bool nvsIsInit;
 
     public:
     WiFiAccessPoint();
-    bool wifiInitAp( void );  // NVS muss initialisiert sein
+    bool wifiInitAp( void );  
     bool shutdownWifi( void );
 
     private:
