@@ -7,9 +7,12 @@ namespace esp32s2
    * @brief instanzieren und initialisieren der statischen variablen
    *
    */
-  const char *LedControl::tag{"LedControl"};           //! tag fürs debug logging
-  uint64_t LedControl::lastChanged{0ULL};              //! letzte Änderung
-  uint64_t LedControl::pumpLedSwitchedOn{false};       //! ist die Pumpen LED noch an?
+  const char *LedControl::tag{"LedControl"};        //! tag fürs debug logging
+  uint64_t LedControl::lastChanged{0ULL};           //! letzte Änderung
+  uint64_t LedControl::pumpLedSwitchedOff{false};   //! ist die Pumpen LED noch an?
+  uint64_t LedControl::controlLedSwitchedOff{0ULL}; // wann soll die Control LED wieder aus?
+  uint64_t LedControl::apModeLedSwitchOff{0ULL};    // wan soll ap-mode ausgeschakltet werden?
+
   esp_timer_handle_t LedControl::timerHandle{nullptr}; //! timer handle
 
   /**
@@ -117,6 +120,39 @@ namespace esp32s2
    */
   void LedControl::setPumpLED(bool _set)
   {
+    if (_set)
+    {
+      // ausschaltzeit setzten und einschalten
+      pumpLedSwitchedOff = esp_timer_get_time() + static_cast<uint64_t>(Prefs::PUMP_LED_DELAY);
+      gpio_set_level(Prefs::LED_PUMP, 1);
+    }
+    else
+    {
+      // deaktivieren
+      pumpLedSwitchedOff = 0ULL;
+      gpio_set_level(Prefs::LED_PUMP, 0);
+    }
+  }
+
+  void LedControl::setControlLED(uint32_t timeout)
+  {
+    //
+    // Ausschaltzeitpunkt setzen
+    //
+    controlLedSwitchedOff = esp_timer_get_time() + static_cast<uint64_t>(timeout);
+    // LED einschalten
+    gpio_set_level(Prefs::LED_CONTROL, 1);
+  }
+
+  void LedControl::setAPModeLED(uint32_t timeout)
+  {
+    //
+    // ausschaltzeitpunkt setzen
+    //
+    apModeLedSwitchOff = esp_timer_get_time() + static_cast<uint64_t>(timeout);
+    gpio_set_level(Prefs::LED_CONTROL, 1);
+    gpio_set_level(Prefs::LED_RAIN, 1);
+    gpio_set_level(Prefs::LED_PUMP, 1);
   }
 
   /**
@@ -127,21 +163,59 @@ namespace esp32s2
   {
     using namespace Prefs;
     static volatile bool haveSwitchedOn = false;
+    uint64_t nowTime = esp_timer_get_time();
 
     if (haveSwitchedOn)
     {
       haveSwitchedOn = false;
-      // Aus
+      // pumpen-pin Aus
       gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 0);
-      // set LED ON
     }
     else if (Preferences::pumpCycles > 0)
     {
       haveSwitchedOn = true;
       --Preferences::pumpCycles;
-      // an
+      // pumpen-pin an
       gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 1);
+      if (pumpLedSwitchedOff == 0ULL)
+      {
+        // LED einschalten
+        gpio_set_level(Prefs::LED_PUMP, 1);
+      }
+      // Zeit neu setzen
+      pumpLedSwitchedOff = esp_timer_get_time() + static_cast<uint64_t>(Prefs::PUMP_LED_DELAY);
+      // zurSicherheit wegen der Zeti hier beenden, verlängert bis zum nächsten Zyklus um 100ms
+      return;
+    }
+
+    if (apModeLedSwitchOff != 0ULL)
+    {
+      if (nowTime > controlLedSwitchedOff)
+      {
+        // die LED alle ausschalten
+        LedControl::allOff();
+        apModeLedSwitchOff = 0ULL;
+      }
+    }
+    else if (controlLedSwitchedOff != 0ULL)
+    {
+      // Control LED sollte an sein...
+      if (nowTime > controlLedSwitchedOff)
+      {
+        // ausschalten der LED
+        gpio_set_level(Prefs::LED_CONTROL, 0);
+        controlLedSwitchedOff = 0ULL;
+      }
+    }
+
+    if (pumpLedSwitchedOff != 0ULL)
+    {
+      if (nowTime > pumpLedSwitchedOff)
+      {
+        // LED ausschalten
+        gpio_set_level(Prefs::LED_PUMP, 0);
+        pumpLedSwitchedOff = 0ULL;
+      }
     }
   }
-
 }

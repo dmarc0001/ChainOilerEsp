@@ -29,6 +29,7 @@ namespace ChOiler
     bool shutdownWifi( void );
 
     private:
+    static bool initNNS();
     static void wifiEventHandler( void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data );
   };
 }  // namespace ChOiler

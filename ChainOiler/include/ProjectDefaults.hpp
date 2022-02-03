@@ -65,24 +65,25 @@ namespace Prefs
   //
   // Wie lange dauert das entprellen in Microsekunden
   //
-  constexpr uint64_t DEBOUNCE_TIME_US = 100 * 1000;       //! Microsekunden zum entprellen
-  constexpr uint64_t LONG_CLICK_TIME_US = 4000 * 1000;    //! Mikrosekunden fuer Langen Click (WiFi ON)
+  constexpr uint64_t DEBOUNCE_TIME_US = 50 * 1000;        //! Microsekunden zum entprellen
+  constexpr uint64_t LONG_CLICK_TIME_US = 3000 * 1000;    //! Mikrosekunden fuer Langen Click (WiFi ON)
   constexpr uint64_t TIME_TO_DEEP_SLEEP = 20000 * 1000UL; //! Zeit bis zum Sleep
   //
   // intervalle beim blinken in Microsekunden
   //
-  constexpr uint64_t BLINK_LED_CONTROL_NORMAL_OFF = 3000 * 1000;
-  constexpr uint64_t BLINK_LED_CONTROL_NORMAL_ON = 10 * 1000;
-  constexpr uint64_t BLINK_LED_CONTROL_CROSS_OFF = 100 * 1000;
-  constexpr uint64_t BLINK_LED_CONTROL_CROSS_ON = 4000 * 1000;
-  constexpr uint64_t BLINK_LED_CONTROL_AP_OFF = 100 * 1000;
-  constexpr uint64_t BLINK_LED_CONTROL_AP_ON = 1000 * 1000;
-  constexpr uint64_t BLINK_LED_CONTROL_TEST_OFF = 60 * 1000;
-  constexpr uint64_t BLINK_LED_CONTROL_TEST_ON = 60 * 1000;
-  constexpr uint64_t BLINK_LED_ATTENTION_OFF = 35 * 1000;
-  constexpr uint64_t BLINK_LED_ATTENTION_ON = 35 * 1000;
-  constexpr uint64_t BLINK_LED_AWAKE_OFF = 150 * 1000;
-  constexpr uint64_t BLINK_LED_AWAKE_ON = 80 * 1000;
+  constexpr uint32_t BLINK_LED_CONTROL_NORMAL_OFF = 3000 * 1000;
+  constexpr uint32_t BLINK_LED_CONTROL_NORMAL_ON = 10 * 1000;
+  constexpr uint32_t BLINK_LED_CONTROL_CROSS_OFF = 100 * 1000;
+  constexpr uint32_t BLINK_LED_CONTROL_CROSS_ON = 4000 * 1000;
+  constexpr uint32_t BLINK_LED_CONTROL_AP_OFF = 100 * 1000;
+  constexpr uint32_t BLINK_LED_CONTROL_AP_ON = 1000 * 1000;
+  constexpr uint32_t BLINK_LED_CONTROL_TEST_OFF = 60 * 1000;
+  constexpr uint32_t BLINK_LED_CONTROL_TEST_ON = 60 * 1000;
+  constexpr uint32_t BLINK_LED_ATTENTION_OFF = 35 * 1000;
+  constexpr uint32_t BLINK_LED_ATTENTION_ON = 35 * 1000;
+  constexpr uint32_t BLINK_LED_AWAKE_OFF = 150 * 1000;
+  constexpr uint32_t BLINK_LED_AWAKE_ON = 80 * 1000;
+  constexpr uint32_t PUMP_LED_DELAY = 2000 * 1000;
   //
   // Konstanten
   //
