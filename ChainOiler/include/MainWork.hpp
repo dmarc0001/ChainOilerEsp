@@ -40,6 +40,7 @@ namespace ChOiler
     static void tachoCompute();    //! berechne Tacho Geschichten
     static void buttonStati();     //! guck was die Buttons machen
     static void computeAvgSpeed(); //! berechne Durchschnitt für max 4 Sekunden
+    static void checkOilState();   //! Teste ob geölt werden muss
   private:
     static void goDeepSleep();               //! schlaf schön
     static void switchToAccessPointMode();   //! AP Mode einschalten
