@@ -21,6 +21,7 @@
 #include "ButtonControl.hpp"
 #include "PumpControl.hpp"
 #include "RainSensorControl.hpp"
+#include "ConfigWiFoAP.hpp"
 
 namespace ChOiler
 {
@@ -31,7 +32,9 @@ namespace ChOiler
   {
   private:
     static const char *tag;                                     //! Kennzeichnung fürs debug
+    static esp_sleep_wakeup_cause_t wakeupCause;                //! der Grund fürs neu starten
     static std::list<esp32s2::deltaTimeTenMeters_us> speedList; // Vector für Tachoauswertung
+    static WiFiAccessPoint AccessPoint;                         //! das Objekt für WiFi
 
   protected:
   public:
@@ -40,7 +43,11 @@ namespace ChOiler
     static void tachoCompute();    //! berechne Tacho Geschichten
     static void buttonStati();     //! guck was die Buttons machen
     static void computeAvgSpeed(); //! berechne Durchschnitt für max 4 Sekunden
+    static void checkOilState();   //! Teste ob geölt werden muss
+    static esp_sleep_wakeup_cause_t getWakeupCause() { return wakeupCause; };
+
   private:
+    static void processStartupCause();       //! finde den Grund
     static void goDeepSleep();               //! schlaf schön
     static void switchToAccessPointMode();   //! AP Mode einschalten
     static void switchFromAccessPointMode(); //! AP Mode aus zum Normal

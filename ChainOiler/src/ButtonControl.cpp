@@ -5,19 +5,19 @@ namespace esp32s2
 {
   /**
    * @brief statische Variablen instanzieren und initialisieren
-   * 
+   *
    */
   const gpio_num_t ButtonControl::isr_control{Prefs::INPUT_CONTROL_SWITCH};    //! Marker für die ISR
   const gpio_num_t ButtonControl::isr_rain{Prefs::INPUT_RAIN_SWITCH_OPTIONAL}; //! Marker für die ISR
-  volatile int ButtonControl::controlSwitchDown{false};                        //! ist der Controll Taster gedrückt
+  volatile int ButtonControl::controlSwitchDown{1};                            //! ist der Controll Taster gedrückt
   volatile uint64_t ButtonControl::lastControlSwitchAction{0ULL};              //! wann war das letzte Control Tasten Ereignis
-  volatile int ButtonControl::rainSwitchDown{false};                           //! der Regentaster ist gedrückt
+  volatile int ButtonControl::rainSwitchDown{1};                               //! der Regentaster ist gedrückt
   volatile uint64_t ButtonControl::lastRainSwitchAction{0ULL};                 //! wann war die letzte Regentaster Aktion
   const char *ButtonControl::tag{"ButtonControl"};                             //! tag fürs debug logging
 
   /**
-   * @brief initialisiere Hardware für die Schalter 
-   * 
+   * @brief initialisiere Hardware für die Schalter
+   *
    */
   void ButtonControl::init()
   {
@@ -43,20 +43,20 @@ namespace esp32s2
 
   /**
    * @brief wie lange ist der Control schalter seit SHORT schon gedrückt
-   * 
-   * @return uint64_t 
+   *
+   * @return uint64_t
    */
   uint64_t ButtonControl::controlDownSince()
   {
     //
-    // wenn taste unten, bin ich im Bereich über SHORT?
-    // beim langen drücken für's blinken
+    // beim langen drücken. wiel lange über short?
+    // wenn der Taster unten ist UND die letze Aktion aufgezeichnet ist
     //
-    if (controlSwitchDown == 0)
+    if ((controlSwitchDown == 0) && (ButtonControl::lastControlSwitchAction != 0ULL))
     {
       if (esp_timer_get_time() > (ButtonControl::lastControlSwitchAction + Prefs::LONG_CLICK_TIME_US))
       {
-        return ButtonControl::lastControlSwitchAction;
+        return (esp_timer_get_time() - (ButtonControl::lastControlSwitchAction + Prefs::DEBOUNCE_TIME_US));
       }
     }
     return (0ULL);
@@ -64,8 +64,8 @@ namespace esp32s2
 
   /**
    * @brief ISR für Schalter Betätigungen
-   * 
-   * @param arg 
+   *
+   * @param arg
    */
   void IRAM_ATTR ButtonControl::buttonIsr(void *arg)
   {
@@ -82,7 +82,7 @@ namespace esp32s2
       //
       // Was ist passiert? Level 1 bedeutet Knopf gelöst
       //
-      if ((level == 1) /*&& (ButtonControl::controlSwitchDown == 0)*/)
+      if (level == 1) /* && (ButtonControl::controlSwitchDown == 0))*/
       {
         //
         // button gelöst, war gedrückt
@@ -101,7 +101,9 @@ namespace esp32s2
           }
         }
       }
+      // was ist der aktuelle Stand
       ButtonControl::controlSwitchDown = level;
+      // wann war das Ereignis
       ButtonControl::lastControlSwitchAction = now;
       break;
 

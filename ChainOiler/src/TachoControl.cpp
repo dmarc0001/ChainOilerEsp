@@ -8,13 +8,11 @@ namespace esp32s2
 {
   /**
    * @brief instanziere und initialisiere die statischen Variablen
-   * 
+   *
    */
-  xQueueHandle TachoControl::pathLenQueue = nullptr;                              //! handle fuer queue
-  xQueueHandle TachoControl::speedQueue = nullptr;                                //! handle fuer queue
-  const char *TachoControl::tag{"EspCtrl"};                                       //! tag fürs debug logging
-  bool TachoControl::isInit{false};                                               //! wurde hard/Software initialisiert?
-  esp_sleep_wakeup_cause_t TachoControl::wakeupCause{ESP_SLEEP_WAKEUP_UNDEFINED}; //! der Grund des Erwachens
+  xQueueHandle TachoControl::pathLenQueue = nullptr; //! handle fuer queue
+  xQueueHandle TachoControl::speedQueue = nullptr;   //! handle fuer queue
+  const char *TachoControl::tag{"TachoCtrl"};        //! tag fürs debug logging
 
   /**
    * Initialisieere die Hardware
@@ -29,10 +27,6 @@ namespace esp32s2
     //
     pathLenQueue = xQueueCreate(QUEUE_LEN_DISTANCE, sizeof(pcnt_evt_t));
     speedQueue = xQueueCreate(QUEUE_LEN_TACHO, sizeof(deltaTimeTenMeters_us));
-    //
-    // warum geweckt/resettet
-    //
-    TachoControl::processStartupCause();
     //
     // Tacho initialisieren
     //
@@ -140,88 +134,13 @@ namespace esp32s2
     //
     pcnt_counter_resume(unit0);
     pcnt_counter_resume(unit1);
-    ESP_LOGD(tag, "init pulse counter unit0/unit1...done");
-    TachoControl::isInit = true;
+    ESP_LOGD(tag, "%s: init pulse counter unit0/unit1...done", __func__);
   }
 
   /**
-   * @brief stellt den Grund des Neustarts fest und leitet evtl Aktionen ein
-   * 
+   * @brief Benachrichtige bei gewünschter Entfernung (hier 100 Meter)
+   *
    */
-  void TachoControl::processStartupCause()
-  {
-    TachoControl::wakeupCause = esp_sleep_get_wakeup_cause();
-#ifdef DEBUG
-    switch (TachoControl::wakeupCause)
-    {
-    case ESP_SLEEP_WAKEUP_EXT0:
-      printf("wakeup source is external RTC_IO signal\n");
-      break;
-    case ESP_SLEEP_WAKEUP_EXT1:
-      printf("wakeup source is external RTC_CNTL signal\n");
-      break;
-    case ESP_SLEEP_WAKEUP_TIMER:
-      printf("wakeup ist timer\n");
-      break;
-    case ESP_SLEEP_WAKEUP_TOUCHPAD:
-      printf("wakeup ist touch sensor\n");
-      break;
-    case ESP_SLEEP_WAKEUP_ULP:
-      printf("wakeup is ULP processor\n");
-      break;
-    default:
-      printf("wakeup is not defined, number is %d\n", TachoControl::wakeupCause);
-      break;
-    }
-#endif
-    if (TachoControl::wakeupCause == ESP_SLEEP_WAKEUP_EXT0)
-    {
-      //
-      // Der Tachoimpuls hat geweckt
-      //
-      printf("TODO: TACHO WAKEUP restore counters from sram...");
-    }
-    else
-    {
-      //
-      // Kompletter Neustart
-      //
-      printf("TODO: POWER_ON_WAKEUP restore counters from NVS...");
-    }
-  }
-
-  void TachoControl::pause()
-  {
-    if (TachoControl::isInit)
-    {
-      //
-      // Counter pausieren und neu initialisieren
-      //
-      pcnt_counter_pause(PCNT_UNIT_0);
-      pcnt_counter_pause(PCNT_UNIT_1);
-      pcnt_counter_clear(PCNT_UNIT_0);
-      pcnt_counter_clear(PCNT_UNIT_1);
-    }
-  }
-
-  void TachoControl::resume()
-  {
-    if (TachoControl::isInit)
-    {
-      //
-      // alles ist initialisiert, starte die Counter
-      //
-      pcnt_counter_clear(PCNT_UNIT_0);
-      pcnt_counter_clear(PCNT_UNIT_1);
-      pcnt_counter_resume(PCNT_UNIT_0);
-      pcnt_counter_resume(PCNT_UNIT_1);
-    }
-  }
-
-  /**
-  * @brief Benachrichtige bei gewünschter Entfernung (hier 100 Meter)
-  * 
-  */
   void IRAM_ATTR TachoControl::tachoOilerCountISR(void *)
   {
     pcnt_evt_t evt;
@@ -229,10 +148,10 @@ namespace esp32s2
     evt.meters = 100;
     int task_awoken = pdFALSE;
     /*
-    PCNT_EVT_THRES_1 = BIT(2),           //!< PCNT watch point event: threshold1 value event 
-    PCNT_EVT_THRES_0 = BIT(3),           //!< PCNT watch point event: threshold0 value event 
+    PCNT_EVT_THRES_1 = BIT(2),           //!< PCNT watch point event: threshold1 value event
+    PCNT_EVT_THRES_0 = BIT(3),           //!< PCNT watch point event: threshold0 value event
     PCNT_EVT_L_LIM = BIT(4),             //!< PCNT watch point event: Minimum counter value
-    PCNT_EVT_H_LIM = BIT(5),             //!< PCNT watch point event: Maximum counter value 
+    PCNT_EVT_H_LIM = BIT(5),             //!< PCNT watch point event: Maximum counter value
     PCNT_EVT_ZERO = BIT(6),              //!< PCNT watch point event: counter value zero event
     PCNT_EVT_MAX
     */
@@ -251,9 +170,9 @@ namespace esp32s2
   }
 
   /**
-  * @brief Messe Zeit für 10 Meter
-  * 
-  */
+   * @brief Messe Zeit für 10 Meter
+   *
+   */
   void IRAM_ATTR TachoControl::speedCountISR(void *)
   {
     uint64_t currentTimeStamp = esp_timer_get_time();
@@ -269,6 +188,32 @@ namespace esp32s2
         portYIELD_FROM_ISR();
       }
     }
+  }
+
+  /**
+   * @brief Tacho timer INT stoppen
+   *
+   */
+  void TachoControl::pause()
+  {
+    pcnt_unit_t unit0 = PCNT_UNIT_0;
+    pcnt_unit_t unit1 = PCNT_UNIT_1;
+    pcnt_counter_pause(unit0);
+    pcnt_counter_clear(unit0);
+    pcnt_counter_pause(unit1);
+    pcnt_counter_clear(unit1);
+  }
+
+  /**
+   * @brief
+   *
+   */
+  void TachoControl::resume()
+  {
+    pcnt_unit_t unit0 = PCNT_UNIT_0;
+    pcnt_unit_t unit1 = PCNT_UNIT_1;
+    pcnt_counter_resume(unit0);
+    pcnt_counter_resume(unit1);
   }
 
 } // namespace esp32s2
