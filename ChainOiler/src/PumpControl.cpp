@@ -5,13 +5,13 @@ namespace esp32s2
 {
   /**
    * @brief instanziere und initialisiere statische variable
-   * 
+   *
    */
   const char *PumpControl::tag{"PumpControl"};
 
   /**
    * @brief initialisiere die Hardware für die Pumpe
-   * 
+   *
    */
   void PumpControl::init()
   {
@@ -29,9 +29,6 @@ namespace esp32s2
                                 .pull_down_en = GPIO_PULLDOWN_DISABLE,
                                 .intr_type = GPIO_INTR_DISABLE};
     gpio_config(&config_out);
-    //
-    // TODO: HArtware Timer für 20ms
-    //
     ESP_LOGD(tag, "init pump hardware...OK");
   }
 }

@@ -36,7 +36,7 @@ namespace Prefs
   constexpr const char *WHEEL_CIRCUM_FERENCE_STR{"curcum_ference"};    //! Radumfang
   constexpr double DEFAULT_WHEEL_CIRCUM_FERENCE = 1.81;                //! Default Umfang Hinterrad
   constexpr const char *OIL_INTERVAL_STR{"oil_interval"};              //! Öl interval in Metern
-  constexpr double DEFAULT_OIL_INTERVAL = 4000.0;                      //! Schmierinterval 4000 Meter
+  constexpr double DEFAULT_OIL_INTERVAL = 2000.0;                      //! Schmierinterval 4000 Meter
   constexpr const char *RAIN_OIL_INTERVAL_FACTOR_STR{"rain_factor"};   //! Streckenfaktor bei Regen
   constexpr double DEFAULT_RAIN_OIL_INTERVAL_FACTOR = 1.4;             //! wieviel mal gegenüber normal schmieren
   constexpr const char *CROSS_OIL_INTERVAL_FACTOR_STR{"cross_factor"}; //! Streckenfaktor bei cross
@@ -88,7 +88,7 @@ namespace Prefs
   // Konstanten
   //
   constexpr size_t QUEUE_LEN_DISTANCE = 10;      //! Wie lang ist die RTOS Queue für entfernungsmessung
-  constexpr size_t QUEUE_LEN_TACHO = 20;         //! wie lang ist die queue für Tacho Ereignisse
+  constexpr size_t QUEUE_LEN_TACHO = 60;         //! wie lang ist die queue für Tacho Ereignisse
   constexpr size_t SPEED_HISTORY_LEN = 200;      //! max länge der Tempo-Historie
   constexpr uint64_t HISTORY_MAX_TIME_MS = 4000; //! wie lang ist die history beim speed maximal
 
