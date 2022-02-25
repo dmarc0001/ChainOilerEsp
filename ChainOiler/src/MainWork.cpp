@@ -237,13 +237,14 @@ namespace ChOiler
     float distanceSinceLastOil = Preferences::getRouteLenPastOil();
     // wann ölen?
     float oilInterval = Preferences::getOilInterval();
-    ESP_LOGD(tag, "check oil state: distance is %04.02fm, interval is %04.2fm...", static_cast<double>(distanceSinceLastOil), static_cast<double>(oilInterval));
+    ESP_LOGD(tag, "distance is %04.02fm, interval is %04.2fm, absolute: %04.2fm...", static_cast<double>(distanceSinceLastOil), static_cast<double>(oilInterval), Preferences::getAckumulatedRouteLen());
     //
     // wenn es soweit ist, gib Öl
     //
     if (distanceSinceLastOil > oilInterval)
     {
       // TODO: nach Berechnung der Wegstrecken nochmal prüfen ob das so bleibt
+      ESP_LOGD(tag, "=== HEAP SIZE: %04u ===", esp_get_free_internal_heap_size());
       ESP_LOGI(tag, "========== oil interval reached ============");
       if (Preferences::getAppMode() == opMode::CROSS)
       {
@@ -295,7 +296,7 @@ namespace ChOiler
       //
       // wenn in der queue ein ergebnis stand
       //
-      ESP_LOGD(tag, "Event %d meters path done: unit%d; cnt: %d", evt.meters, evt.unit, evt.value);
+      // ESP_LOGD(tag, "Event %d meters path done: unit%d; cnt: %d", evt.meters, evt.unit, evt.value);
       Prefs::Preferences::addRouteLenPastOil(evt.meters);
     }
   }
@@ -478,7 +479,7 @@ namespace ChOiler
     if (deltaTimeSum_sec > 0.001)
     {
       // distance durch zeit...
-      ESP_LOGD(tag, "distance: %3.3f m time: %3.6f sec", distance_sum, deltaTimeSum_sec);
+      // ESP_LOGD(tag, "distance: %3.3f m time: %3.6f sec", distance_sum, deltaTimeSum_sec);
       averageSpeed = distance_sum / deltaTimeSum_sec;
       Prefs::Preferences::setCurrentSpeed(averageSpeed);
     }

@@ -122,7 +122,7 @@ namespace esp32s2
     if (_set)
     {
       // ausschaltzeit setzten und einschalten
-      pumpLedSwitchedOff = esp_timer_get_time() + static_cast<uint64_t>(Prefs::PUMP_LED_DELAY);
+      pumpLedSwitchedOff = esp_timer_get_time() + Prefs::PUMP_LED_DELAY;
       gpio_set_level(Prefs::LED_PUMP, 1);
     }
     else
@@ -133,22 +133,22 @@ namespace esp32s2
     }
   }
 
-  void LedControl::setControlLED(uint32_t timeout)
+  void LedControl::setControlLED(uint64_t timeout)
   {
     //
     // Ausschaltzeitpunkt setzen
     //
-    controlLedSwitchedOff = esp_timer_get_time() + static_cast<uint64_t>(timeout);
+    controlLedSwitchedOff = esp_timer_get_time() + timeout;
     // LED einschalten
     gpio_set_level(Prefs::LED_CONTROL, 1);
   }
 
-  void LedControl::setAPModeLED(uint32_t timeout)
+  void LedControl::setAPModeLED(uint64_t timeout)
   {
     //
     // ausschaltzeitpunkt setzen
     //
-    apModeLedSwitchOff = esp_timer_get_time() + static_cast<uint64_t>(timeout);
+    apModeLedSwitchOff = esp_timer_get_time() + timeout;
     gpio_set_level(Prefs::LED_CONTROL, 1);
     gpio_set_level(Prefs::LED_RAIN, 1);
     gpio_set_level(Prefs::LED_PUMP, 1);
@@ -193,7 +193,7 @@ namespace esp32s2
       {
         // LED einschalten
         gpio_set_level(Prefs::LED_PUMP, 1);
-        pumpLedSwitchedOff = esp_timer_get_time() + static_cast<uint64_t>(Prefs::PUMP_LED_DELAY);
+        pumpLedSwitchedOff = esp_timer_get_time() + Prefs::PUMP_LED_DELAY;
         isPumpLedOn = true;
       }
     }

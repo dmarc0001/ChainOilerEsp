@@ -10,9 +10,9 @@ namespace esp32s2
    * @brief instanziere und initialisiere die statischen Variablen
    *
    */
-  xQueueHandle TachoControl::pathLenQueue = nullptr;                              //! handle fuer queue
-  xQueueHandle TachoControl::speedQueue = nullptr;                                //! handle fuer queue
-  const char *TachoControl::tag{"EspCtrl"};                                       //! tag fürs debug logging
+  xQueueHandle TachoControl::pathLenQueue = nullptr; //! handle fuer queue
+  xQueueHandle TachoControl::speedQueue = nullptr;   //! handle fuer queue
+  const char *TachoControl::tag{"TachoCtrl"};        //! tag fürs debug logging
 
   /**
    * Initialisieere die Hardware
@@ -192,7 +192,7 @@ namespace esp32s2
 
   /**
    * @brief Tacho timer INT stoppen
-   * 
+   *
    */
   void TachoControl::pause()
   {
@@ -205,8 +205,8 @@ namespace esp32s2
   }
 
   /**
-   * @brief 
-   * 
+   * @brief
+   *
    */
   void TachoControl::resume()
   {

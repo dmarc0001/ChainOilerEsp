@@ -79,7 +79,9 @@ namespace esp32s2
     else if ((Preferences::pumpCycles > 0) & (off_phase < 1))
     {
       haveSwitchedOn = true;
+      portENTER_CRITICAL(&Preferences::oilCycleMutex);
       --Preferences::pumpCycles;
+      portEXIT_CRITICAL(&Preferences::oilCycleMutex);
       // pumpen-pin an
       gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, Prefs::P_ON);
     }

@@ -53,7 +53,7 @@ namespace ChOiler
     //
     // System für WiFi initialisieren
     //
-    result = WiFiAccessPoint::initNNS();
+    result = WiFiAccessPoint::initNVS();
     //
     if (ESP_OK != esp_netif_init())
     {
@@ -203,7 +203,7 @@ namespace ChOiler
     return true;
   }
 
-  bool WiFiAccessPoint::initNNS()
+  bool WiFiAccessPoint::initNVS()
   {
     WiFiAccessPoint::nvsIsInit = false;
 

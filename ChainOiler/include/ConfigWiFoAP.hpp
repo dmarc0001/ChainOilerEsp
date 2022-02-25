@@ -19,17 +19,17 @@ namespace ChOiler
 
   class WiFiAccessPoint
   {
-    private:
+  private:
     static const char *tag;
     static bool nvsIsInit;
 
-    public:
+  public:
     WiFiAccessPoint();
-    bool wifiInitAp( void );  
-    bool shutdownWifi( void );
+    bool wifiInitAp(void);
+    bool shutdownWifi(void);
 
-    private:
-    static bool initNNS();
-    static void wifiEventHandler( void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data );
+  private:
+    static bool initNVS();
+    static void wifiEventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
   };
-}  // namespace ChOiler
+} // namespace ChOiler
