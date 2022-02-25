@@ -4,33 +4,34 @@
 
 namespace Prefs
 {
-  const char *Preferences::serialStr = "20220220-202033-build-0814";
+  const char *Preferences::serialStr = "20220225-190856-build-0846";
   const std::string Preferences::serialString = std::string(Preferences::serialStr);
-  const char *Preferences::tag{"Preferences"};                                               //! tag fürs debug logging
-  nvs_handle_t Preferences::nvs_handle{0U};                                                  //! handle für NVS
-  bool Preferences::isInit{false};                                                           //! Objekt initialisiert?
-  int32_t Preferences::version{INVALID_VERSION};                                             //! Version der Einstellungen
-  std::string Preferences::ssid{DEFAULT_SSID};                                               //! SSID des Accespoint
-  std::string Preferences::ap_passwd{DEFAULT_AP_PASSWORD};                                   //! Password des Accesspoint
-  uint8_t Preferences::ap_cannel{static_cast<uint8_t>(DEFAULT_AP_CHANNEL)};                  //! Kanal des WiFi AP
-  uint8_t Preferences::ap_max_connections{static_cast<uint8_t>(DEFAULT_AP_MAX_CONNECTIONS)}; //! maximale Verbindungen wlan AP
-  float Preferences::pulsePerRound{DEFAULT_PULSE_PER_WEEL_ROUND};                            //! impulse per Radumdrehung
-  float Preferences::circumFerence{DEFAULT_WHEEL_CIRCUM_FERENCE};                            //! Radumfang für Tacho
-  float Preferences::oilInterval{DEFAULT_OIL_INTERVAL};                                      //! Das Intrerval für die Ölung
-  float Preferences::rainFactor{DEFAULT_RAIN_OIL_INTERVAL_FACTOR};                           //! Streckenfaktor bei Regen
-  float Preferences::crossFactor{DEFAULT_CROSS_OIL_INTERVAL_FACTOR};                         //! Streckenfaktor beim crossen
-  float Preferences::speedProgression{DEFAULT_SPEED_PROGRESSION_FACTOR};                     //! Mehr öl bei höherer Geschwindigkeit
-  int32_t Preferences::rainSensorThreshold{static_cast<int>(DEFAULT_THRESHOLD_RAIN_SENSOR)}; //! Sensor Schwellwert
-  uint64_t Preferences::pumpLedTimeout{DEFAULT_PUMP_LED_LITHGING_TIME};                      //! wie lange leuchtet die LED nach
-  volatile uint64_t Preferences::lastTachoPulse{0};                                          //! wann traten die letzten Tachoinformationen auf
-  volatile fClick Preferences::controlSwitchAction{fClick::NONE};                            //! welche Aktion des buttons liegt an
-  volatile fClick Preferences::rainSwitchAction{fClick::NONE};                               //! welche aktion des buttons liegt an
-  volatile uint8_t Preferences::pumpCycles{0};                                               //! wie viele pumpenzyklen sollen erfolgen(setzten startet pumpe)
-  opMode Preferences::appOpMode{opMode::AWAKE};                                              //! In welchem Zustand ist das Programm
-  float Preferences::currentSpeedMeterPerSec{0.0F};                                          //! aktuelle Geschwindigkeit
-  float Preferences::currentRouteLenPastOil{0.0F};                                           //! Wegstrecke nach dem Ölen
-  bool Preferences::isAttentionFlag{false};                                                  //! Flag für Ankündigung/Achtung (soll blinken auslösen)
-  portMUX_TYPE Preferences::oilCycleMutex;                                                   //! Mutex für zugriff auf Olpumpen zyklen
+  const char *Preferences::tag{"Preferences"};                              //! tag fürs debug logging
+  nvs_handle_t Preferences::nvs_handle{0U};                                 //! handle für NVS
+  bool Preferences::isInit{false};                                          //! Objekt initialisiert?
+  uint32_t Preferences::version{INVALID_VERSION};                           //! Version der Einstellungen
+  std::string Preferences::ssid{DEFAULT_SSID};                              //! SSID des Accespoint
+  std::string Preferences::ap_passwd{DEFAULT_AP_PASSWORD};                  //! Password des Accesspoint
+  uint8_t Preferences::ap_cannel{DEFAULT_AP_CHANNEL};                       //! Kanal des WiFi AP
+  uint8_t Preferences::ap_max_connections{DEFAULT_AP_MAX_CONNECTIONS};      //! maximale Verbindungen wlan AP
+  float Preferences::pulsePerRound{DEFAULT_PULSE_PER_WEEL_ROUND};           //! impulse per Radumdrehung
+  float Preferences::circumFerence{DEFAULT_WHEEL_CIRCUM_FERENCE};           //! Radumfang für Tacho
+  float Preferences::oilInterval{DEFAULT_OIL_INTERVAL};                     //! Das Intrerval für die Ölung
+  float Preferences::rainFactor{DEFAULT_RAIN_OIL_INTERVAL_FACTOR};          //! Streckenfaktor bei Regen
+  float Preferences::crossFactor{DEFAULT_CROSS_OIL_INTERVAL_FACTOR};        //! Streckenfaktor beim crossen
+  float Preferences::speedProgression{DEFAULT_SPEED_PROGRESSION_FACTOR};    //! Mehr öl bei höherer Geschwindigkeit
+  uint32_t Preferences::rainSensorThreshold{DEFAULT_THRESHOLD_RAIN_SENSOR}; //! Sensor Schwellwert
+  uint64_t Preferences::pumpLedTimeout{DEFAULT_PUMP_LED_LITHGING_TIME};     //! wie lange leuchtet die LED nach
+  volatile uint64_t Preferences::lastTachoPulse{0};                         //! wann traten die letzten Tachoinformationen auf
+  volatile fClick Preferences::controlSwitchAction{fClick::NONE};           //! welche Aktion des buttons liegt an
+  volatile fClick Preferences::rainSwitchAction{fClick::NONE};              //! welche aktion des buttons liegt an
+  volatile uint8_t Preferences::pumpCycles{0};                              //! wie viele pumpenzyklen sollen erfolgen(setzten startet pumpe)
+  opMode Preferences::appOpMode{opMode::AWAKE};                             //! In welchem Zustand ist das Programm
+  float Preferences::currentSpeedMeterPerSec{0.0F};                         //! aktuelle Geschwindigkeit
+  float Preferences::currentRouteLenPastOil{0.0F};                          //! Wegstrecke nach dem Ölen
+  double Preferences::ackumulatedRouteLen{0.0D};                            //! Akkumulierte Wegstrecke
+  bool Preferences::isAttentionFlag{false};                                 //! Flag für Ankündigung/Achtung (soll blinken auslösen)
+  portMUX_TYPE Preferences::oilCycleMutex;                                  //! Mutex für zugriff auf Olpumpen zyklen
 
   /**
    * @brief gib version als string zurück
@@ -48,7 +49,7 @@ namespace Prefs
   void Preferences::init()
   {
     Preferences::oilCycleMutex = portMUX_INITIALIZER_UNLOCKED;
-    int32_t tmp_vers = INVALID_VERSION;
+    uint32_t tmp_vers = INVALID_VERSION;
     //
     // Initialize NVS
     //
@@ -413,7 +414,7 @@ namespace Prefs
   void Preferences::makeDefaults()
   {
     esp_err_t err;
-    nvs_handle_t nvs_local_handle{Preferences::nvs_handle};
+    // nvs_handle_t nvs_local_handle{Preferences::nvs_handle};
     //
     // debuggen
     //
@@ -437,7 +438,7 @@ namespace Prefs
     nvs_erase_all(Preferences::nvs_handle);
     err = nvs_commit(Preferences::nvs_handle);
     // dummy
-    Preferences::setIntValue("dummy", 123456789);
+    Preferences::setIntValue("dummy", static_cast<uint32_t>(123456789U));
     // SSID
     Preferences::setStringValue(SSID_STR, DEFAULT_SSID);
     // AP Passwort
@@ -461,7 +462,9 @@ namespace Prefs
     // sensor schwellwert
     Preferences::setIntValue(THRESHOLD_RAIN_SENSOR_STR, DEFAULT_THRESHOLD_RAIN_SENSOR);
     // Pumpen nachleuchten
-    Preferences::setIntValue(PUMP_LED_LITHGING_TIME_STR, static_cast<uint32_t>(DEFAULT_PUMP_LED_LITHGING_TIME));
+    Preferences::setIntValue(PUMP_LED_LITHGING_TIME_STR, DEFAULT_PUMP_LED_LITHGING_TIME);
+    // absolute Wegstrecke
+    Preferences::setDoubleValue(ABSOLUTE_PATH_LEN_STR, 0.0D);
     // Version
     Preferences::setIntValue(PREFS_VERSION_STR, CURRENT_PREFS_VERSION);
     //
@@ -477,6 +480,14 @@ namespace Prefs
     ESP_LOGD(tag, "commit updates in NVS...done");
     // das RW Handle schliessen
     nvs_close(Preferences::nvs_handle);
+    ESP_LOGD(tag, "================== R E B O O T ===============================");
+#ifdef DEBUG
+    vTaskDelay(pdMS_TO_TICKS(3000));
+#else
+    vTaskDelay(pdMS_TO_TICKS(50));
+#endif
+    esp_restart();
+    /*
     // Handle zurückholen
     Preferences::nvs_handle = nvs_local_handle;
     nvs_stats_t nvs_stats;
@@ -484,6 +495,7 @@ namespace Prefs
     printf("Count: UsedEntries = (%d), FreeEntries = (%d), AllEntries = (%d)\n", nvs_stats.used_entries, nvs_stats.free_entries,
            nvs_stats.total_entries);
     ESP_LOGD(tag, "=================================================");
+    */
   }
 
   /**
@@ -559,15 +571,15 @@ namespace Prefs
     ESP_LOGD(tag, "save current propertys...");
     ESP_LOGD(tag, "=================================================");
     // dummy
-    Preferences::setIntValue("dummy", 123456789);
+    Preferences::setIntValue("dummy", static_cast<uint32_t>(123456789U));
     // SSID
     Preferences::setStringValue(SSID_STR, Preferences::ssid);
     // AP Passwort
     Preferences::setStringValue(AP_PASSWORD_STR, Preferences::ap_passwd);
     // AP Kanal
-    Preferences::setIntValue(AP_CHANNEL_STR, static_cast<int32_t>(Preferences::ap_cannel));
+    Preferences::setIntValue(AP_CHANNEL_STR, Preferences::ap_cannel);
     // AP max connections
-    Preferences::setIntValue(AP_MAX_CONNECTIONS_STR, static_cast<int32_t>(Preferences::ap_max_connections));
+    Preferences::setIntValue(AP_MAX_CONNECTIONS_STR, Preferences::ap_max_connections);
     // pulses per round
     Preferences::setFloatValue(PULSE_PER_WEEL_ROUND_STR, Preferences::pulsePerRound);
     // Radumfang
@@ -582,8 +594,10 @@ namespace Prefs
     Preferences::setFloatValue(SPEED_PROGRESSION_FACTOR_STR, Preferences::speedProgression);
     // sensor schwellwert
     Preferences::setIntValue(THRESHOLD_RAIN_SENSOR_STR, Preferences::rainSensorThreshold);
-    // Pumpen nachleuchten, der Wert hat wg. des Timers 64 Bit, speichern brauch ich nur 32 Bit
-    Preferences::setIntValue(PUMP_LED_LITHGING_TIME_STR, static_cast<uint32_t>(Preferences::pumpLedTimeout));
+    // Pumpen nachleuchten
+    Preferences::setIntValue(PUMP_LED_LITHGING_TIME_STR, Preferences::pumpLedTimeout);
+    // absolute Wegstrecke
+    Preferences::setDoubleValue(ABSOLUTE_PATH_LEN_STR, Preferences::ackumulatedRouteLen);
     // Version
     Preferences::setIntValue(PREFS_VERSION_STR, CURRENT_PREFS_VERSION);
     //
@@ -648,10 +662,9 @@ namespace Prefs
     Preferences::rainFactor = Preferences::getFloatValue(RAIN_OIL_INTERVAL_FACTOR_STR, DEFAULT_RAIN_OIL_INTERVAL_FACTOR);
     Preferences::crossFactor = Preferences::getFloatValue(CROSS_OIL_INTERVAL_FACTOR_STR, DEFAULT_CROSS_OIL_INTERVAL_FACTOR);
     Preferences::speedProgression = Preferences::getFloatValue(SPEED_PROGRESSION_FACTOR_STR, DEFAULT_SPEED_PROGRESSION_FACTOR);
-    Preferences::rainSensorThreshold =
-        static_cast<uint32_t>(Preferences::getIntValue(THRESHOLD_RAIN_SENSOR_STR, DEFAULT_THRESHOLD_RAIN_SENSOR));
-    Preferences::pumpLedTimeout =
-        static_cast<uint64_t>(Preferences::getIntValue(PUMP_LED_LITHGING_TIME_STR, DEFAULT_PUMP_LED_LITHGING_TIME));
+    Preferences::rainSensorThreshold = Preferences::getIntValue(THRESHOLD_RAIN_SENSOR_STR, DEFAULT_THRESHOLD_RAIN_SENSOR);
+    Preferences::pumpLedTimeout = Preferences::getIntValue(PUMP_LED_LITHGING_TIME_STR, DEFAULT_PUMP_LED_LITHGING_TIME);
+    Preferences::ackumulatedRouteLen = Preferences::getDoubleValue(ABSOLUTE_PATH_LEN_STR, 0.0D);
     ESP_LOGD(tag, "read all preferences...done");
   }
 
@@ -660,10 +673,10 @@ namespace Prefs
    *
    * @return int16_t
    */
-  int16_t Preferences::getPulsesFor100Meters()
+  uint16_t Preferences::getPulsesFor100Meters()
   {
     float val100Meters = (100.0 / circumFerence) * pulsePerRound;
-    int16_t count = static_cast<int16_t>(std::ceil(val100Meters));
+    uint16_t count = static_cast<uint16_t>(std::ceil(val100Meters));
     ESP_LOGI(tag, "==== pulses for 100 meters: <%06d>", count);
     return count;
   }
@@ -673,10 +686,10 @@ namespace Prefs
    *
    * @return int16_t
    */
-  int16_t Preferences::getPulsesFor10Meters()
+  uint16_t Preferences::getPulsesFor10Meters()
   {
     float val10Meters = (10.0 / circumFerence) * pulsePerRound;
-    int16_t count = static_cast<int16_t>(std::ceil(val10Meters));
+    uint16_t count = static_cast<uint16_t>(std::ceil(val10Meters));
     ESP_LOGI(tag, "==== pulses for 10 meters: <%06d>", count);
     return (count >= 1) ? count : 1;
   }
@@ -836,6 +849,7 @@ namespace Prefs
   void Preferences::addRouteLenPastOil(float _routeLen)
   {
     Preferences::currentRouteLenPastOil += _routeLen;
+    Preferences::ackumulatedRouteLen += static_cast<double>(_routeLen);
   }
 
   /**
@@ -846,6 +860,11 @@ namespace Prefs
   float Preferences::getRouteLenPastOil()
   {
     return Preferences::currentRouteLenPastOil;
+  }
+
+  double Preferences::getAckumulatedRouteLen()
+  {
+    return Preferences::ackumulatedRouteLen;
   }
 
   /**
@@ -897,6 +916,93 @@ namespace Prefs
   //#### private functions                                                 ####
   //###########################################################################
   //###########################################################################
+  uint8_t Preferences::getIntValue(const char *_name, uint8_t _defaultVal)
+  {
+    esp_err_t err;
+    uint8_t val = _defaultVal;
+    ESP_LOGD(tag, "read uint8 value <%s>...", _name);
+    if (!Preferences::isInit)
+      return (_defaultVal);
+    err = nvs_get_u8(Preferences::nvs_handle, _name, &val);
+    switch (err)
+    {
+    case ESP_OK:
+      ESP_LOGD(tag, "read uint8 value <%s> = <%06u>...", _name, val);
+      return (val);
+    case ESP_ERR_NVS_NOT_FOUND:
+      ESP_LOGE(tag, "read uint8 value <%s> is not initialized yet", _name);
+      break;
+    case ESP_ERR_NVS_INVALID_HANDLE:
+      ESP_LOGE(tag, "read uint8 value <invalid handle>");
+      break;
+    case ESP_ERR_NVS_INVALID_NAME:
+      ESP_LOGE(tag, "read uint8 value <invalid name>");
+      break;
+    case ESP_ERR_NVS_INVALID_LENGTH:
+      ESP_LOGE(tag, "read uint8 value <invalid data length>");
+      break;
+    default:
+      ESP_LOGE(tag, "error while reading value <%s>", _name);
+      break;
+    }
+    return (_defaultVal);
+  }
+
+  bool Preferences::setIntValue(const char *_name, uint8_t _val)
+  {
+    esp_err_t err;
+    if (!Preferences::isInit)
+      return false;
+    err = nvs_set_u8(Preferences::nvs_handle, _name, _val);
+    ESP_LOGD(tag, "write uint8 name <%s> value <%06u>...", _name, _val);
+    if (err == ESP_OK)
+      return true;
+    return false;
+  }
+
+  uint64_t Preferences::getIntValue(const char *_name, uint64_t _defaultVal)
+  {
+    esp_err_t err;
+    uint64_t val = _defaultVal;
+    ESP_LOGD(tag, "read uint64 value <%s>...", _name);
+    if (!Preferences::isInit)
+      return (_defaultVal);
+    err = nvs_get_u64(Preferences::nvs_handle, _name, &val);
+    switch (err)
+    {
+    case ESP_OK:
+      ESP_LOGD(tag, "read uint64 value <%s> = <%06u>...", _name, static_cast<uint32_t>(val));
+      return (val);
+    case ESP_ERR_NVS_NOT_FOUND:
+      ESP_LOGE(tag, "read uint64 value <%s> is not initialized yet", _name);
+      break;
+    case ESP_ERR_NVS_INVALID_HANDLE:
+      ESP_LOGE(tag, "read uint64 value <invalid handle>");
+      break;
+    case ESP_ERR_NVS_INVALID_NAME:
+      ESP_LOGE(tag, "read uint64 value <invalid name>");
+      break;
+    case ESP_ERR_NVS_INVALID_LENGTH:
+      ESP_LOGE(tag, "read uint64 value <invalid data length>");
+      break;
+    default:
+      ESP_LOGE(tag, "error while reading value <%s>", _name);
+      break;
+    }
+    return (_defaultVal);
+  }
+
+  bool Preferences::setIntValue(const char *_name, uint64_t _val)
+  {
+    esp_err_t err;
+    if (!Preferences::isInit)
+      return false;
+    err = nvs_set_u64(Preferences::nvs_handle, _name, _val);
+    ESP_LOGD(tag, "write int32 name <%s> value <%06u>...", _name, static_cast<uint32_t>(_val));
+    if (err == ESP_OK)
+      return true;
+    return false;
+  }
 
   /**
    * @brief lese INT Variable aus dem NVS
@@ -905,36 +1011,36 @@ namespace Prefs
    * @param defaultVal
    * @return int32_t
    */
-  int32_t Preferences::getIntValue(const char *_name, int32_t defaultVal)
+  uint32_t Preferences::getIntValue(const char *_name, uint32_t _defaultVal)
   {
     esp_err_t err;
-    int32_t val = defaultVal;
-    ESP_LOGD(tag, "read int32 value <%s>...", _name);
+    uint32_t val = _defaultVal;
+    ESP_LOGD(tag, "read uint32 value <%s>...", _name);
     if (!Preferences::isInit)
-      return (defaultVal);
-    err = nvs_get_i32(Preferences::nvs_handle, _name, &val);
+      return (_defaultVal);
+    err = nvs_get_u32(Preferences::nvs_handle, _name, &val);
     switch (err)
     {
     case ESP_OK:
-      ESP_LOGD(tag, "read int32 value <%s> = <%06d>...", _name, val);
+      ESP_LOGD(tag, "read uint32 value <%s> = <%06u>...", _name, val);
       return (val);
     case ESP_ERR_NVS_NOT_FOUND:
-      ESP_LOGE(tag, "read int32 value <%s> is not initialized yet", _name);
+      ESP_LOGE(tag, "read uint32 value <%s> is not initialized yet", _name);
       break;
     case ESP_ERR_NVS_INVALID_HANDLE:
-      ESP_LOGE(tag, "read int32 value <invalid handle>");
+      ESP_LOGE(tag, "read uint32 value <invalid handle>");
       break;
     case ESP_ERR_NVS_INVALID_NAME:
-      ESP_LOGE(tag, "read int32 value <invalid name>");
+      ESP_LOGE(tag, "read uint32 value <invalid name>");
       break;
     case ESP_ERR_NVS_INVALID_LENGTH:
-      ESP_LOGE(tag, "read int32 value <invalid data length>");
+      ESP_LOGE(tag, "read uint32 value <invalid data length>");
       break;
     default:
       ESP_LOGE(tag, "error while reading value <%s>", _name);
       break;
     }
-    return (defaultVal);
+    return (_defaultVal);
   }
 
   /**
@@ -945,13 +1051,13 @@ namespace Prefs
    * @return true
    * @return false
    */
-  bool Preferences::setIntValue(const char *_name, int32_t _val)
+  bool Preferences::setIntValue(const char *_name, uint32_t _val)
   {
     esp_err_t err;
     if (!Preferences::isInit)
       return false;
-    err = nvs_set_i32(Preferences::nvs_handle, _name, _val);
-    ESP_LOGD(tag, "write int32 name <%s> value <%06d>...", _name, _val);
+    err = nvs_set_u32(Preferences::nvs_handle, _name, _val);
+    ESP_LOGD(tag, "write int32 name <%s> value <%06u>...", _name, _val);
     if (err == ESP_OK)
       return true;
     return false;
@@ -1037,7 +1143,7 @@ namespace Prefs
    * @param _defaultValue
    * @return float
    */
-  float Preferences::getFloatValue(const char *_name, float _defaultValue)
+  float Preferences::getFloatValue(const char *_name, float _defaultVal)
   {
     esp_err_t err;
     float val;
@@ -1045,7 +1151,7 @@ namespace Prefs
     //
     ESP_LOGD(tag, "read float value <%s>...", _name);
     if (!Preferences::isInit)
-      return (_defaultValue);
+      return (_defaultVal);
     err = nvs_get_blob(Preferences::nvs_handle, _name, &val, &size);
     switch (err)
     {
@@ -1054,12 +1160,12 @@ namespace Prefs
       return (val);
     case ESP_ERR_NVS_NOT_FOUND:
       ESP_LOGE(tag, "read float value <%s> is not initialized yet", _name);
-      return (_defaultValue);
+      return (_defaultVal);
     default:
       ESP_LOGE(tag, "error while reading float value <%s>", _name);
-      return (_defaultValue);
+      return (_defaultVal);
     }
-    return (_defaultValue);
+    return (_defaultVal);
   }
 
   /**
@@ -1078,6 +1184,44 @@ namespace Prefs
       return false;
     err = nvs_set_blob(Preferences::nvs_handle, _name, &_val, sizeof(_val));
     ESP_LOGD(tag, "write float <%s> value <%.2f>...", _name, _val);
+    if (err == ESP_OK)
+      return true;
+    return false;
+  }
+
+  float Preferences::getDoubleValue(const char *_name, double _defaultVal)
+  {
+    esp_err_t err;
+    double val;
+    size_t size = sizeof(val);
+    //
+    ESP_LOGD(tag, "read double value <%s>...", _name);
+    if (!Preferences::isInit)
+      return (_defaultVal);
+    err = nvs_get_blob(Preferences::nvs_handle, _name, &val, &size);
+    switch (err)
+    {
+    case ESP_OK:
+      ESP_LOGD(tag, "read double value <%s> = <%f>...", _name, static_cast<double>(val));
+      return (val);
+    case ESP_ERR_NVS_NOT_FOUND:
+      ESP_LOGE(tag, "read double value <%s> is not initialized yet", _name);
+      return (_defaultVal);
+    default:
+      ESP_LOGE(tag, "error while reading double value <%s>", _name);
+      return (_defaultVal);
+    }
+    return (_defaultVal);
+  }
+
+  bool Preferences::setDoubleValue(const char *_name, double _val)
+  {
+    esp_err_t err;
+    //
+    if (!Preferences::isInit)
+      return false;
+    err = nvs_set_blob(Preferences::nvs_handle, _name, &_val, sizeof(_val));
+    ESP_LOGD(tag, "write double <%s> value <%.2f>...", _name, static_cast<double>(_val));
     if (err == ESP_OK)
       return true;
     return false;

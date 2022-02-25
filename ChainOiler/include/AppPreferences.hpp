@@ -24,7 +24,7 @@ namespace Prefs
     static const std::string serialString; //! Seriennummer als string
     static nvs_handle_t nvs_handle;        //! Handle für den Speicher
     static bool isInit;                    //! ist der Speicher initialisiert?
-    static int32_t version;                //! version der einstellungen
+    static uint32_t version;               //! version der einstellungen
     static std::string ssid;               //! SSID des Accesspoints
     static std::string ap_passwd;          //! Passwort des Accespoints
     static uint8_t ap_cannel;              //! Kanal des WiFi AP
@@ -35,7 +35,7 @@ namespace Prefs
     static float rainFactor;               //! Faktor für Öl intervall verlängerung
     static float crossFactor;              //! Faktor für öl beim crossen
     static float speedProgression;         //! Mehr öl bei höherer Geschwindigkeit
-    static int rainSensorThreshold;        //! Schwellwert des Regensensors
+    static uint32_t rainSensorThreshold;   //! Schwellwert des Regensensors
     static uint64_t pumpLedTimeout;        //! wie lange leuchtet die LED nach
     static bool isAttentionFlag;           //! Flag für Ankündigung/Achtung (soll blinken auslösen)
     static portMUX_TYPE oilCycleMutex;     //! Mutex für zugriff auf Olpumpen zyklen
@@ -44,6 +44,7 @@ namespace Prefs
     static opMode appOpMode;                    //! In welchem Zustand ist das Programm
     static float currentSpeedMeterPerSec;       //! aktuele Geschwindigkeit
     static float currentRouteLenPastOil;        //! Wegstrecke nach dem Ölen
+    static double ackumulatedRouteLen;          //! Akkunukierte Wegstrecke
     static volatile uint64_t lastTachoPulse;    //! wann war der letzte Puls (deep sleep)
     static volatile fClick controlSwitchAction; //! ist ein Ereignis?
     static volatile fClick rainSwitchAction;    //! ist ein ereignis?
@@ -80,8 +81,8 @@ namespace Prefs
     static float getSpeedProgression();            //! lese den Faktor bei Geschwindigkeit
     static void setSensorThreshold(int);           //! setzte sen Schwelenwert des Regensensors
     static int getSensorThreshold();               //! lese Schwellenwert des Regensensors
-    static int16_t getPulsesFor100Meters();        //! gib impulse per 100 Meter, errechnet aus den Parametern
-    static int16_t getPulsesFor10Meters();         //! impulse per 10 Meter, für Tacho
+    static uint16_t getPulsesFor100Meters();       //! gib impulse per 100 Meter, errechnet aus den Parametern
+    static uint16_t getPulsesFor10Meters();        //! impulse per 10 Meter, für Tacho
     static uint16_t getMinimalPulseLength();       //! die kleinste Pulslänge in meiner Konfiguration
     static uint32_t getCounterPulsesForInterval(); //! wie viele impuse zum erreichen der strecke
     static opMode getAppMode();                    //! gib Operationsmode zurück
@@ -95,6 +96,7 @@ namespace Prefs
     static void setRouteLenPastOil(float);         //! setze die Strecke nach dem Ölen
     static void addRouteLenPastOil(float);         //! füge Strecke nach dem Ölen hinzu
     static float getRouteLenPastOil();             //! gib die Strecke seit dem letzen Ölen zurück
+    static double getAckumulatedRouteLen();        //! wie weit war es bisher
     static uint64_t getPumpLedTimeout();           //! LED Timeout bei Meldungen
     static void setPumpLedTimeout(uint64_t);       //! LED tiemout bei Meldungen
     static bool getAttentionFlag();                //! gib das ACHTUNG Flag zurück
@@ -105,12 +107,18 @@ namespace Prefs
     static void setPumpCycles(uint8_t);            //! zyklen einstellen
 
   private:
-    static int32_t getIntValue(const char *, int32_t);             //! lese einen 32 Bit INT wert aus dem Speicher
-    static bool setIntValue(const char *, int32_t);                //! schreibe einen 32 Bit INT wert in den Speicher
+    static uint8_t getIntValue(const char *, uint8_t);             //! lese einen 8 Bit UINT wert aus dem Speicher
+    static bool setIntValue(const char *, uint8_t);                //! schreibe einen 8 Bit UINT wert in den Speicher
+    static uint32_t getIntValue(const char *, uint32_t);           //! lese einen 32 Bit UINT wert aus dem Speicher
+    static bool setIntValue(const char *, uint32_t);               //! schreibe einen 32 Bit UINT wert in den Speicher
+    static uint64_t getIntValue(const char *, uint64_t);           //! lese einen 64 Bit UINT wert aus dem Speicher
+    static bool setIntValue(const char *, uint64_t);               //! schreibe einen 64 Bit UINT wert in den Speicher
     static std::string getStringValue(const char *);               //! lese eine Zeichenkette aus dem Speicher
     static bool setStringValue(const char *, const char *);        //! schreibe eine Zeichenkette in den Speicher
     static bool setStringValue(const char *, const std::string &); //! schreibe eine Zeichenkette in den Speicher
     static float getFloatValue(const char *, float);               //! lies einen double Wert aus dem Speicher
     static bool setFloatValue(const char *, float);                //! schreibe einen double Wert in den Speicher
+    static float getDoubleValue(const char *, double);             //! lies einen double Wert aus dem Speicher
+    static bool setDoubleValue(const char *, double);              //! schreibe einen double Wert in den Speicher
   };
 } // namespace Prefs

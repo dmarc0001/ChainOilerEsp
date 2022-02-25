@@ -25,8 +25,8 @@ namespace esp32s2
     static void showAttention();
     static void setRainLED(bool);
     static void setPumpLED(bool);
-    static void setControlLED(uint32_t); //! LED für ..ms ein
-    static void setAPModeLED(uint32_t);  //! LEDs für AP Mide ein
+    static void setControlLED(uint64_t); //! LED für ..ms ein
+    static void setAPModeLED(uint64_t);  //! LEDs für AP Mide ein
 
   private:
     static void startTimer();

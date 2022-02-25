@@ -15,8 +15,8 @@ namespace Prefs
   // Version des Speichers bei Versionen, wenn änderungen an speicher
   // muss die Version erhöht werden und im code reagiert werden
   //
-  constexpr int32_t CURRENT_PREFS_VERSION = 1;
-  constexpr int32_t INVALID_VERSION = 999;
+  constexpr uint32_t CURRENT_PREFS_VERSION = 1U;
+  constexpr uint32_t INVALID_VERSION = 999U;
   constexpr const char *PREFS_PARTITION_LABEL{"prefs"};
   //
   // Konfigurierbare Parameter und deren keys
@@ -32,21 +32,22 @@ namespace Prefs
   constexpr const char *AP_MAX_CONNECTIONS_STR{"ap_max_conns"};        //! maximale anzahl gleichzeitiger Verbindungen
   constexpr uint8_t DEFAULT_AP_MAX_CONNECTIONS{4};                     //! maximale verbindungen
   constexpr const char *PULSE_PER_WEEL_ROUND_STR{"pulse_per_round"};   //! Impulse per Radumdrehung
-  constexpr double DEFAULT_PULSE_PER_WEEL_ROUND = 109.0;               //! Defaultwert für Reed, Honda Africa Twin 109
+  constexpr double DEFAULT_PULSE_PER_WEEL_ROUND = 109.0D;              //! Defaultwert für Reed, Honda Africa Twin 109
   constexpr const char *WHEEL_CIRCUM_FERENCE_STR{"curcum_ference"};    //! Radumfang
-  constexpr double DEFAULT_WHEEL_CIRCUM_FERENCE = 1.81;                //! Default Umfang Hinterrad
+  constexpr double DEFAULT_WHEEL_CIRCUM_FERENCE = 1.81D;               //! Default Umfang Hinterrad
   constexpr const char *OIL_INTERVAL_STR{"oil_interval"};              //! Öl interval in Metern
-  constexpr double DEFAULT_OIL_INTERVAL = 4000.0;                      //! Schmierinterval 4000 Meter
+  constexpr double DEFAULT_OIL_INTERVAL = 2000.0D;                     //! Schmierinterval 4000 Meter
   constexpr const char *RAIN_OIL_INTERVAL_FACTOR_STR{"rain_factor"};   //! Streckenfaktor bei Regen
-  constexpr double DEFAULT_RAIN_OIL_INTERVAL_FACTOR = 1.4;             //! wieviel mal gegenüber normal schmieren
+  constexpr double DEFAULT_RAIN_OIL_INTERVAL_FACTOR = 1.4D;            //! wieviel mal gegenüber normal schmieren
   constexpr const char *CROSS_OIL_INTERVAL_FACTOR_STR{"cross_factor"}; //! Streckenfaktor bei cross
-  constexpr double DEFAULT_CROSS_OIL_INTERVAL_FACTOR = 6.0;            //! wieviel mal öfter beim Crossen schmieren
+  constexpr double DEFAULT_CROSS_OIL_INTERVAL_FACTOR = 6.0D;           //! wieviel mal öfter beim Crossen schmieren
   constexpr const char *SPEED_PROGRESSION_FACTOR_STR{"speed_progres"}; //! Geschwindigkeits regression
-  constexpr double DEFAULT_SPEED_PROGRESSION_FACTOR = -0.76;           //! der Faktor für die Berechnung der Progression
+  constexpr double DEFAULT_SPEED_PROGRESSION_FACTOR = -0.76D;          //! der Faktor für die Berechnung der Progression
   constexpr const char *THRESHOLD_RAIN_SENSOR_STR{"rain_threshold"};   //! Regensensor Schwellwert
-  constexpr uint32_t DEFAULT_THRESHOLD_RAIN_SENSOR = 512;              //! Schwellenwert für Regen TODO: Hysterese zum Abschalten
+  constexpr uint32_t DEFAULT_THRESHOLD_RAIN_SENSOR = 512U;             //! Schwellenwert für Regen TODO: Hysterese zum Abschalten
   constexpr const char *PUMP_LED_LITHGING_TIME_STR{"pump_led_time"};   //! Zeit für die Aktivitätsanzeige
-  constexpr uint32_t DEFAULT_PUMP_LED_LITHGING_TIME = 300;             //! Leuchtzeit der Pumpen-LED
+  constexpr uint64_t DEFAULT_PUMP_LED_LITHGING_TIME = 300ULL;          //! Leuchtzeit der Pumpen-LED
+  constexpr const char *ABSOLUTE_PATH_LEN_STR{"abs_path_len"};         //! akkumulierte Wegstrecke
   //
   // Ein-/Ausgänge GPIO, nicht konfigurierbar
   //
@@ -71,24 +72,24 @@ namespace Prefs
   //
   // intervalle beim blinken in Microsekunden
   //
-  constexpr uint32_t BLINK_LED_CONTROL_NORMAL_OFF = 3000 * 1000;
-  constexpr uint32_t BLINK_LED_CONTROL_NORMAL_ON = 10 * 1000;
-  constexpr uint32_t BLINK_LED_CONTROL_CROSS_OFF = 100 * 1000;
-  constexpr uint32_t BLINK_LED_CONTROL_CROSS_ON = 4000 * 1000;
-  constexpr uint32_t BLINK_LED_CONTROL_AP_OFF = 100 * 1000;
-  constexpr uint32_t BLINK_LED_CONTROL_AP_ON = 1000 * 1000;
-  constexpr uint32_t BLINK_LED_CONTROL_TEST_OFF = 60 * 1000;
-  constexpr uint32_t BLINK_LED_CONTROL_TEST_ON = 60 * 1000;
-  constexpr uint32_t BLINK_LED_ATTENTION_OFF = 35 * 1000;
-  constexpr uint32_t BLINK_LED_ATTENTION_ON = 35 * 1000;
-  constexpr uint32_t BLINK_LED_AWAKE_OFF = 150 * 1000;
-  constexpr uint32_t BLINK_LED_AWAKE_ON = 80 * 1000;
-  constexpr uint32_t PUMP_LED_DELAY = 3000 * 1000;
+  constexpr uint64_t BLINK_LED_CONTROL_NORMAL_OFF = 3000 * 1000;
+  constexpr uint64_t BLINK_LED_CONTROL_NORMAL_ON = 10 * 1000;
+  constexpr uint64_t BLINK_LED_CONTROL_CROSS_OFF = 100 * 1000;
+  constexpr uint64_t BLINK_LED_CONTROL_CROSS_ON = 4000 * 1000;
+  constexpr uint64_t BLINK_LED_CONTROL_AP_OFF = 100 * 1000;
+  constexpr uint64_t BLINK_LED_CONTROL_AP_ON = 1000 * 1000;
+  constexpr uint64_t BLINK_LED_CONTROL_TEST_OFF = 60 * 1000;
+  constexpr uint64_t BLINK_LED_CONTROL_TEST_ON = 60 * 1000;
+  constexpr uint64_t BLINK_LED_ATTENTION_OFF = 35 * 1000;
+  constexpr uint64_t BLINK_LED_ATTENTION_ON = 35 * 1000;
+  constexpr uint64_t BLINK_LED_AWAKE_OFF = 150 * 1000;
+  constexpr uint64_t BLINK_LED_AWAKE_ON = 80 * 1000;
+  constexpr uint64_t PUMP_LED_DELAY = 3000 * 1000;
   //
   // Konstanten
   //
   constexpr size_t QUEUE_LEN_DISTANCE = 10;      //! Wie lang ist die RTOS Queue für entfernungsmessung
-  constexpr size_t QUEUE_LEN_TACHO = 20;         //! wie lang ist die queue für Tacho Ereignisse
+  constexpr size_t QUEUE_LEN_TACHO = 30;         //! wie lang ist die queue für Tacho Ereignisse
   constexpr size_t SPEED_HISTORY_LEN = 200;      //! max länge der Tempo-Historie
   constexpr uint64_t HISTORY_MAX_TIME_MS = 4000; //! wie lang ist die history beim speed maximal
   constexpr uint8_t PUMP_OFF_ZYCLES = 8;         //! wenn die Punpe on war, wie viele Zyklen bis wieder an möglich
