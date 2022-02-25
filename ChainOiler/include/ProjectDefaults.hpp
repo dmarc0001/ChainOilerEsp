@@ -36,7 +36,7 @@ namespace Prefs
   constexpr const char *WHEEL_CIRCUM_FERENCE_STR{"curcum_ference"};    //! Radumfang
   constexpr double DEFAULT_WHEEL_CIRCUM_FERENCE = 1.81;                //! Default Umfang Hinterrad
   constexpr const char *OIL_INTERVAL_STR{"oil_interval"};              //! Öl interval in Metern
-  constexpr double DEFAULT_OIL_INTERVAL = 2000.0;                      //! Schmierinterval 4000 Meter
+  constexpr double DEFAULT_OIL_INTERVAL = 4000.0;                      //! Schmierinterval 4000 Meter
   constexpr const char *RAIN_OIL_INTERVAL_FACTOR_STR{"rain_factor"};   //! Streckenfaktor bei Regen
   constexpr double DEFAULT_RAIN_OIL_INTERVAL_FACTOR = 1.4;             //! wieviel mal gegenüber normal schmieren
   constexpr const char *CROSS_OIL_INTERVAL_FACTOR_STR{"cross_factor"}; //! Streckenfaktor bei cross
@@ -83,15 +83,20 @@ namespace Prefs
   constexpr uint32_t BLINK_LED_ATTENTION_ON = 35 * 1000;
   constexpr uint32_t BLINK_LED_AWAKE_OFF = 150 * 1000;
   constexpr uint32_t BLINK_LED_AWAKE_ON = 80 * 1000;
-  constexpr uint32_t PUMP_LED_DELAY = 2000 * 1000;
+  constexpr uint32_t PUMP_LED_DELAY = 3000 * 1000;
   //
   // Konstanten
   //
   constexpr size_t QUEUE_LEN_DISTANCE = 10;      //! Wie lang ist die RTOS Queue für entfernungsmessung
-  constexpr size_t QUEUE_LEN_TACHO = 60;         //! wie lang ist die queue für Tacho Ereignisse
+  constexpr size_t QUEUE_LEN_TACHO = 20;         //! wie lang ist die queue für Tacho Ereignisse
   constexpr size_t SPEED_HISTORY_LEN = 200;      //! max länge der Tempo-Historie
   constexpr uint64_t HISTORY_MAX_TIME_MS = 4000; //! wie lang ist die history beim speed maximal
-
+  constexpr uint8_t PUMP_OFF_ZYCLES = 8;         //! wenn die Punpe on war, wie viele Zyklen bis wieder an möglich
+  constexpr uint32_t P_OFF = 0;                  //! Status für Pumpe OFF
+  constexpr uint32_t P_ON = 1;                   //! Status für Punpe ON
+  constexpr uint8_t NORMAL_OIL_COUNT = 1;        //! Pumpenzyklen für normales ölen
+  constexpr uint8_t RAIN_OIL_COUNT = 3;          //! Pumpenzyklen für regen ölen
+  constexpr uint8_t CROSS_OIL_COUNT = 8;         //! Pumpenzyklen für crossen ölen
   //
   // Kommandos REST API
   //

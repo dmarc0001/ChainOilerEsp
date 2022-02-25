@@ -30,23 +30,27 @@ namespace ChOiler
    */
   class MainWorker
   {
-    private:
-    static const char *tag;                                        //! Kennzeichnung fürs debug
-    static std::list< esp32s2::deltaTimeTenMeters_us > speedList;  // Vector für Tachoauswertung
-    static WiFiAccessPoint AccessPoint;                            //! das Objekt für WiFi
+  private:
+    static const char *tag;                                     //! Kennzeichnung fürs debug
+    static esp_sleep_wakeup_cause_t wakeupCause;                //! der Grund fürs neu starten
+    static std::list<esp32s2::deltaTimeTenMeters_us> speedList; // Vector für Tachoauswertung
+    static WiFiAccessPoint AccessPoint;                         //! das Objekt für WiFi
 
-    protected:
-    public:
-    static void init();             //! initialisiert Prferenzen und Hardware
-    static void run();              //! da geht es los
-    static void tachoCompute();     //! berechne Tacho Geschichten
-    static void buttonStati();      //! guck was die Buttons machen
-    static void computeAvgSpeed();  //! berechne Durchschnitt für max 4 Sekunden
-    static void checkOilState();    //! Teste ob geölt werden muss
-    private:
-    static void goDeepSleep();                //! schlaf schön
-    static void switchToAccessPointMode();    //! AP Mode einschalten
-    static void switchFromAccessPointMode();  //! AP Mode aus zum Normal
+  protected:
+  public:
+    static void init();            //! initialisiert Prferenzen und Hardware
+    static void run();             //! da geht es los
+    static void tachoCompute();    //! berechne Tacho Geschichten
+    static void buttonStati();     //! guck was die Buttons machen
+    static void computeAvgSpeed(); //! berechne Durchschnitt für max 4 Sekunden
+    static void checkOilState();   //! Teste ob geölt werden muss
+    static esp_sleep_wakeup_cause_t getWakeupCause() { return wakeupCause; };
+
+  private:
+    static void processStartupCause();       //! finde den Grund
+    static void goDeepSleep();               //! schlaf schön
+    static void switchToAccessPointMode();   //! AP Mode einschalten
+    static void switchFromAccessPointMode(); //! AP Mode aus zum Normal
   };
 
-}  // namespace ChOiler
+} // namespace ChOiler

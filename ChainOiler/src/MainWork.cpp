@@ -6,12 +6,13 @@ namespace ChOiler
    * @brief instanzieren und initialisieren der stsatischen Variablen
    *
    */
-  const char *MainWorker::tag{"MainWorker"};                       //! tag fürs debug logging
-  std::list<esp32s2::deltaTimeTenMeters_us> MainWorker::speedList; //! erzeuge leere Liste
-  WiFiAccessPoint MainWorker::AccessPoint;                         //! statisches Objekt
-  constexpr uint64_t timeForMessage = 3500000ULL;                  //! Zeit zur nächsten Nachricht
-  constexpr uint64_t timeForSpeedMeasure = 2000000ULL;             //! zeit bis zur Geschwindigkeitsmessung
-  constexpr uint64_t timeForOilerCheck = 3200000ULL;               //! zeit bis zur Kontrole ob Geölt werden muss
+  const char *MainWorker::tag{"MainWorker"};                                    //! tag fürs debug logging
+  esp_sleep_wakeup_cause_t MainWorker::wakeupCause{ESP_SLEEP_WAKEUP_UNDEFINED}; //! startgrund
+  std::list<esp32s2::deltaTimeTenMeters_us> MainWorker::speedList;              //! erzeuge leere Liste
+  WiFiAccessPoint MainWorker::AccessPoint;                                      //! statisches Objekt
+  constexpr uint64_t timeForMessage = 3500000ULL;                               //! Zeit zur nächsten Nachricht
+  constexpr uint64_t timeForSpeedMeasure = 2000000ULL;                          //! zeit bis zur Geschwindigkeitsmessung
+  constexpr uint64_t timeForOilerCheck = 3200000ULL;                            //! zeit bis zur Kontrole ob Geölt werden muss
 
   /**
    * @brief initialisiere das Programm
@@ -22,6 +23,15 @@ namespace ChOiler
     using namespace Prefs;
 
     printf("controller ist starting, version %s...\n\n", Preferences::getVersion().c_str());
+    //
+    // warum geweckt/resettet
+    //
+    ESP_LOGD(tag, "===================================================================");
+    MainWorker::processStartupCause();
+    ESP_LOGD(tag, "===================================================================\n\n");
+    // 100 ms warten
+    vTaskDelay(pdMS_TO_TICKS(100));
+    //
     MainWorker::speedList.clear();
     Preferences::setAppMode(opMode::AWAKE);
     //
@@ -29,9 +39,13 @@ namespace ChOiler
     //
     Preferences::init();
     //
+    // gloabal einmalig für GPIO IST Services einschalten
+    //
+    gpio_install_isr_service(0);
+    //
     // initialisiere die Hardware
     //
-    gpio_install_isr_service(0); // gloabal einmalig für GPIO
+    //
     esp32s2::ButtonControl::init();
     esp32s2::LedControl::init();
     esp32s2::PumpControl::init();
@@ -57,21 +71,24 @@ namespace ChOiler
     //
     ESP_LOGI(tag, "%s: run start...", __func__);
     //
-    // das Startsignal leuchten
+    // das Startsignal leuchten/blinken
     //
     while (esp_timer_get_time() < computeSpeedTime)
     {
       esp32s2::LedControl::showAttention();
       vTaskDelay(1);
     }
+    // 100 ms warten
     vTaskDelay(pdMS_TO_TICKS(100));
+    // LES aus, NORMAL Modus setzten
     esp32s2::LedControl::allOff();
     Preferences::setAppMode(opMode::NORMAL);
     //
     // hier geth es dann richtig los
-    // für immer :-)
+    // SChleife für immer :-)
     //
     ESP_LOGI(tag, "%s: loop start...", __func__);
+    // nächste Geschwindigkeitsmessung ist:
     computeSpeedTime = esp_timer_get_time() + timeForSpeedMeasure;
     //
     // #####################################################################
@@ -174,7 +191,9 @@ namespace ChOiler
         }
 #endif
         break;
+
       default:
+        ESP_LOGE(tag, "UNKNOWN OPMODE!");
         break;
       }
       //
@@ -195,17 +214,52 @@ namespace ChOiler
         }
       }
       taskYIELD();
+      vTaskDelay(1);
+
     } // while schleife
     //
     // #####################################################################
     //
   }
 
+  /**
+   * @brief TEste, ob der Oeler aktiviert werden muss
+   *
+   */
   void MainWorker::checkOilState()
   {
+    using namespace Prefs;
     //
-    // TODO: lass berechnen ob jetzt geölt werden muss
-    // und dann gib nach Prefs::Preferences::
+    // lass berechnen ob jetzt geölt werden muss
+    // und dann gib nach Prefs::Preferences::addPumpCycles(uint8_t);
+    //
+    // wie weit war ich?
+    float distanceSinceLastOil = Preferences::getRouteLenPastOil();
+    // wann ölen?
+    float oilInterval = Preferences::getOilInterval();
+    ESP_LOGD(tag, "check oil state: distance is %04.02fm, interval is %04.2fm...", static_cast<double>(distanceSinceLastOil), static_cast<double>(oilInterval));
+    //
+    // wenn es soweit ist, gib Öl
+    //
+    if (distanceSinceLastOil > oilInterval)
+    {
+      // TODO: nach Berechnung der Wegstrecken nochmal prüfen ob das so bleibt
+      ESP_LOGI(tag, "========== oil interval reached ============");
+      if (Preferences::getAppMode() == opMode::CROSS)
+      {
+        Preferences::addPumpCycles(CROSS_OIL_COUNT);
+      }
+      else if (Preferences::getAppMode() == opMode::RAIN)
+      {
+        Preferences::addPumpCycles(RAIN_OIL_COUNT);
+      }
+      else
+      {
+        Preferences::addPumpCycles(NORMAL_OIL_COUNT);
+      }
+      esp32s2::LedControl::setPumpLED(true);
+      Preferences::setRouteLenPastOil(0);
+    }
   }
 
   /**
@@ -218,36 +272,30 @@ namespace ChOiler
 
     pcnt_evt_t evt;
     deltaTimeTenMeters_us dtime_us;
-    portBASE_TYPE res;
     //
     // Geschwindigkeitsdaten aus der Queue in den Speed-History-Buffer
     // vector wie queue benutzern, aber ich kann std::queue nicht nehmen
     // da ich wahlfrei zugriff haben will
     //
-    res = xQueueReceive(TachoControl::speedQueue, &dtime_us, pdMS_TO_TICKS(10));
+    if (xQueueReceive(TachoControl::speedQueue, &dtime_us, pdMS_TO_TICKS(5)) == pdTRUE)
     {
-      if (res == pdTRUE)
+      while (MainWorker::speedList.size() > Prefs::SPEED_HISTORY_LEN - 1)
       {
-        while (MainWorker::speedList.size() > Prefs::SPEED_HISTORY_LEN - 1)
-        {
-          // am Ende entfernen
-          MainWorker::speedList.pop_back();
-        }
-        // das Neue am Anfang einfuegen
-        MainWorker::speedList.push_front(dtime_us);
+        // am Ende entfernen
+        MainWorker::speedList.pop_back();
       }
+      // das Neue am Anfang einfuegen
+      MainWorker::speedList.push_front(dtime_us);
     }
     //
     // zurückgelegte Wegstrecke berechnen
     //
-    res = xQueueReceive(TachoControl::pathLenQueue, &evt, pdMS_TO_TICKS(10));
-    if (res == pdTRUE)
+    if (xQueueReceive(TachoControl::pathLenQueue, &evt, pdMS_TO_TICKS(5)) == pdTRUE)
     {
       //
       // wenn in der queue ein ergebnis stand
       //
-      // pcnt_get_counter_value(PCNT_UNIT_0, &count);
-      ESP_LOGI(tag, "Event %d meters path done: unit%d; cnt: %d", evt.meters, evt.unit, evt.value);
+      ESP_LOGD(tag, "Event %d meters path done: unit%d; cnt: %d", evt.meters, evt.unit, evt.value);
       Prefs::Preferences::addRouteLenPastOil(evt.meters);
     }
   }
@@ -263,10 +311,11 @@ namespace ChOiler
 
     //
     // Control switch gedrückt länger als LONG ?
+    // dann soll es lustig flackern
     //
     if (!Preferences::getAttentionFlag() && (ButtonControl::controlDownSince() != 0ULL) && (ButtonControl::controlDownSince() > LONG_CLICK_TIME_US))
     {
-      // ein Ereignis, der knopp ist lange unten und noch niecht wieder hoch
+      // ein Ereignis, der knopp ist lange unten und noch nicht wieder hoch
       Preferences::setAttentionFlag(true);
     }
     else if (Preferences::getAttentionFlag() && ((ButtonControl::controlDownSince() == 0ULL) || (ButtonControl::controlDownSince() < LONG_CLICK_TIME_US)))
@@ -274,18 +323,6 @@ namespace ChOiler
       // das Ereignis ist vorbei
       Preferences::setAttentionFlag(false);
     }
-
-    /*
-    if ((ButtonControl::controlDownSince() != 0ULL) && (ButtonControl::controlDownSince() > LONG_CLICK_TIME_US) && !Preferences::getAttentionFlag())
-    {
-      Preferences::setAttentionFlag(true);
-    }
-    else if (Preferences::getAttentionFlag())
-    {
-      Preferences::setAttentionFlag(false);
-      LedControl::allOff();
-    }
-    */
     //
     // gibt es eine Aktion des Control Switch?
     //
@@ -312,12 +349,12 @@ namespace ChOiler
         //
         if (Preferences::getAppMode() == opMode::CROSS)
         {
-          ESP_LOGD(tag, "set NORMAL mode");
+          ESP_LOGI(tag, "set NORMAL mode");
           Preferences::setAppMode(opMode::NORMAL);
         }
         else
         {
-          ESP_LOGD(tag, "set CROSS mode");
+          ESP_LOGI(tag, "set CROSS mode");
           Preferences::setAppMode(opMode::CROSS);
         }
       }
@@ -326,15 +363,15 @@ namespace ChOiler
       //
       else if (Preferences::getControlSwitchAction() == fClick::LONG)
       {
-        ESP_LOGI(tag, "CONTROL Button long down");
+        ESP_LOGD(tag, "CONTROL Button long down");
         if (Preferences::getAppMode() == opMode::APMODE)
         {
-          ESP_LOGD(tag, "set NORMAL mode");
+          ESP_LOGI(tag, "set NORMAL mode");
           MainWorker::switchFromAccessPointMode();
         }
         else
         {
-          ESP_LOGD(tag, "set ACCESS POINT mode");
+          ESP_LOGI(tag, "set ACCESS POINT mode");
           MainWorker::switchToAccessPointMode();
         }
       }
@@ -354,12 +391,12 @@ namespace ChOiler
       if (Preferences::getAppMode() == opMode::NORMAL)
       {
         // von NORMAL darf es zu regen gehen, von CROSS nicht
-        ESP_LOGD(tag, "set RAIN mode");
+        ESP_LOGI(tag, "set RAIN mode");
         Preferences::setAppMode(opMode::RAIN);
       }
       else if (Preferences::getAppMode() == opMode::RAIN)
       {
-        ESP_LOGD(tag, "set NORMAL mode from RAIN");
+        ESP_LOGI(tag, "set NORMAL mode from RAIN");
         Preferences::setAppMode(opMode::NORMAL);
       }
       // Taste löschen
@@ -513,6 +550,76 @@ namespace ChOiler
     MainWorker::AccessPoint.shutdownWifi();
     esp32s2::TachoControl::resume();
     Preferences::setAppMode(opMode::NORMAL);
+  }
+
+  /**
+   * @brief stellt den Grund des Neustarts fest und leitet evtl Aktionen ein
+   *
+   */
+  void MainWorker::processStartupCause()
+  {
+    MainWorker::wakeupCause = esp_sleep_get_wakeup_cause();
+#ifdef DEBUG
+    switch (MainWorker::wakeupCause)
+    {
+    case ESP_SLEEP_WAKEUP_UNDEFINED:
+      ESP_LOGD(tag, "wakeup undefined.");
+      break;
+    case ESP_SLEEP_WAKEUP_ALL:
+      ESP_LOGD(tag, "not a wakeup cause (ESP_SLEEP_WAKEUP_ALL)");
+      break;
+    case ESP_SLEEP_WAKEUP_EXT0:
+      ESP_LOGD(tag, "wakeup source is external RTC_IO signal");
+      break;
+    case ESP_SLEEP_WAKEUP_EXT1:
+      ESP_LOGD(tag, "wakeup source is external RTC_CNTL signal");
+      break;
+    case ESP_SLEEP_WAKEUP_TIMER:
+      ESP_LOGD(tag, "wakeup ist timer");
+      break;
+    case ESP_SLEEP_WAKEUP_TOUCHPAD:
+      ESP_LOGD(tag, "wakeup ist touch sensor");
+      break;
+    case ESP_SLEEP_WAKEUP_ULP:
+      ESP_LOGD(tag, "wakeup is ULP processor");
+      break;
+    case ESP_SLEEP_WAKEUP_GPIO:
+      ESP_LOGD(tag, "Wakeup caused by GPIO (light sleep only)");
+      break;
+    case ESP_SLEEP_WAKEUP_UART:
+      ESP_LOGD(tag, "Wakeup caused by UART (light sleep only)");
+      break;
+    case ESP_SLEEP_WAKEUP_WIFI:
+      ESP_LOGD(tag, "Wakeup caused by WIFI (light sleep only)");
+      break;
+    case ESP_SLEEP_WAKEUP_COCPU:
+      ESP_LOGD(tag, "Wakeup caused by COCPU int");
+      break;
+    case ESP_SLEEP_WAKEUP_COCPU_TRAP_TRIG:
+      ESP_LOGD(tag, "Wakeup caused by COCPU crash");
+      break;
+    case ESP_SLEEP_WAKEUP_BT:
+      ESP_LOGD(tag, "Wakeup caused by BT (light sleep only)");
+      break;
+    default:
+      ESP_LOGD(tag, "wakeup is not defined, number is %d", MainWorker::wakeupCause);
+      break;
+    }
+#endif
+    if (MainWorker::wakeupCause == ESP_SLEEP_WAKEUP_EXT0)
+    {
+      //
+      // Der Tachoimpuls hat geweckt
+      //
+      ESP_LOGW(tag, "TODO: TACHO WAKEUP restore counters from sram...");
+    }
+    else
+    {
+      //
+      // Kompletter Neustart
+      //
+      ESP_LOGW(tag, "TODO: SOMTHING ELSE WAKEUP restore counters from NVS...");
+    }
   }
 
 } // namespace ChOiler

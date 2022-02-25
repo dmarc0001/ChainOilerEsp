@@ -7,12 +7,11 @@ namespace esp32s2
    * @brief instanzieren und initialisieren der statischen variablen
    *
    */
-  const char *LedControl::tag{"LedControl"};        //! tag fürs debug logging
-  uint64_t LedControl::lastChanged{0ULL};           //! letzte Änderung
-  uint64_t LedControl::pumpLedSwitchedOff{false};   //! ist die Pumpen LED noch an?
-  uint64_t LedControl::controlLedSwitchedOff{0ULL}; // wann soll die Control LED wieder aus?
-  uint64_t LedControl::apModeLedSwitchOff{0ULL};    // wan soll ap-mode ausgeschakltet werden?
-
+  const char *LedControl::tag{"LedControl"};           //! tag fürs debug logging
+  uint64_t LedControl::lastChanged{0ULL};              //! letzte Änderung
+  uint64_t LedControl::pumpLedSwitchedOff{false};      //! ist die Pumpen LED noch an?
+  uint64_t LedControl::controlLedSwitchedOff{0ULL};    // wann soll die Control LED wieder aus?
+  uint64_t LedControl::apModeLedSwitchOff{0ULL};       // wan soll ap-mode ausgeschakltet werden?
   esp_timer_handle_t LedControl::timerHandle{nullptr}; //! timer handle
 
   /**
@@ -162,31 +161,8 @@ namespace esp32s2
   void LedControl::timerCallback(void *)
   {
     using namespace Prefs;
-    static volatile bool haveSwitchedOn = false;
     uint64_t nowTime = esp_timer_get_time();
-
-    if (haveSwitchedOn)
-    {
-      haveSwitchedOn = false;
-      // pumpen-pin Aus
-      gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 0);
-    }
-    else if (Preferences::pumpCycles > 0)
-    {
-      haveSwitchedOn = true;
-      --Preferences::pumpCycles;
-      // pumpen-pin an
-      gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, 1);
-      if (pumpLedSwitchedOff == 0ULL)
-      {
-        // LED einschalten
-        gpio_set_level(Prefs::LED_PUMP, 1);
-      }
-      // Zeit neu setzen
-      pumpLedSwitchedOff = esp_timer_get_time() + static_cast<uint64_t>(Prefs::PUMP_LED_DELAY);
-      // zurSicherheit wegen der Zeti hier beenden, verlängert bis zum nächsten Zyklus um 100ms
-      return;
-    }
+    static bool isPumpLedOn{false};
 
     if (apModeLedSwitchOff != 0ULL)
     {
@@ -208,14 +184,35 @@ namespace esp32s2
       }
     }
 
-    if (pumpLedSwitchedOff != 0ULL)
+    if (Preferences::pumpCycles > 0)
     {
-      if (nowTime > pumpLedSwitchedOff)
+      //
+      // die Pumpe hat Arbeit
+      //
+      if (!isPumpLedOn)
       {
-        // LED ausschalten
-        gpio_set_level(Prefs::LED_PUMP, 0);
-        pumpLedSwitchedOff = 0ULL;
+        // LED einschalten
+        gpio_set_level(Prefs::LED_PUMP, 1);
+        pumpLedSwitchedOff = esp_timer_get_time() + static_cast<uint64_t>(Prefs::PUMP_LED_DELAY);
+        isPumpLedOn = true;
+      }
+    }
+    else
+    {
+      //
+      // Pumpe ist fertig
+      //
+      if (pumpLedSwitchedOff > 0ULL)
+      {
+        if (nowTime > pumpLedSwitchedOff)
+        {
+          // LED ausschalten
+          gpio_set_level(Prefs::LED_PUMP, 0);
+          isPumpLedOn = false;
+          pumpLedSwitchedOff = 0ULL;
+        }
       }
     }
   }
-}
+
+} // namespace

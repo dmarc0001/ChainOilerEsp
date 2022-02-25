@@ -39,7 +39,6 @@ namespace esp32s2
   {
   private:
     static const char *tag;
-    static esp_sleep_wakeup_cause_t wakeupCause;
 
   protected:
     static void init();
@@ -48,12 +47,10 @@ namespace esp32s2
 
   public:
     friend class ChOiler::MainWorker;
-    static esp_sleep_wakeup_cause_t getWakeupCause() { return wakeupCause; };
     static void pause();
     static void resume();
 
   private:
-    static void processStartupCause();
     static void IRAM_ATTR tachoOilerCountISR(void *);
     static void IRAM_ATTR speedCountISR(void *);
   };

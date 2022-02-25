@@ -10,6 +10,7 @@
 namespace esp32s2
 {
   class LedControl; //! forward deklaration für friend
+  class PumpControl;
 }
 
 namespace Prefs
@@ -50,6 +51,7 @@ namespace Prefs
 
   public:
     friend esp32s2::LedControl;                    //! ein Freund
+    friend esp32s2::PumpControl;                   //! ein Freund
     static const std::string &getVersion();        //! Versionsstring zurückgeben
     static void init();                            //! das (statische) Objekt initialisieren
     static void close();                           //! Objekt schließen

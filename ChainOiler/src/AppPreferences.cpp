@@ -4,7 +4,7 @@
 
 namespace Prefs
 {
-  const char *Preferences::serialStr = "20220224-200223-build-0787";
+  const char *Preferences::serialStr = "20220220-202033-build-0814";
   const std::string Preferences::serialString = std::string(Preferences::serialStr);
   const char *Preferences::tag{"Preferences"};                                               //! tag fürs debug logging
   nvs_handle_t Preferences::nvs_handle{0U};                                                  //! handle für NVS
@@ -100,16 +100,19 @@ namespace Prefs
     ESP_LOGD(tag, "preferences version from code is <%02d>...", CURRENT_PREFS_VERSION);
     ESP_LOGD(tag, "preferences wrong version code is <%02d>...", tmp_vers);
     tmp_vers = Preferences::getIntValue(PREFS_VERSION_STR, INVALID_VERSION);
-    ESP_LOGD(tag, "preferences version from NVM is <%02d>...", tmp_vers);
+    ESP_LOGD(tag, "preferences readed version from NVM is <%02d>...", tmp_vers);
     ESP_LOGD(tag, "====================================================================");
     if ((tmp_vers == INVALID_VERSION) || (CURRENT_PREFS_VERSION != tmp_vers))
     {
       //
       // Neue version der Preferenzen => Alles neu machen
-      //  TODO: abhängig vom Versionssprung entscheiden
       //
       ESP_LOGW(tag, "new prefs version, make defaults...");
       Preferences::makeDefaults();
+    }
+    else
+    {
+      ESP_LOGD(tag, "known prefs version, read from NVS...");
     }
     Preferences::readPreferences();
     // nvs schliessen
@@ -137,7 +140,7 @@ namespace Prefs
    */
   void Preferences::format()
   {
-    ESP_LOGD(tag, "format NVM...");
+    ESP_LOGD(tag, "format/erase NVM...");
     Preferences::close();
     ESP_ERROR_CHECK(nvs_flash_erase());
     Preferences::init();
@@ -476,12 +479,10 @@ namespace Prefs
     nvs_close(Preferences::nvs_handle);
     // Handle zurückholen
     Preferences::nvs_handle = nvs_local_handle;
-
     nvs_stats_t nvs_stats;
     nvs_get_stats(PREFS_PARTITION_LABEL, &nvs_stats);
     printf("Count: UsedEntries = (%d), FreeEntries = (%d), AllEntries = (%d)\n", nvs_stats.used_entries, nvs_stats.free_entries,
            nvs_stats.total_entries);
-
     ESP_LOGD(tag, "=================================================");
   }
 
@@ -727,11 +728,10 @@ namespace Prefs
   void Preferences::setAppMode(opMode _mode)
   {
     //
-    // TODO:
-    // crossmode: Strecke anpassen
-    // normalmode: Strecke anpassen
-    // regenmode: Strecke anpassen
-    // ap mode, komplett umbauen
+    // TODO: crossmode: Strecke anpassen
+    // TODO: normalmode: Strecke anpassen
+    // TODO: regenmode: Strecke anpassen
+    // TODO: ap mode, komplett umbauen
     //
     if (_mode == Preferences::appOpMode)
     {

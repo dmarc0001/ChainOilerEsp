@@ -13,7 +13,6 @@ namespace esp32s2
   xQueueHandle TachoControl::pathLenQueue = nullptr;                              //! handle fuer queue
   xQueueHandle TachoControl::speedQueue = nullptr;                                //! handle fuer queue
   const char *TachoControl::tag{"EspCtrl"};                                       //! tag fürs debug logging
-  esp_sleep_wakeup_cause_t TachoControl::wakeupCause{ESP_SLEEP_WAKEUP_UNDEFINED}; //! der Grund des Erwachens
 
   /**
    * Initialisieere die Hardware
@@ -28,10 +27,6 @@ namespace esp32s2
     //
     pathLenQueue = xQueueCreate(QUEUE_LEN_DISTANCE, sizeof(pcnt_evt_t));
     speedQueue = xQueueCreate(QUEUE_LEN_TACHO, sizeof(deltaTimeTenMeters_us));
-    //
-    // warum geweckt/resettet
-    //
-    TachoControl::processStartupCause();
     //
     // Tacho initialisieren
     //
@@ -140,52 +135,6 @@ namespace esp32s2
     pcnt_counter_resume(unit0);
     pcnt_counter_resume(unit1);
     ESP_LOGD(tag, "%s: init pulse counter unit0/unit1...done", __func__);
-  }
-
-  /**
-   * @brief stellt den Grund des Neustarts fest und leitet evtl Aktionen ein
-   *
-   */
-  void TachoControl::processStartupCause()
-  {
-    TachoControl::wakeupCause = esp_sleep_get_wakeup_cause();
-#ifdef DEBUG
-    switch (TachoControl::wakeupCause)
-    {
-    case ESP_SLEEP_WAKEUP_EXT0:
-      printf("wakeup source is external RTC_IO signal\n");
-      break;
-    case ESP_SLEEP_WAKEUP_EXT1:
-      printf("wakeup source is external RTC_CNTL signal\n");
-      break;
-    case ESP_SLEEP_WAKEUP_TIMER:
-      printf("wakeup ist timer\n");
-      break;
-    case ESP_SLEEP_WAKEUP_TOUCHPAD:
-      printf("wakeup ist touch sensor\n");
-      break;
-    case ESP_SLEEP_WAKEUP_ULP:
-      printf("wakeup is ULP processor\n");
-      break;
-    default:
-      printf("wakeup is not defined, number is %d\n", TachoControl::wakeupCause);
-      break;
-    }
-#endif
-    if (TachoControl::wakeupCause == ESP_SLEEP_WAKEUP_EXT0)
-    {
-      //
-      // Der Tachoimpuls hat geweckt
-      //
-      printf("TODO: TACHO WAKEUP restore counters from sram...");
-    }
-    else
-    {
-      //
-      // Kompletter Neustart
-      //
-      printf("TODO: POWER_ON_WAKEUP restore counters from NVS...");
-    }
   }
 
   /**
