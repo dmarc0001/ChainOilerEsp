@@ -12,10 +12,10 @@ namespace esp32s2
   {
   private:
     static const char *tag;
-    static uint64_t lastChanged;
-    static uint64_t pumpLedSwitchedOff;    //! wan soll die punken-LED aus?
-    static uint64_t controlLedSwitchedOff; // wann soll die Control LED wieder aus?
-    static uint64_t apModeLedSwitchOff;    // wan soll ap-mode ausgeschakltet werden?
+    static volatile uint64_t lastChanged;
+    static volatile uint64_t pumpLedSwitchedOff;    //! wan soll die punken-LED aus?
+    static volatile uint64_t controlLedSwitchedOff; // wann soll die Control LED wieder aus?
+    static volatile uint64_t apModeLedSwitchOff;    // wan soll ap-mode ausgeschakltet werden?
     static esp_timer_handle_t timerHandle;
 
   public:

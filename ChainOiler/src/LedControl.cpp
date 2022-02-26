@@ -7,12 +7,12 @@ namespace esp32s2
    * @brief instanzieren und initialisieren der statischen variablen
    *
    */
-  const char *LedControl::tag{"LedControl"};           //! tag fürs debug logging
-  uint64_t LedControl::lastChanged{0ULL};              //! letzte Änderung
-  uint64_t LedControl::pumpLedSwitchedOff{false};      //! ist die Pumpen LED noch an?
-  uint64_t LedControl::controlLedSwitchedOff{0ULL};    // wann soll die Control LED wieder aus?
-  uint64_t LedControl::apModeLedSwitchOff{0ULL};       // wan soll ap-mode ausgeschakltet werden?
-  esp_timer_handle_t LedControl::timerHandle{nullptr}; //! timer handle
+  const char *LedControl::tag{"LedControl"};                 //! tag fürs debug logging
+  volatile uint64_t LedControl::lastChanged{0ULL};           //! letzte Änderung
+  volatile uint64_t LedControl::pumpLedSwitchedOff{false};   //! ist die Pumpen LED noch an?
+  volatile uint64_t LedControl::controlLedSwitchedOff{0ULL}; // wann soll die Control LED wieder aus?
+  volatile uint64_t LedControl::apModeLedSwitchOff{0ULL};    // wan soll ap-mode ausgeschakltet werden?
+  esp_timer_handle_t LedControl::timerHandle{nullptr};       //! timer handle
 
   /**
    * @brief initialisierung der Hardware für die LED
@@ -161,9 +161,12 @@ namespace esp32s2
   void LedControl::timerCallback(void *)
   {
     using namespace Prefs;
-    uint64_t nowTime = esp_timer_get_time();
     static bool isPumpLedOn{false};
+    uint64_t nowTime = esp_timer_get_time();
 
+    //
+    // Wenn der Accesspount wieder aus ist
+    //
     if (apModeLedSwitchOff != 0ULL)
     {
       if (nowTime > controlLedSwitchedOff)
@@ -173,41 +176,63 @@ namespace esp32s2
         apModeLedSwitchOff = 0ULL;
       }
     }
+    //
+    // wenn die Zeit für die Control LED läuft
+    //
     else if (controlLedSwitchedOff != 0ULL)
     {
-      // Control LED sollte an sein...
+      //
+      // Control LED sollte noch an sein...
+      // ist die zeit abgelaufen?
+      //
       if (nowTime > controlLedSwitchedOff)
       {
+        // Zeit abngelaufen,
         // ausschalten der LED
         gpio_set_level(Prefs::LED_CONTROL, 0);
         controlLedSwitchedOff = 0ULL;
       }
     }
 
+    //
+    // ist die Pumpe in action?
+    //
     if (Preferences::pumpCycles > 0)
     {
       //
       // die Pumpe hat Arbeit
+      // ist die LED für die Pumpe eingeschaltet?
       //
       if (!isPumpLedOn)
       {
+        //
+        // nein, muss noch eingeschaltet werden
         // LED einschalten
+        //
         gpio_set_level(Prefs::LED_PUMP, 1);
+        // ausschalten nach delay....
         pumpLedSwitchedOff = esp_timer_get_time() + Prefs::PUMP_LED_DELAY;
+        // zustand vermerken
         isPumpLedOn = true;
       }
     }
     else
     {
       //
-      // Pumpe ist fertig
+      // Pumpe ist fertig, hat keine Arbeit
+      // ist eine delay-Zeit für die LED am laufen?
       //
       if (pumpLedSwitchedOff > 0ULL)
       {
+        //
+        // ist die Zeit fürs ausschalten gekommen?
+        //
         if (nowTime > pumpLedSwitchedOff)
         {
+          // ja
           // LED ausschalten
           gpio_set_level(Prefs::LED_PUMP, 0);
+          // zustand vermerken
           isPumpLedOn = false;
           pumpLedSwitchedOff = 0ULL;
         }

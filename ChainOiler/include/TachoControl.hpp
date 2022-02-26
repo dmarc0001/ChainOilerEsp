@@ -34,7 +34,8 @@ namespace esp32s2
     uint16_t meters;          //! anzahl Meter
   };
   using deltaTimeTenMeters_us = uint64_t; //! zeitstempel für 10 Meter
-
+  using pathLenMeters = uint32_t;         // Wegstrecke in Metern
+  
   class TachoControl
   {
   private:

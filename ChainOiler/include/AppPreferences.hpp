@@ -82,7 +82,7 @@ namespace Prefs
     static void setSensorThreshold(int);           //! setzte sen Schwelenwert des Regensensors
     static int getSensorThreshold();               //! lese Schwellenwert des Regensensors
     static uint16_t getPulsesFor100Meters();       //! gib impulse per 100 Meter, errechnet aus den Parametern
-    static uint16_t getPulsesFor10Meters();        //! impulse per 10 Meter, für Tacho
+    static uint16_t getPulsesFor25Meters();        //! impulse per 25 Meter, für Tacho
     static uint16_t getMinimalPulseLength();       //! die kleinste Pulslänge in meiner Konfiguration
     static uint32_t getCounterPulsesForInterval(); //! wie viele impuse zum erreichen der strecke
     static opMode getAppMode();                    //! gib Operationsmode zurück

@@ -223,7 +223,7 @@ namespace ChOiler
   }
 
   /**
-   * @brief TEste, ob der Oeler aktiviert werden muss
+   * @brief Teste, ob der Oeler aktiviert werden muss
    *
    */
   void MainWorker::checkOilState()
@@ -244,7 +244,6 @@ namespace ChOiler
     if (distanceSinceLastOil > oilInterval)
     {
       // TODO: nach Berechnung der Wegstrecken nochmal prüfen ob das so bleibt
-      ESP_LOGD(tag, "=== HEAP SIZE: %04u ===", esp_get_free_internal_heap_size());
       ESP_LOGI(tag, "========== oil interval reached ============");
       if (Preferences::getAppMode() == opMode::CROSS)
       {
@@ -258,8 +257,7 @@ namespace ChOiler
       {
         Preferences::addPumpCycles(NORMAL_OIL_COUNT);
       }
-      esp32s2::LedControl::setPumpLED(true);
-      Preferences::setRouteLenPastOil(0);
+      Preferences::setRouteLenPastOil(0.0F);
     }
   }
 
@@ -270,15 +268,14 @@ namespace ChOiler
   void MainWorker::tachoCompute()
   {
     using namespace esp32s2;
-
-    pcnt_evt_t evt;
-    deltaTimeTenMeters_us dtime_us;
+    static uint32_t path_len{0};
+    static deltaTimeTenMeters_us dtime_us;
     //
     // Geschwindigkeitsdaten aus der Queue in den Speed-History-Buffer
     // vector wie queue benutzern, aber ich kann std::queue nicht nehmen
     // da ich wahlfrei zugriff haben will
     //
-    if (xQueueReceive(TachoControl::speedQueue, &dtime_us, pdMS_TO_TICKS(5)) == pdTRUE)
+    if (xQueueReceive(TachoControl::speedQueue, &dtime_us, 0) == pdTRUE)
     {
       while (MainWorker::speedList.size() > Prefs::SPEED_HISTORY_LEN - 1)
       {
@@ -291,13 +288,13 @@ namespace ChOiler
     //
     // zurückgelegte Wegstrecke berechnen
     //
-    if (xQueueReceive(TachoControl::pathLenQueue, &evt, pdMS_TO_TICKS(5)) == pdTRUE)
+    if (xQueueReceive(TachoControl::pathLenQueue, &path_len, 0) == pdTRUE)
     {
       //
       // wenn in der queue ein ergebnis stand
       //
       // ESP_LOGD(tag, "Event %d meters path done: unit%d; cnt: %d", evt.meters, evt.unit, evt.value);
-      Prefs::Preferences::addRouteLenPastOil(evt.meters);
+      Prefs::Preferences::addRouteLenPastOil(path_len);
     }
   }
 
@@ -414,10 +411,10 @@ namespace ChOiler
     //
     // ungefähr alle 2 Sekunden Berechnen
     //
-    // Durchschnitt über die letzten 4 Sekunden
-    // jeder Zeitstempel ist für 10 Meter Strecke
+    // Durchschnitt über die letzten Sekunden
+    // jeder Zeitstempel ist für PATH_LEN_METERS_PER_ISR Meter Strecke
     // die Durchschnittsgeschwindigkeit ist also max über
-    // 10 * Prefs::SPEED_HISTORY_LEN
+    // PATH_LEN_METERS_PER_ISR * Prefs::SPEED_HISTORY_LEN
     //
     uint64_t lastTimeStamp{0ULL};
     float distance_sum = 0.0F;
@@ -467,7 +464,8 @@ namespace ChOiler
       //
       // summiere Wegstrecke und zugehhörige Zeit
       // die Zeit dann als Sekunden / float
-      distance_sum += 10.0F;
+      //
+      distance_sum += Prefs::PATH_LEN_METERS_PER_ISR_FLOAT;
       deltaTimeSum_sec += timeDiff_sec;
       ++computedCount;
       lastTimeStamp = *it;

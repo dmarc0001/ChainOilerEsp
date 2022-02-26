@@ -4,7 +4,7 @@
 
 namespace Prefs
 {
-  const char *Preferences::serialStr = "20220225-190856-build-0846";
+  const char *Preferences::serialStr = "20220226-181650-build-0869";
   const std::string Preferences::serialString = std::string(Preferences::serialStr);
   const char *Preferences::tag{"Preferences"};                              //! tag fürs debug logging
   nvs_handle_t Preferences::nvs_handle{0U};                                 //! handle für NVS
@@ -686,11 +686,11 @@ namespace Prefs
    *
    * @return int16_t
    */
-  uint16_t Preferences::getPulsesFor10Meters()
+  uint16_t Preferences::getPulsesFor25Meters()
   {
-    float val10Meters = (10.0 / circumFerence) * pulsePerRound;
+    float val10Meters = (25.0 / circumFerence) * pulsePerRound;
     uint16_t count = static_cast<uint16_t>(std::ceil(val10Meters));
-    ESP_LOGI(tag, "==== pulses for 10 meters: <%06d>", count);
+    ESP_LOGI(tag, "==== pulses for 25 meters: <%06d>", count);
     return (count >= 1) ? count : 1;
   }
 

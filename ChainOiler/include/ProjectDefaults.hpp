@@ -88,18 +88,16 @@ namespace Prefs
   //
   // Konstanten
   //
-  constexpr size_t QUEUE_LEN_DISTANCE = 10;      //! Wie lang ist die RTOS Queue für entfernungsmessung
-  constexpr size_t QUEUE_LEN_TACHO = 30;         //! wie lang ist die queue für Tacho Ereignisse
-  constexpr size_t SPEED_HISTORY_LEN = 200;      //! max länge der Tempo-Historie
-  constexpr uint64_t HISTORY_MAX_TIME_MS = 4000; //! wie lang ist die history beim speed maximal
-  constexpr uint8_t PUMP_OFF_ZYCLES = 8;         //! wenn die Punpe on war, wie viele Zyklen bis wieder an möglich
-  constexpr uint32_t P_OFF = 0;                  //! Status für Pumpe OFF
-  constexpr uint32_t P_ON = 1;                   //! Status für Punpe ON
-  constexpr uint8_t NORMAL_OIL_COUNT = 1;        //! Pumpenzyklen für normales ölen
-  constexpr uint8_t RAIN_OIL_COUNT = 3;          //! Pumpenzyklen für regen ölen
-  constexpr uint8_t CROSS_OIL_COUNT = 8;         //! Pumpenzyklen für crossen ölen
-  //
-  // Kommandos REST API
-  //
-  constexpr const char *CMD_SET_RGBW{"set_rgbw"};
+  constexpr size_t QUEUE_LEN_DISTANCE = 10;              //! Wie lang ist die RTOS Queue für entfernungsmessung
+  constexpr size_t QUEUE_LEN_TACHO = 8;                  //! wie lang ist die queue für Tacho Ereignisse
+  constexpr size_t SPEED_HISTORY_LEN = 200;              //! max länge der Tempo-Historie
+  constexpr uint32_t PATH_LEN_METERS_PER_ISR = 25;       //! wie weit ist die strecke zwiwchen zwei interrupts
+  constexpr float PATH_LEN_METERS_PER_ISR_FLOAT = 25.0F; //! dieselbe Länge als Float
+  constexpr uint64_t HISTORY_MAX_TIME_MS = 10000;        //! wie lang ist die history beim speed maximal
+  constexpr uint8_t PUMP_OFF_ZYCLES = 8;                 //! wenn die Punpe on war, wie viele Zyklen bis wieder an möglich
+  constexpr uint32_t P_OFF = 0;                          //! Status für Pumpe OFF
+  constexpr uint32_t P_ON = 1;                           //! Status für Punpe ON
+  constexpr uint8_t NORMAL_OIL_COUNT = 1;                //! Pumpenzyklen für normales ölen
+  constexpr uint8_t RAIN_OIL_COUNT = 3;                  //! Pumpenzyklen für regen ölen
+  constexpr uint8_t CROSS_OIL_COUNT = 8;                 //! Pumpenzyklen für crossen ölen
 } // namespace Prefs
