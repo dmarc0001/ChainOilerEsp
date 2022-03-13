@@ -47,7 +47,7 @@ namespace ChOiler
     //
     //
     esp32s2::ButtonControl::init();
-    esp32s2::LedControl::init();
+    // esp32s2::LedControl::init();
     esp32s2::PumpControl::init();
     esp32s2::TachoControl::init();
     esp32s2::RainSensorControl::init();
@@ -70,6 +70,19 @@ namespace ChOiler
 
     //
     ESP_LOGI(tag, "%s: run start...", __func__);
+
+    //
+    // DEBUG:
+    //
+    if( workerHandle != (taskInfosPtr->workerHandle) )
+    {
+      ESP_LOGE("TASK_HANDLE", "task_handle is different from getting task handle!");
+      ESP_LOGE("TASK_HANDLE", "task_handle is different from getting task handle!");
+      ESP_LOGE("TASK_HANDLE", "task_handle is different from getting task handle!");
+      ESP_LOGE("TASK_HANDLE", "task_handle is different from getting task handle!");
+      vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+
     //
     // das Startsignal leuchten/blinken
     //
