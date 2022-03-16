@@ -49,6 +49,7 @@ namespace Prefs
     static volatile fClick controlSwitchAction; //! ist ein Ereignis?
     static volatile fClick rainSwitchAction;    //! ist ein ereignis?
     static volatile uint8_t pumpCycles;         //! Anzahl der Pumenstösse, setzten aktiviert die Pumpe
+    static volatile bool pumpAction;            //! Marker wenn pumpenstöse gesetzt werden, pumpCycles ist zu schnell auf 0
 
   public:
     friend esp32s2::LedControl;                    //! ein Freund

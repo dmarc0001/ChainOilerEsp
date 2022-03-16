@@ -92,7 +92,7 @@ namespace esp32s2
     //
     // ISR installieren und Callback aktivieren
     //
-    pcnt_isr_service_install(0);
+    pcnt_isr_service_install(ESP_INTR_FLAG_IRAM);
     pcnt_isr_handler_add(unit0, TachoControl::tachoOilerCountISR, nullptr);
     //
     // alles ist initialisiert, starte die Counter

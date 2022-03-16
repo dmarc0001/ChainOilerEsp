@@ -58,30 +58,32 @@ namespace ChOiler
    * @brief Hauptschleife des Programmes
    *
    */
-  void MainWorker::run(void *_argsPtr)
+  void MainWorker::run(void *)
   {
     using namespace Prefs;
     static int64_t computeSpeedTime = esp_timer_get_time() + timeForSpeedMeasure;
     static int64_t computeOilerCheckTime = esp_timer_get_time() + timeForOilerCheck;
     static int64_t ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_NORMAL_OFF;
     esp_err_t err;
-    TaskInfos *taskInfosPtr = static_cast<TaskInfos *>(_argsPtr);
     TaskHandle_t workerHandle = xTaskGetIdleTaskHandle();
 
     //
     ESP_LOGI(tag, "%s: run start...", __func__);
+
     //
     // das Startsignal leuchten/blinken
     //
+    Preferences::setAttentionFlag(true);
     while (esp_timer_get_time() < computeSpeedTime)
     {
-      esp32s2::LedControl::showAttention();
-      vTaskDelay(1);
+      vTaskDelay(100);
     }
     // 100 ms warten
-    vTaskDelay(pdMS_TO_TICKS(100));
-    // LES aus, NORMAL Modus setzten
+    // vTaskDelay(pdMS_TO_TICKS(100));
+    // LED aus, NORMAL Modus setzten
+    Preferences::setAttentionFlag(false);
     esp32s2::LedControl::allOff();
+    //
     Preferences::setAppMode(opMode::NORMAL);
     //
     // hier geth es dann richtig los
@@ -90,7 +92,7 @@ namespace ChOiler
     ESP_LOGI(tag, "%s: loop start...", __func__);
 #ifdef DEBUG
     // TODO: nur zum Testen
-    Preferences::addPumpCycles(64);
+    Preferences::addPumpCycles(32);
 #endif
     // nächste Geschwindigkeitsmessung ist:
     computeSpeedTime = esp_timer_get_time() + timeForSpeedMeasure;
@@ -130,18 +132,11 @@ namespace ChOiler
       // wachund zurücksetzen
       esp_task_wdt_reset();
       // taskYIELD();
-      //  will ich was melden?
-      bool attention = Preferences::getAttentionFlag();
-      if (attention)
-      {
-        esp32s2::LedControl::showAttention();
-        ledNextActionTime = esp_timer_get_time() + BLINK_LED_ATTENTION_ON;
-      }
       // je nach Modus
       switch (Preferences::getAppMode())
       {
       case opMode::NORMAL:
-        if (!attention && (esp_timer_get_time() > ledNextActionTime))
+        if (esp_timer_get_time() > ledNextActionTime)
         {
           // Blinken initiieren
           ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_NORMAL_ON + BLINK_LED_CONTROL_NORMAL_OFF;
@@ -152,10 +147,10 @@ namespace ChOiler
         break;
 
       case opMode::CROSS:
-        if (!attention && (esp_timer_get_time() > ledNextActionTime))
+        if (esp_timer_get_time() > ledNextActionTime)
         {
           // Blinken initiieren
-          ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_CROSS_ON + BLINK_LED_CONTROL_CROSS_OFF;
+          ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_CROSS_ON + BLINK_LED_CONTROL_CROSS_OFF + BLINK_LED_CONTROL_CROSS_OFF;
           esp32s2::LedControl::setControlLED(BLINK_LED_CONTROL_CROSS_ON);
         }
         MainWorker::buttonStati();
@@ -163,7 +158,7 @@ namespace ChOiler
         break;
 
       case opMode::RAIN:
-        if (!attention && (esp_timer_get_time() > ledNextActionTime))
+        if (esp_timer_get_time() > ledNextActionTime)
         {
           // Blinken initiieren
           ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_NORMAL_ON + BLINK_LED_CONTROL_NORMAL_OFF;
@@ -174,7 +169,7 @@ namespace ChOiler
         break;
 
       case opMode::TEST:
-        if (!attention && (esp_timer_get_time() > ledNextActionTime))
+        if (esp_timer_get_time() > ledNextActionTime)
         {
           // Blinken initiieren
           ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_TEST_ON + BLINK_LED_CONTROL_TEST_OFF;
@@ -183,7 +178,7 @@ namespace ChOiler
         MainWorker::buttonStati();
         break;
       case opMode::APMODE:
-        if (!attention && (esp_timer_get_time() > ledNextActionTime))
+        if (esp_timer_get_time() > ledNextActionTime)
         {
           // Blinken initiieren
           ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_AP_ON + BLINK_LED_CONTROL_AP_OFF;
@@ -272,6 +267,7 @@ namespace ChOiler
       {
         Preferences::addPumpCycles(NORMAL_OIL_COUNT);
       }
+      // bei einem pumpenstoss könnte es zu knapp sein (Pumpe 20 ms -> led 100 ms )
       Preferences::setRouteLenPastOil(0.0F);
       ESP_LOGI(tag, "========== oil interval reached oil %02d cycles ============", Preferences::getPumpCycles());
     }

@@ -27,15 +27,6 @@
 
 namespace ChOiler
 {
-  class TaskInfos
-  {
-  public:
-    TaskHandle_t workerHandle;
-    std::string threadName;
-    // was sonst noch gebraucht wird hier
-    TaskInfos() : workerHandle(nullptr){};
-  };
-
   /**
    * Auch ein statisches Objekt, ist nur enmalig vorhanden und spart damit RAM
    */
