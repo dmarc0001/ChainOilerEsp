@@ -4,14 +4,10 @@
 
 namespace esp32s2
 {
-  /**
-   * @brief instanzieren und initialisieren der statischen variablen
-   *
-   */
-  const char *LedControl::tag{"LedControl"};                 //! tag fürs debug logging
-  dedic_gpio_bundle_handle_t LedControl::ledBundle{nullptr}; //! gebündeltes GPOI Array
-  uint32_t LedControl::ctrlLEDMask{0U};                      //! Maske für zu beackernde LED
-  uint32_t LedControl::ctrlLedValue{0U};                     //! Wert zum setzten
+
+  LedControl::LedControl() : ledBundle(nullptr), ctrlLEDMask(0U), ctrlLedValue(0U)
+  {
+  }
 
   /**
    * @brief initialisierung der Hardware für die LED
@@ -48,7 +44,7 @@ namespace esp32s2
                 .out_en = 1,
                 .out_invert = 0},
         };
-    ESP_ERROR_CHECK(dedic_gpio_new_bundle(&bundleConfig, &LedControl::ledBundle));
+    ESP_ERROR_CHECK(dedic_gpio_new_bundle(&bundleConfig, &ledBundle));
     ESP_LOGD(tag, "init hardware for LED...done");
   }
 
@@ -61,9 +57,9 @@ namespace esp32s2
     //
     // alles ausschalten
     //
-    LedControl::ctrlLEDMask = G_LED_REED_CONTROL_MASK | G_LED_CONTROL_MASK | G_LED_PUMP_MASK | G_LED_RAIN_MASK;
-    LedControl::ctrlLedValue = 0U;
-    LedControl::makeChange();
+    ctrlLEDMask = G_LED_REED_CONTROL_MASK | G_LED_CONTROL_MASK | G_LED_PUMP_MASK | G_LED_RAIN_MASK;
+    ctrlLedValue = 0U;
+    makeChange();
   }
 
   void LedControl::setAttentionLED(bool _set)
@@ -73,13 +69,13 @@ namespace esp32s2
     //
     if (_set)
     {
-      LedControl::ctrlLedValue = (LedControl::ctrlLedValue | G_LED_CONTROL_MASK | G_LED_PUMP_MASK) & !G_LED_RAIN_MASK;
+      ctrlLedValue = (ctrlLedValue | G_LED_CONTROL_MASK | G_LED_PUMP_MASK) & !G_LED_RAIN_MASK;
     }
     else
     {
-      LedControl::ctrlLedValue = (LedControl::ctrlLedValue | G_LED_RAIN_MASK) & !(G_LED_CONTROL_MASK | G_LED_PUMP_MASK);
+      ctrlLedValue = (ctrlLedValue | G_LED_RAIN_MASK) & !(G_LED_CONTROL_MASK | G_LED_PUMP_MASK);
     }
-    LedControl::ctrlLEDMask |= G_LED_CONTROL_MASK | G_LED_PUMP_MASK | G_LED_RAIN_MASK;
+    ctrlLEDMask |= G_LED_CONTROL_MASK | G_LED_PUMP_MASK | G_LED_RAIN_MASK;
   }
 
   /**
@@ -94,13 +90,13 @@ namespace esp32s2
     //
     if (_set)
     {
-      LedControl::ctrlLedValue |= G_LED_RAIN_MASK;
+      ctrlLedValue |= G_LED_RAIN_MASK;
     }
     else
     {
-      LedControl::ctrlLedValue &= !G_LED_RAIN_MASK;
+      ctrlLedValue &= !G_LED_RAIN_MASK;
     }
-    LedControl::ctrlLEDMask |= G_LED_RAIN_MASK;
+    ctrlLEDMask |= G_LED_RAIN_MASK;
   }
 
   void LedControl::setControlLED(bool _set)
@@ -110,13 +106,13 @@ namespace esp32s2
     //
     if (_set)
     {
-      LedControl::ctrlLedValue |= G_LED_CONTROL_MASK;
+      ctrlLedValue |= G_LED_CONTROL_MASK;
     }
     else
     {
-      LedControl::ctrlLedValue &= !G_LED_CONTROL_MASK;
+      ctrlLedValue &= !G_LED_CONTROL_MASK;
     }
-    LedControl::ctrlLEDMask |= G_LED_CONTROL_MASK;
+    ctrlLEDMask |= G_LED_CONTROL_MASK;
   }
 
   void LedControl::setControlCrossLED(bool _set)
@@ -126,13 +122,13 @@ namespace esp32s2
     //
     if (_set)
     {
-      LedControl::ctrlLedValue |= G_LED_CONTROL_MASK;
+      ctrlLedValue |= G_LED_CONTROL_MASK | G_LED_RAIN_MASK;
     }
     else
     {
-      LedControl::ctrlLedValue &= !G_LED_CONTROL_MASK;
+      ctrlLedValue &= !(G_LED_CONTROL_MASK | G_LED_RAIN_MASK);
     }
-    LedControl::ctrlLEDMask |= G_LED_CONTROL_MASK;
+    ctrlLEDMask |= G_LED_CONTROL_MASK | G_LED_RAIN_MASK;
   }
 
   void LedControl::setPumpLED(bool _set)
@@ -142,13 +138,21 @@ namespace esp32s2
     //
     if (_set)
     {
-      LedControl::ctrlLedValue |= G_LED_PUMP_MASK;
+      ctrlLedValue |= G_LED_PUMP_MASK;
     }
     else
     {
-      LedControl::ctrlLedValue &= !G_LED_PUMP_MASK;
+      ctrlLedValue &= !G_LED_PUMP_MASK;
     }
-    LedControl::ctrlLEDMask |= G_LED_PUMP_MASK;
+    ctrlLEDMask |= G_LED_PUMP_MASK;
+  }
+
+  bool LedControl::fadeOutPumpLED()
+  {
+    // hier geht nur ausschalten
+    ctrlLedValue &= !G_LED_PUMP_MASK;
+    ctrlLEDMask |= G_LED_PUMP_MASK;
+    return true;
   }
 
   void LedControl::setAPModeLED(bool _set)
@@ -158,13 +162,13 @@ namespace esp32s2
     //
     if (_set)
     {
-      LedControl::ctrlLedValue = G_LED_CONTROL_MASK | G_LED_PUMP_MASK | G_LED_RAIN_MASK;
+      ctrlLedValue = G_LED_CONTROL_MASK | G_LED_PUMP_MASK | G_LED_RAIN_MASK;
     }
     else
     {
-      LedControl::ctrlLedValue = !(G_LED_CONTROL_MASK | G_LED_PUMP_MASK | G_LED_RAIN_MASK);
+      ctrlLedValue = !(G_LED_CONTROL_MASK | G_LED_PUMP_MASK | G_LED_RAIN_MASK);
     }
-    LedControl::ctrlLEDMask = G_LED_CONTROL_MASK | G_LED_PUMP_MASK | G_LED_RAIN_MASK;
+    ctrlLEDMask = G_LED_CONTROL_MASK | G_LED_PUMP_MASK | G_LED_RAIN_MASK;
   }
 
   /**
@@ -176,11 +180,11 @@ namespace esp32s2
     //
     // wenn es was zu tun gibt
     //
-    if (LedControl::ctrlLEDMask == 0U)
+    if (ctrlLEDMask == 0U)
       return;
     // ausführen der Änderungen
-    dedic_gpio_bundle_write(LedControl::ledBundle, LedControl::ctrlLEDMask, LedControl::ctrlLedValue);
-    LedControl::ctrlLEDMask = 0U;  // Maske für zu beackernde LED
-    LedControl::ctrlLedValue = 0U; // Wert zum setzten
+    dedic_gpio_bundle_write(ledBundle, ctrlLEDMask, ctrlLedValue);
+    ctrlLEDMask = 0U;  // Maske für zu beackernde LED
+    ctrlLedValue = 0U; // Wert zum setzten
   }
 } // namespace

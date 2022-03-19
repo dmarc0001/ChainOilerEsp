@@ -5,6 +5,7 @@
 #include <driver/dedic_gpio.h>
 #include "ProjectDefaults.hpp"
 #include "AppPreferences.hpp"
+#include "SignalControlAbstract.hpp"
 
 namespace esp32s2
 {
@@ -17,26 +18,33 @@ namespace esp32s2
   constexpr uint32_t G_LED_RAIN_MASK = 0b00100;
   constexpr uint32_t G_LED_PUMP_MASK = 0b01000;
 
-  class LedControl
+  class LedControl : public SignalControlAbstract
   {
+    //
+    // bein instsanzieren dürfen keine Ports doppelt genutzt werden
+    // TODO: Sperre einbuen
+    //
+  protected:
+    const char *tag = "led_single";
+
   private:
-    static const char *tag;                      //! Hinweistext für logger
-    static dedic_gpio_bundle_handle_t ledBundle; //! gebündeltes GPIO Array
-    static uint32_t ctrlLEDMask;                 //! Maske für zu bearbeitende Werte
-    static uint32_t ctrlLedValue;                //! Werte
+    dedic_gpio_bundle_handle_t ledBundle; //! gebündeltes GPIO Array
+    uint32_t ctrlLEDMask;                 //! Maske für zu bearbeitende Werte
+    uint32_t ctrlLedValue;                //! Werte
 
   public:
-    static void init();                   //! hardware/values initialisieren
-    static void allOff();                 //! alles ausschalten
-    static void setRainLED(bool);         //! LED für Regen einschalten
-    static void setControlLED(bool);      //! LED für ..ms ein
-    static void setControlCrossLED(bool); //! LED für ..ms ein
-    static void setPumpLED(bool);         //! pump led ein ....ms
-    static void setAttentionLED(bool);    //! Achtung LED ein oder AUS
-    static void setAPModeLED(bool);       //! LEDs für AP Mide ein
-    static void makeChange();             //! Veränderungen setzen
+    LedControl();
+    virtual void init();                   //! hardware/values initialisieren
+    virtual void allOff();                 //! alles ausschalten
+    virtual void setRainLED(bool);         //! LED für Regen einschalten
+    virtual void setControlLED(bool);      //! LED für Control ein
+    virtual void setControlCrossLED(bool); //! LED für Cross ein
+    virtual void setPumpLED(bool);         //! LED für Pumpe ein
+    virtual bool fadeOutPumpLED();         //! Pumpen LED ausblenden
+    virtual void setAttentionLED(bool);    //! Achtung LED ein oder AUS
+    virtual void setAPModeLED(bool);       //! LEDs für AP Mide ein
+    virtual void makeChange();             //! Veränderungen setzen
 
   private:
-    LedControl(){};
   };
 }

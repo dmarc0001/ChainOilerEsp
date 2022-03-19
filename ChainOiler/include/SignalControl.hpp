@@ -5,11 +5,27 @@
 #include <driver/dedic_gpio.h>
 #include "ProjectDefaults.hpp"
 #include "AppPreferences.hpp"
+#include "SignalControlAbstract.hpp"
+
 #ifdef RAWLED
+#if defined(LEDSTRIPE) || defined(LEDPWM)
+#error Only ONE Signal hardware allowed
+#endif
 #include "LedSingleControl.hpp"
 #endif
+
 #ifdef LEDSTRIPE
+#if defined(RAWLED) || defined(LEDPWM)
+#error Only ONE Signal hardware allowed
+#endif
 #include "LedStripeControl.hpp"
+#endif
+
+#ifdef LEDPWM
+#if defined(LEDSTRIPE) || defined(RAWLED)
+#error Only ONE Signal hardware allowed
+#endif
+#include "LedPwmControl.hpp"
 #endif
 
 namespace esp32s2
@@ -24,6 +40,7 @@ namespace esp32s2
     static volatile int64_t rainLedSwitchedOff;         // wann soll die Control LED wieder aus?
     static volatile int64_t apModeLedSwitchOff;         // wan soll ap-mode ausgeschakltet werden?
     static esp_timer_handle_t timerHandle;              //! da handle zum timer für die LED
+    static SignalControlAbstract *ledObject;            //! polymorphing mit den Anzeigen
 
   public:
     static void init();            //! initialisiere das Objekt

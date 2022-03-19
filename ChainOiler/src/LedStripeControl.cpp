@@ -4,13 +4,16 @@
 
 namespace esp32s2
 {
+  /*
   const char *LedStripeControl::tag{"ledstrip"};
   gpio_num_t LedStripeControl::stripeRemoteTXPort{Prefs::LED_STRIPE_RMT_TX_GPIO};
   rmt_channel_t LedStripeControl::rmtChannel{Prefs::LED_STRIPE_RMT_CHANNEL};
   uint32_t LedStripeControl::ledCount{Prefs::LED_STRIPE_COUNT};
-  portMUX_TYPE LedStripeControl::colorMutex{0U, 0U};
   led_strip_t *LedStripeControl::strip{nullptr};
   bool LedStripeControl::changed{true};
+  */
+  portMUX_TYPE LedStripeControl::colorMutex{0U, 0U};
+  bool LedStripeControl::colorsComputed{false};
   uint32_t LedStripeControl::blackRGBA{0U};
   uint32_t LedStripeControl::controlRGBA{0U};
   uint32_t LedStripeControl::crossRGBA{0U};
@@ -20,6 +23,24 @@ namespace esp32s2
   uint32_t LedStripeControl::attentionRGBA{0U};
   uint32_t LedStripeControl::accessPointRGBA{0U};
 
+  LedStripeControl::LedStripeControl() : stripeRemoteTXPort{Prefs::LED_STRIPE_RMT_TX_GPIO}, rmtChannel{Prefs::LED_STRIPE_RMT_CHANNEL}, ledCount{Prefs::LED_STRIPE_COUNT}, strip{nullptr}, changed{true}
+  {
+    //
+    // Farben für LED vorher zurechtlegen (speed optimized)
+    //
+    if (!LedStripeControl::colorsComputed)
+    {
+      LedStripeControl::hsv2rgba(Prefs::LED_STRIPE_CONTROL_HSVCOLOR, 100, 100, &LedStripeControl::controlRGBA);
+      LedStripeControl::hsv2rgba(Prefs::LED_STRIPE_CROSS_HSVCOLOR, 100, 100, &LedStripeControl::crossRGBA);
+      LedStripeControl::hsv2rgba(Prefs::LED_STRIPE_CROSS_HSVCOLOR, 100, 5, &LedStripeControl::crossDarkRGBA);
+      LedStripeControl::hsv2rgba(Prefs::LED_STRIPE_PUMP_HSVCOLOR, 100, 100, &LedStripeControl::pumpRGBA);
+      LedStripeControl::hsv2rgba(Prefs::LED_STRIPE_RAIN_HSVCOLOR, 100, 100, &LedStripeControl::rainRGBA);
+      LedStripeControl::hsv2rgba(Prefs::LED_STRIPE_ATT_HSVCOLOR, 100, 100, &LedStripeControl::attentionRGBA);
+      LedStripeControl::hsv2rgba(Prefs::LED_STRIPE_AP_HSVCOLOR, 100, 100, &LedStripeControl::accessPointRGBA);
+      LedStripeControl::colorsComputed = true;
+    }
+  }
+
   /**
    * @brief initialize dribvers for WS2812
    *
@@ -27,16 +48,6 @@ namespace esp32s2
   void LedStripeControl::init()
   {
     ESP_LOGD(tag, "initialize WS2812 led stripe...");
-    //
-    // Farben für LED vorher zurechtlegen (speed optimized)
-    //
-    LedStripeControl::hsv2rgba(Prefs::LED_STRIPE_CONTROL_HSVCOLOR, 100, 100, &LedStripeControl::controlRGBA);
-    LedStripeControl::hsv2rgba(Prefs::LED_STRIPE_CROSS_HSVCOLOR, 100, 100, &LedStripeControl::crossRGBA);
-    LedStripeControl::hsv2rgba(Prefs::LED_STRIPE_CROSS_HSVCOLOR, 100, 5, &LedStripeControl::crossDarkRGBA);
-    LedStripeControl::hsv2rgba(Prefs::LED_STRIPE_PUMP_HSVCOLOR, 100, 100, &LedStripeControl::pumpRGBA);
-    LedStripeControl::hsv2rgba(Prefs::LED_STRIPE_RAIN_HSVCOLOR, 100, 100, &LedStripeControl::rainRGBA);
-    LedStripeControl::hsv2rgba(Prefs::LED_STRIPE_ATT_HSVCOLOR, 100, 100, &LedStripeControl::attentionRGBA);
-    LedStripeControl::hsv2rgba(Prefs::LED_STRIPE_AP_HSVCOLOR, 100, 100, &LedStripeControl::accessPointRGBA);
     //
     rmt_config_t config =
         {
@@ -64,15 +75,15 @@ namespace esp32s2
     ESP_ERROR_CHECK(rmt_driver_install(config.channel, 0, 0));
     // install ws2812 driver
     led_strip_config_t strip_config = LED_STRIP_DEFAULT_CONFIG(ledCount, (led_strip_dev_t)config.channel);
-    LedStripeControl::strip = led_strip_new_rmt_ws2812(&strip_config);
-    if (!LedStripeControl::strip)
+    strip = led_strip_new_rmt_ws2812(&strip_config);
+    if (!strip)
     {
       ESP_LOGE(tag, "install WS2812 driver failed");
     }
     // Clear LED strip (turn off all LEDs)
     ESP_LOGD(tag, "clear all led...");
-    ESP_ERROR_CHECK(LedStripeControl::strip->clear(LedStripeControl::strip, 100));
-    LedStripeControl::changed = false;
+    ESP_ERROR_CHECK(strip->clear(strip, 100));
+    changed = false;
     //
     ESP_LOGD(tag, "install WS2812 led stripe driver...OK");
   }
@@ -83,99 +94,121 @@ namespace esp32s2
    */
   void LedStripeControl::allOff()
   {
-    if (!LedStripeControl::strip)
+    if (!strip)
       return;
-    ESP_ERROR_CHECK(LedStripeControl::strip->clear(LedStripeControl::strip, 100));
-    LedStripeControl::changed = false;
+    ESP_ERROR_CHECK(strip->clear(strip, 100));
+    changed = false;
   }
 
   void LedStripeControl::setRainLED(bool _set)
   {
-    if (!LedStripeControl::strip)
+    if (!strip)
       return;
     if (_set)
-      ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_RAIN, LedStripeControl::rainRGBA >> 24, LedStripeControl::rainRGBA >> 16, LedStripeControl::rainRGBA >> 8));
+      ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_RAIN, LedStripeControl::rainRGBA >> 24, LedStripeControl::rainRGBA >> 16, LedStripeControl::rainRGBA >> 8));
     else
-      ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_RAIN, 0U, 0U, 0U));
-    LedStripeControl::changed = true;
+      ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_RAIN, 0U, 0U, 0U));
+    changed = true;
   }
 
   void LedStripeControl::setControlLED(bool _set)
   {
-    if (!LedStripeControl::strip)
+    if (!strip)
       return;
     if (_set)
-      ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_CONTROL, LedStripeControl::controlRGBA >> 24, LedStripeControl::controlRGBA >> 16, LedStripeControl::controlRGBA >> 8));
+      ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_CONTROL, LedStripeControl::controlRGBA >> 24, LedStripeControl::controlRGBA >> 16, LedStripeControl::controlRGBA >> 8));
     else
-      ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_CONTROL, 0U, 0U, 0U));
-    LedStripeControl::changed = true;
+      ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_CONTROL, 0U, 0U, 0U));
+    changed = true;
   }
 
   void LedStripeControl::setControlCrossLED(bool _set)
   {
-    if (!LedStripeControl::strip)
+    if (!strip)
       return;
     //
     // Regen kan ncht gleichzeitig mit CROSS aktiv sein, daher geht das
     //
     if (_set)
     {
-      ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_CONTROL, LedStripeControl::crossRGBA >> 24, LedStripeControl::crossRGBA >> 16, LedStripeControl::crossRGBA >> 8));
-      // ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_RAIN, LedStripeControl::crossDarkRGBA >> 24, LedStripeControl::crossDarkRGBA >> 16, LedStripeControl::crossDarkRGBA >> 8));
+      ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_CONTROL, LedStripeControl::crossRGBA >> 24, LedStripeControl::crossRGBA >> 16, LedStripeControl::crossRGBA >> 8));
+      // ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_RAIN, LedStripeControl::crossDarkRGBA >> 24, LedStripeControl::crossDarkRGBA >> 16, LedStripeControl::crossDarkRGBA >> 8));
     }
     else
     {
-      ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_CONTROL, LedStripeControl::crossDarkRGBA >> 24, LedStripeControl::crossDarkRGBA >> 16, LedStripeControl::crossDarkRGBA >> 8));
-      // ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_RAIN, LedStripeControl::crossRGBA >> 24, LedStripeControl::crossRGBA >> 16, LedStripeControl::crossRGBA >> 8));
+      ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_CONTROL, LedStripeControl::crossDarkRGBA >> 24, LedStripeControl::crossDarkRGBA >> 16, LedStripeControl::crossDarkRGBA >> 8));
+      // ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_RAIN, LedStripeControl::crossRGBA >> 24, LedStripeControl::crossRGBA >> 16, LedStripeControl::crossRGBA >> 8));
     }
-    LedStripeControl::changed = true;
+    changed = true;
   }
 
   void LedStripeControl::setPumpLED(bool _set)
   {
-    if (!LedStripeControl::strip)
+    if (!strip)
       return;
     if (_set)
-      ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_PUMP, LedStripeControl::pumpRGBA >> 24, LedStripeControl::pumpRGBA >> 16, LedStripeControl::pumpRGBA >> 8));
+    {
+      ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_PUMP, LedStripeControl::pumpRGBA >> 24, LedStripeControl::pumpRGBA >> 16, LedStripeControl::pumpRGBA >> 8));
+      pumpFadingValue = 100U;
+    }
     else
-      ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_PUMP, 0U, 0U, 0U));
-    LedStripeControl::changed = true;
+    {
+      ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_PUMP, 0U, 0U, 0U));
+      pumpFadingValue = 0U;
+    }
+    changed = true;
+  }
+
+  bool LedStripeControl::fadeOutPumpLED()
+  {
+    if (!strip)
+      return true;
+    if (pumpFadingValue == 0)
+      return true;
+    // berechnen welche Farbe dran ist
+    uint32_t r, g, b;
+    pumpFadingValue -= 5U;
+    LedStripeControl::hsv2rgb(Prefs::LED_STRIPE_PUMP_HSVCOLOR, 100U, pumpFadingValue, &r, &g, &b);
+    ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_PUMP, r, g, b));
+    changed = true;
+    // noch nicht fertig
+    return false;
   }
 
   void LedStripeControl::setAttentionLED(bool _set)
   {
-    if (!LedStripeControl::strip)
+    if (!strip)
       return;
     if (_set)
     {
-      ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_CONTROL, LedStripeControl::attentionRGBA >> 24, LedStripeControl::attentionRGBA >> 16, LedStripeControl::attentionRGBA >> 8));
-      ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_RAIN, 0U, 0U, 0U));
-      ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_PUMP, LedStripeControl::attentionRGBA >> 24, LedStripeControl::attentionRGBA >> 16, LedStripeControl::attentionRGBA >> 8));
+      ESP_ERROR_CHECK(strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_CONTROL, LedStripeControl::attentionRGBA >> 24, LedStripeControl::attentionRGBA >> 16, LedStripeControl::attentionRGBA >> 8));
+      ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_RAIN, 0U, 0U, 0U));
+      ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_PUMP, LedStripeControl::attentionRGBA >> 24, LedStripeControl::attentionRGBA >> 16, LedStripeControl::attentionRGBA >> 8));
     }
     else
     {
-      ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_CONTROL, 0U, 0U, 0U));
-      ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_RAIN, LedStripeControl::attentionRGBA >> 24, LedStripeControl::attentionRGBA >> 16, LedStripeControl::attentionRGBA >> 8));
-      ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_PUMP, 0U, 0U, 0U));
+      ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_CONTROL, 0U, 0U, 0U));
+      ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_RAIN, LedStripeControl::attentionRGBA >> 24, LedStripeControl::attentionRGBA >> 16, LedStripeControl::attentionRGBA >> 8));
+      ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_PUMP, 0U, 0U, 0U));
     }
-    LedStripeControl::changed = true;
+    changed = true;
   }
 
   void LedStripeControl::setAPModeLED(bool _set)
   {
-    if (!LedStripeControl::strip)
+    if (!strip)
       return;
     if (_set)
     {
-      ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_CONTROL, LedStripeControl::accessPointRGBA >> 24, LedStripeControl::accessPointRGBA >> 16, LedStripeControl::accessPointRGBA >> 8));
-      ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_RAIN, LedStripeControl::accessPointRGBA >> 24, LedStripeControl::accessPointRGBA >> 16, LedStripeControl::accessPointRGBA >> 8));
-      ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, Prefs::LED_STRIPE_PUMP, LedStripeControl::accessPointRGBA >> 24, LedStripeControl::accessPointRGBA >> 16, LedStripeControl::accessPointRGBA >> 8));
-      LedStripeControl::changed = true;
+      ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_CONTROL, LedStripeControl::accessPointRGBA >> 24, LedStripeControl::accessPointRGBA >> 16, LedStripeControl::accessPointRGBA >> 8));
+      ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_RAIN, LedStripeControl::accessPointRGBA >> 24, LedStripeControl::accessPointRGBA >> 16, LedStripeControl::accessPointRGBA >> 8));
+      ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_PUMP, LedStripeControl::accessPointRGBA >> 24, LedStripeControl::accessPointRGBA >> 16, LedStripeControl::accessPointRGBA >> 8));
+      changed = true;
     }
     else
     {
-      ESP_ERROR_CHECK(LedStripeControl::strip->clear(LedStripeControl::strip, 100));
-      LedStripeControl::changed = false;
+      ESP_ERROR_CHECK(strip->clear(strip, 100));
+      changed = false;
     }
   }
 
@@ -187,10 +220,10 @@ namespace esp32s2
   {
     if (!changed)
       return;
-    if (!LedStripeControl::strip)
+    if (!strip)
       return;
-    ESP_ERROR_CHECK(LedStripeControl::strip->refresh(LedStripeControl::strip, 100));
-    LedStripeControl::changed = false;
+    ESP_ERROR_CHECK(strip->refresh(strip, 100));
+    changed = false;
   }
 
   /**
@@ -201,9 +234,9 @@ namespace esp32s2
    */
   void LedStripeControl::setPixel(uint32_t _index, uint32_t _rgba)
   {
-    if (!LedStripeControl::strip)
+    if (!strip)
       return;
-    ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, _index, _rgba >> 24, _rgba >> 16, _rgba >> 8));
+    ESP_ERROR_CHECK(strip->set_pixel(strip, _index, _rgba >> 24, _rgba >> 16, _rgba >> 8));
   }
 
   /**

@@ -103,7 +103,11 @@ namespace Prefs
   constexpr int64_t BLINK_LED_ATTENTION_ON = 35 * 1000;
   constexpr int64_t BLINK_LED_AWAKE_OFF = 150 * 1000;
   constexpr int64_t BLINK_LED_AWAKE_ON = 80 * 1000;
+#ifdef RAWLED
   constexpr int64_t PUMP_LED_DELAY = 3000 * 1000;
+#else
+  constexpr int64_t PUMP_LED_DELAY = 1200 * 1000;
+#endif
   //
   // Konstanten
   //
