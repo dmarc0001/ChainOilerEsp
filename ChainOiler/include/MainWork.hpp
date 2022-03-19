@@ -2,22 +2,23 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <string>
 #include <stdlib.h>
 #include <list>
 #include <limits>
 #include <time.h>
 #include <sys/time.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_sleep.h"
-#include "driver/rtc_io.h"
-#include "driver/uart.h"
-#include "esp_log.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <esp_sleep.h>
+#include <driver/rtc_io.h>
+#include <driver/uart.h>
+#include <esp_task_wdt.h>
 #include "ProjectDefaults.hpp"
 #include "AppPreferences.hpp"
 #include "AppTypes.hpp"
 #include "TachoControl.hpp"
-#include "LedControl.hpp"
+#include "SignalControl.hpp"
 #include "ButtonControl.hpp"
 #include "PumpControl.hpp"
 #include "RainSensorControl.hpp"
@@ -39,7 +40,7 @@ namespace ChOiler
   protected:
   public:
     static void init();            //! initialisiert Prferenzen und Hardware
-    static void run();             //! da geht es los
+    static void run(void *);       //! da geht es los
     static void tachoCompute();    //! berechne Tacho Geschichten
     static void buttonStati();     //! guck was die Buttons machen
     static void computeAvgSpeed(); //! berechne Durchschnitt für max 4 Sekunden

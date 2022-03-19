@@ -1,10 +1,11 @@
 #include "AppPreferences.hpp"
 #include "ProjectDefaults.hpp"
 #include <cmath>
+#include <esp_log.h>
 
 namespace Prefs
 {
-  const char *Preferences::serialStr = "20220225-190856-build-0846";
+  const char *Preferences::serialStr = "20220319-210303-build-1124";
   const std::string Preferences::serialString = std::string(Preferences::serialStr);
   const char *Preferences::tag{"Preferences"};                              //! tag fürs debug logging
   nvs_handle_t Preferences::nvs_handle{0U};                                 //! handle für NVS
@@ -26,6 +27,7 @@ namespace Prefs
   volatile fClick Preferences::controlSwitchAction{fClick::NONE};           //! welche Aktion des buttons liegt an
   volatile fClick Preferences::rainSwitchAction{fClick::NONE};              //! welche aktion des buttons liegt an
   volatile uint8_t Preferences::pumpCycles{0};                              //! wie viele pumpenzyklen sollen erfolgen(setzten startet pumpe)
+  volatile bool Preferences::pumpAction{false};                             //! marker für neue Pumpenzyklen, pumpCycles ist zu schnell auf 0 für LED
   opMode Preferences::appOpMode{opMode::AWAKE};                             //! In welchem Zustand ist das Programm
   float Preferences::currentSpeedMeterPerSec{0.0F};                         //! aktuelle Geschwindigkeit
   float Preferences::currentRouteLenPastOil{0.0F};                          //! Wegstrecke nach dem Ölen
@@ -686,11 +688,11 @@ namespace Prefs
    *
    * @return int16_t
    */
-  uint16_t Preferences::getPulsesFor10Meters()
+  uint16_t Preferences::getPulsesFor25Meters()
   {
-    float val10Meters = (10.0 / circumFerence) * pulsePerRound;
+    float val10Meters = (25.0 / circumFerence) * pulsePerRound;
     uint16_t count = static_cast<uint16_t>(std::ceil(val10Meters));
-    ESP_LOGI(tag, "==== pulses for 10 meters: <%06d>", count);
+    ESP_LOGI(tag, "==== pulses for 25 meters: <%06d>", count);
     return (count >= 1) ? count : 1;
   }
 
@@ -748,7 +750,7 @@ namespace Prefs
     //
     if (_mode == Preferences::appOpMode)
     {
-      // nix zu tun
+      // nix zu tun, war schon
       return;
     }
     //
@@ -763,6 +765,7 @@ namespace Prefs
       else
       {
         // evtl booten oder AP und webserver löschen
+        esp_restart();
       }
     }
     Preferences::appOpMode = _mode;
@@ -892,6 +895,7 @@ namespace Prefs
   {
     portENTER_CRITICAL(&Preferences::oilCycleMutex);
     Preferences::pumpCycles = _cycles;
+    Preferences::pumpAction = true;
     portEXIT_CRITICAL(&Preferences::oilCycleMutex);
   }
 
@@ -899,6 +903,7 @@ namespace Prefs
   {
     portENTER_CRITICAL(&Preferences::oilCycleMutex);
     Preferences::pumpCycles += _cycles;
+    Preferences::pumpAction = true;
     portEXIT_CRITICAL(&Preferences::oilCycleMutex);
   }
 

@@ -16,7 +16,6 @@
 #include <esp_sleep.h>
 #include <esp_attr.h>
 #include <esp_timer.h>
-#include <esp_log.h>
 
 namespace ChOiler
 {
@@ -34,6 +33,7 @@ namespace esp32s2
     uint16_t meters;          //! anzahl Meter
   };
   using deltaTimeTenMeters_us = uint64_t; //! zeitstempel für 10 Meter
+  using pathLenMeters = uint32_t;         // Wegstrecke in Metern
 
   class TachoControl
   {

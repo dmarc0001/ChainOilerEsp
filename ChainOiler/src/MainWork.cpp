@@ -1,4 +1,5 @@
 #include "MainWork.hpp"
+#include <esp_log.h>
 
 namespace ChOiler
 {
@@ -22,7 +23,7 @@ namespace ChOiler
   {
     using namespace Prefs;
 
-    printf("controller ist starting, version %s...\n\n", Preferences::getVersion().c_str());
+    ESP_LOGD(tag, "controller ist starting, version %s...", Preferences::getVersion().c_str());
     //
     // warum geweckt/resettet
     //
@@ -44,10 +45,10 @@ namespace ChOiler
     gpio_install_isr_service(0);
     //
     // initialisiere die Hardware
-    //
+    // -DLEDSTRIPE -DRAWLED
     //
     esp32s2::ButtonControl::init();
-    esp32s2::LedControl::init();
+    esp32s2::SignalControl::init();
     esp32s2::PumpControl::init();
     esp32s2::TachoControl::init();
     esp32s2::RainSensorControl::init();
@@ -58,138 +59,133 @@ namespace ChOiler
    * @brief Hauptschleife des Programmes
    *
    */
-  void MainWorker::run()
+  void MainWorker::run(void *)
   {
     using namespace Prefs;
+    static int64_t computeSpeedTime = esp_timer_get_time() + timeForSpeedMeasure;
+    static int64_t computeOilerCheckTime = esp_timer_get_time() + timeForOilerCheck;
+    static int64_t ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_NORMAL_OFF;
+    esp_err_t err;
+    TaskHandle_t workerHandle = xTaskGetIdleTaskHandle();
 
-    uint64_t computeSpeedTime = esp_timer_get_time() + timeForSpeedMeasure;
-    uint64_t computeOilerCheckTime = esp_timer_get_time() + timeForOilerCheck;
-    uint64_t ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_NORMAL_OFF;
-#ifdef DEBUG
-    uint64_t waitTimeForPlaceholderMessage{0ULL};
-#endif
     //
     ESP_LOGI(tag, "%s: run start...", __func__);
+
     //
     // das Startsignal leuchten/blinken
     //
+    Preferences::setAttentionFlag(true);
     while (esp_timer_get_time() < computeSpeedTime)
     {
-      esp32s2::LedControl::showAttention();
-      vTaskDelay(1);
+      vTaskDelay(100);
     }
     // 100 ms warten
-    vTaskDelay(pdMS_TO_TICKS(100));
-    // LES aus, NORMAL Modus setzten
-    esp32s2::LedControl::allOff();
+    // vTaskDelay(pdMS_TO_TICKS(100));
+    // LED aus, NORMAL Modus setzten
+    Preferences::setAttentionFlag(false);
+    esp32s2::SignalControl::allOff();
+    //
     Preferences::setAppMode(opMode::NORMAL);
     //
     // hier geth es dann richtig los
     // SChleife für immer :-)
     //
     ESP_LOGI(tag, "%s: loop start...", __func__);
+#ifdef DEBUG
+    // TODO: nur zum Testen
+    Preferences::addPumpCycles(32);
+#endif
     // nächste Geschwindigkeitsmessung ist:
     computeSpeedTime = esp_timer_get_time() + timeForSpeedMeasure;
+    //
+    // watchdog initialisieren und scharf machen
+    //
+    ESP_LOGD(tag, "init watchdog for task...");
+    err = esp_task_wdt_init(10000, false);
+    if (err != ESP_OK)
+    {
+      ESP_LOGW(tag, "esp_task_wdt_init failed...");
+      err = esp_task_wdt_add(workerHandle);
+      ESP_LOGD(tag, "thread added...");
+      if (err != ESP_OK)
+      {
+        ESP_LOGE(tag, "esp_task_wdt_add failed...");
+        if (err != ESP_OK)
+        {
+          err = esp_task_wdt_reset();
+          ESP_LOGE(tag, "esp_task_wdt_reset failed...");
+        }
+      }
+      if (err == ESP_OK)
+      {
+        ESP_LOGI(tag, "esp watchdog init successful...");
+      }
+    }
+#ifdef DEBUG
+    // 100 ms warten
+    vTaskDelay(pdMS_TO_TICKS(100));
+#endif
     //
     // #####################################################################
     //
     while (true)
     {
-      // will ich was melden?
-      bool attention = Preferences::getAttentionFlag();
-      if (attention)
-      {
-        esp32s2::LedControl::showAttention();
-        ledNextActionTime = esp_timer_get_time() + BLINK_LED_ATTENTION_ON;
-      }
+      // wachund zurücksetzen
+      esp_task_wdt_reset();
+      // taskYIELD();
       // je nach Modus
       switch (Preferences::getAppMode())
       {
       case opMode::NORMAL:
-        if (!attention && (esp_timer_get_time() > ledNextActionTime))
+        if (esp_timer_get_time() > ledNextActionTime)
         {
           // Blinken initiieren
           ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_NORMAL_ON + BLINK_LED_CONTROL_NORMAL_OFF;
-          esp32s2::LedControl::setControlLED(BLINK_LED_CONTROL_NORMAL_ON);
+          esp32s2::SignalControl::flashControlLED();
         }
         MainWorker::buttonStati();
         MainWorker::tachoCompute();
-#ifdef DEBUG
-        if (waitTimeForPlaceholderMessage < esp_timer_get_time())
-        {
-          ESP_LOGD(tag, "NORMAL MODE...");
-          waitTimeForPlaceholderMessage = esp_timer_get_time() + timeForMessage;
-        }
-#endif
         break;
 
       case opMode::CROSS:
-        if (!attention && (esp_timer_get_time() > ledNextActionTime))
+        if (esp_timer_get_time() > ledNextActionTime)
         {
           // Blinken initiieren
-          ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_CROSS_ON + BLINK_LED_CONTROL_CROSS_OFF;
-          esp32s2::LedControl::setControlLED(BLINK_LED_CONTROL_CROSS_ON);
+          ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_CROSS_ON + BLINK_LED_CONTROL_CROSS_OFF + BLINK_LED_CONTROL_CROSS_OFF;
+          esp32s2::SignalControl::flashCrossLED();
         }
         MainWorker::buttonStati();
         MainWorker::tachoCompute();
-#ifdef DEBUG
-        if (waitTimeForPlaceholderMessage < esp_timer_get_time())
-        {
-          ESP_LOGD(tag, "CROSS MODE...");
-          waitTimeForPlaceholderMessage = esp_timer_get_time() + timeForMessage;
-        }
-#endif
         break;
 
       case opMode::RAIN:
-        if (!attention && (esp_timer_get_time() > ledNextActionTime))
+        if (esp_timer_get_time() > ledNextActionTime)
         {
           // Blinken initiieren
           ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_NORMAL_ON + BLINK_LED_CONTROL_NORMAL_OFF;
-          esp32s2::LedControl::setControlLED(BLINK_LED_CONTROL_NORMAL_ON);
+          esp32s2::SignalControl::flashControlLED();
         }
         MainWorker::buttonStati();
         MainWorker::tachoCompute();
-#ifdef DEBUG
-        if (waitTimeForPlaceholderMessage < esp_timer_get_time())
-        {
-          ESP_LOGD(tag, "RAIN MODE...");
-          waitTimeForPlaceholderMessage = esp_timer_get_time() + timeForMessage;
-        }
-#endif
         break;
 
       case opMode::TEST:
-        if (!attention && (esp_timer_get_time() > ledNextActionTime))
+        if (esp_timer_get_time() > ledNextActionTime)
         {
           // Blinken initiieren
           ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_TEST_ON + BLINK_LED_CONTROL_TEST_OFF;
-          esp32s2::LedControl::setControlLED(BLINK_LED_CONTROL_TEST_ON);
+          esp32s2::SignalControl::flashControlLED();
         }
         MainWorker::buttonStati();
-#ifdef DEBUG
-        if (waitTimeForPlaceholderMessage < esp_timer_get_time())
-        {
-          ESP_LOGD(tag, "TESTMODE...");
-          waitTimeForPlaceholderMessage = esp_timer_get_time() + timeForMessage;
-        }
-#endif
         break;
       case opMode::APMODE:
-        if (!attention && (esp_timer_get_time() > ledNextActionTime))
+        if (esp_timer_get_time() > ledNextActionTime)
         {
           // Blinken initiieren
           ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_AP_ON + BLINK_LED_CONTROL_AP_OFF;
-          esp32s2::LedControl::setAPModeLED(BLINK_LED_CONTROL_AP_ON);
+          esp32s2::SignalControl::flashControlLED();
         }
         MainWorker::buttonStati();
-#ifdef DEBUG
-        if (waitTimeForPlaceholderMessage < esp_timer_get_time())
-        {
-          ESP_LOGD(tag, "ACCESSPOINT MODE, WAIT");
-          waitTimeForPlaceholderMessage = esp_timer_get_time() + timeForMessage;
-        }
-#endif
         break;
 
       default:
@@ -204,18 +200,34 @@ namespace ChOiler
       {
         if (esp_timer_get_time() > computeSpeedTime)
         {
+          esp_task_wdt_reset();
           MainWorker::computeAvgSpeed();
+          taskYIELD();
           computeSpeedTime = esp_timer_get_time() + timeForSpeedMeasure;
         }
         if (esp_timer_get_time() > computeOilerCheckTime)
         {
+#ifdef DEBUG
+          err = esp_task_wdt_status(workerHandle);
+          if (err != ESP_OK)
+          {
+            if (err == ESP_ERR_NOT_FOUND)
+            {
+              ESP_LOGW(tag, "=== The task is currently not subscribed to the TWDT (Task Watchdog Timer)! ===");
+            }
+            else if (err == ESP_ERR_INVALID_STATE)
+            {
+              ESP_LOGW(tag, "=== The TWDT (Task Watchdog Timer) is not initialized, therefore no tasks can be subscribed === ");
+            }
+          }
+#endif
+          esp_task_wdt_reset();
           computeOilerCheckTime = esp_timer_get_time() + timeForOilerCheck;
           MainWorker::checkOilState();
         }
       }
       taskYIELD();
-      vTaskDelay(1);
-
+      vTaskDelay(pdMS_TO_TICKS(20));
     } // while schleife
     //
     // #####################################################################
@@ -223,7 +235,7 @@ namespace ChOiler
   }
 
   /**
-   * @brief TEste, ob der Oeler aktiviert werden muss
+   * @brief Teste, ob der Oeler aktiviert werden muss
    *
    */
   void MainWorker::checkOilState()
@@ -237,15 +249,13 @@ namespace ChOiler
     float distanceSinceLastOil = Preferences::getRouteLenPastOil();
     // wann ölen?
     float oilInterval = Preferences::getOilInterval();
-    ESP_LOGD(tag, "distance is %04.02fm, interval is %04.2fm, absolute: %04.2fm...", static_cast<double>(distanceSinceLastOil), static_cast<double>(oilInterval), Preferences::getAckumulatedRouteLen());
+    // DEBUG: ESP_LOGD(tag, "distance is %04.02fm, interval is %04.2fm, absolute: %04.2fm...", static_cast<double>(distanceSinceLastOil), static_cast<double>(oilInterval), Preferences::getAckumulatedRouteLen());
     //
     // wenn es soweit ist, gib Öl
     //
     if (distanceSinceLastOil > oilInterval)
     {
       // TODO: nach Berechnung der Wegstrecken nochmal prüfen ob das so bleibt
-      ESP_LOGD(tag, "=== HEAP SIZE: %04u ===", esp_get_free_internal_heap_size());
-      ESP_LOGI(tag, "========== oil interval reached ============");
       if (Preferences::getAppMode() == opMode::CROSS)
       {
         Preferences::addPumpCycles(CROSS_OIL_COUNT);
@@ -258,8 +268,9 @@ namespace ChOiler
       {
         Preferences::addPumpCycles(NORMAL_OIL_COUNT);
       }
-      esp32s2::LedControl::setPumpLED(true);
-      Preferences::setRouteLenPastOil(0);
+      // bei einem pumpenstoss könnte es zu knapp sein (Pumpe 20 ms -> led 100 ms )
+      Preferences::setRouteLenPastOil(0.0F);
+      ESP_LOGI(tag, "========== oil interval reached oil %02d cycles ============", Preferences::getPumpCycles());
     }
   }
 
@@ -270,15 +281,14 @@ namespace ChOiler
   void MainWorker::tachoCompute()
   {
     using namespace esp32s2;
-
-    pcnt_evt_t evt;
-    deltaTimeTenMeters_us dtime_us;
+    static uint32_t path_len{0};
+    static deltaTimeTenMeters_us dtime_us;
     //
     // Geschwindigkeitsdaten aus der Queue in den Speed-History-Buffer
     // vector wie queue benutzern, aber ich kann std::queue nicht nehmen
     // da ich wahlfrei zugriff haben will
     //
-    if (xQueueReceive(TachoControl::speedQueue, &dtime_us, pdMS_TO_TICKS(5)) == pdTRUE)
+    if (xQueueReceive(TachoControl::speedQueue, &dtime_us, 0) == pdTRUE)
     {
       while (MainWorker::speedList.size() > Prefs::SPEED_HISTORY_LEN - 1)
       {
@@ -291,13 +301,13 @@ namespace ChOiler
     //
     // zurückgelegte Wegstrecke berechnen
     //
-    if (xQueueReceive(TachoControl::pathLenQueue, &evt, pdMS_TO_TICKS(5)) == pdTRUE)
+    if (xQueueReceive(TachoControl::pathLenQueue, &path_len, 0) == pdTRUE)
     {
       //
       // wenn in der queue ein ergebnis stand
       //
       // ESP_LOGD(tag, "Event %d meters path done: unit%d; cnt: %d", evt.meters, evt.unit, evt.value);
-      Prefs::Preferences::addRouteLenPastOil(evt.meters);
+      Prefs::Preferences::addRouteLenPastOil(path_len);
     }
   }
 
@@ -335,7 +345,6 @@ namespace ChOiler
       if (Preferences::getControlSwitchAction() == fClick::SHORT)
       {
         ESP_LOGD(tag, "CONTROL Button short down");
-        LedControl::allOff();
         if (Preferences::getAppMode() == opMode::APMODE)
         {
           // unschalten in Normal
@@ -352,11 +361,13 @@ namespace ChOiler
         {
           ESP_LOGI(tag, "set NORMAL mode");
           Preferences::setAppMode(opMode::NORMAL);
+          SignalControl::flashControlLED();
         }
         else
         {
           ESP_LOGI(tag, "set CROSS mode");
           Preferences::setAppMode(opMode::CROSS);
+          SignalControl::flashCrossLED();
         }
       }
       //
@@ -414,12 +425,12 @@ namespace ChOiler
     //
     // ungefähr alle 2 Sekunden Berechnen
     //
-    // Durchschnitt über die letzten 4 Sekunden
-    // jeder Zeitstempel ist für 10 Meter Strecke
+    // Durchschnitt über die letzten Sekunden
+    // jeder Zeitstempel ist für PATH_LEN_METERS_PER_ISR Meter Strecke
     // die Durchschnittsgeschwindigkeit ist also max über
-    // 10 * Prefs::SPEED_HISTORY_LEN
+    // PATH_LEN_METERS_PER_ISR * Prefs::SPEED_HISTORY_LEN
     //
-    uint64_t lastTimeStamp{0ULL};
+    int64_t lastTimeStamp{0ULL};
     float distance_sum = 0.0F;
     float deltaTimeSum_sec = 0.0F;
     float averageSpeed = 0.0;
@@ -430,7 +441,7 @@ namespace ChOiler
       // zuerst veraltete Einträge finden und entfernen
       // diff in ms berechnen und merken
       //
-      uint64_t logDeltaTimeStamp_ms = (esp_timer_get_time() - *it) >> 10;
+      int64_t logDeltaTimeStamp_ms = (esp_timer_get_time() - *it) >> 10;
       //
       // mehr als Prefs::HISTORY_MAX_TIME_MS Milisekunden her, also veraltet?
       //
@@ -458,7 +469,7 @@ namespace ChOiler
       // jetzt die Zeitdifferrenz errechnen
       //
       // logDeltaTimeStamp_ms = (lastTimeStamp - *it) >> 10;
-      uint32_t deltaTime_ms = static_cast<uint32_t>((lastTimeStamp - *it) >> 10);
+      int32_t deltaTime_ms = static_cast<int32_t>((lastTimeStamp - *it) >> 10);
       //
       // jetzt habe ich eine zahl < history ms, weil die zu alten loesche ich oben
       // hier völlig zum schätzen der Geschwindigkeit, Korrekturfaktor ist rund 0.95
@@ -467,7 +478,8 @@ namespace ChOiler
       //
       // summiere Wegstrecke und zugehhörige Zeit
       // die Zeit dann als Sekunden / float
-      distance_sum += 10.0F;
+      //
+      distance_sum += Prefs::PATH_LEN_METERS_PER_ISR_FLOAT;
       deltaTimeSum_sec += timeDiff_sec;
       ++computedCount;
       lastTimeStamp = *it;
@@ -476,7 +488,7 @@ namespace ChOiler
     //
     // berechne Durchschnittliche Geschwindigkeit für die letzten Sekunden
     //
-    if (deltaTimeSum_sec > 0.001)
+    if (deltaTimeSum_sec > 0.001f)
     {
       // distance durch zeit...
       // ESP_LOGD(tag, "distance: %3.3f m time: %3.6f sec", distance_sum, deltaTimeSum_sec);
@@ -504,7 +516,7 @@ namespace ChOiler
       ESP_LOGD(tag, "%s: sleep in %02d secounds...", __func__, i);
       vTaskDelay(pdMS_TO_TICKS(1000));
     }
-    esp32s2::LedControl::allOff();
+    esp32s2::SignalControl::allOff();
     printf("..Good night.\n");
     //
     // Wiederbelebung erst durch Tachoimpuls

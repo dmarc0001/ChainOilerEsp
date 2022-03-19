@@ -6,11 +6,11 @@ echo kopiere debug config...
 copy /Y sdkconfig.debug sdkconfig
 )
 
-
-c:\users\dmarc\.platformio\penv\Scripts\pio.exe run --target menuconfig --environment esp32-debug
+c:\users\dmarc\.platformio\penv\Scripts\pio.exe run --target menuconfig --environment esp32s2-debug-stripe
 
 if exist sdkconfig (
 echo.
 echo kopiere zu debug config...
 copy /Y sdkconfig sdkconfig.debug
 )
+

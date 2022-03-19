@@ -1,5 +1,5 @@
 #include "PumpControl.hpp"
-#include "esp_log.h"
+#include <esp_log.h>
 
 namespace esp32s2
 {
@@ -59,7 +59,7 @@ namespace esp32s2
     //
     // timer starten, microsekunden ( 20 ms soll es)
     //
-    ESP_ERROR_CHECK(esp_timer_start_periodic(PumpControl::timerHandle, 20000));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(PumpControl::timerHandle, 20000ULL));
     //
   }
 
@@ -74,14 +74,14 @@ namespace esp32s2
       haveSwitchedOn = false;
       // pumpen-pin Aus
       gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, Prefs::P_OFF);
-      off_phase = Prefs::PUMP_OFF_ZYCLES;
-    }
-    else if ((Preferences::pumpCycles > 0) & (off_phase < 1))
-    {
-      haveSwitchedOn = true;
       portENTER_CRITICAL(&Preferences::oilCycleMutex);
       --Preferences::pumpCycles;
       portEXIT_CRITICAL(&Preferences::oilCycleMutex);
+      off_phase = Prefs::PUMP_OFF_ZYCLES;
+    }
+    else if ((Preferences::pumpCycles > 0) & (off_phase == 0))
+    {
+      haveSwitchedOn = true;
       // pumpen-pin an
       gpio_set_level(Prefs::OUTPUT_PUMP_CONTROL, Prefs::P_ON);
     }

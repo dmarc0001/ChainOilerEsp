@@ -1,16 +1,21 @@
 #pragma once
 #include <string>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_log.h"
-#include "nvs_flash.h"
-#include "nvs.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <nvs_flash.h>
+#include <nvs.h>
 #include "AppTypes.hpp"
 
 namespace esp32s2
 {
+#ifdef RAWLED
   class LedControl; //! forward deklaration für friend
+#endif
+#ifdef LEDSTRIPE
+  class LedStripeControl;
+#endif
   class PumpControl;
+  class SignalControl;
 }
 
 namespace Prefs
@@ -49,10 +54,17 @@ namespace Prefs
     static volatile fClick controlSwitchAction; //! ist ein Ereignis?
     static volatile fClick rainSwitchAction;    //! ist ein ereignis?
     static volatile uint8_t pumpCycles;         //! Anzahl der Pumenstösse, setzten aktiviert die Pumpe
+    static volatile bool pumpAction;            //! Marker wenn pumpenstöse gesetzt werden, pumpCycles ist zu schnell auf 0
 
   public:
-    friend esp32s2::LedControl;                    //! ein Freund
+#ifdef RAWLED
+    friend esp32s2::LedControl; //! ein Freund
+#endif
+#ifdef LEDSTRIPE
+    friend esp32s2::LedStripeControl; //! ein Freund
+#endif
     friend esp32s2::PumpControl;                   //! ein Freund
+    friend esp32s2::SignalControl;                 //! auch ein Freund
     static const std::string &getVersion();        //! Versionsstring zurückgeben
     static void init();                            //! das (statische) Objekt initialisieren
     static void close();                           //! Objekt schließen
@@ -82,7 +94,7 @@ namespace Prefs
     static void setSensorThreshold(int);           //! setzte sen Schwelenwert des Regensensors
     static int getSensorThreshold();               //! lese Schwellenwert des Regensensors
     static uint16_t getPulsesFor100Meters();       //! gib impulse per 100 Meter, errechnet aus den Parametern
-    static uint16_t getPulsesFor10Meters();        //! impulse per 10 Meter, für Tacho
+    static uint16_t getPulsesFor25Meters();        //! impulse per 25 Meter, für Tacho
     static uint16_t getMinimalPulseLength();       //! die kleinste Pulslänge in meiner Konfiguration
     static uint32_t getCounterPulsesForInterval(); //! wie viele impuse zum erreichen der strecke
     static opMode getAppMode();                    //! gib Operationsmode zurück
