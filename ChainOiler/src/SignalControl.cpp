@@ -22,11 +22,40 @@ namespace esp32s2
   void SignalControl::init()
   {
     using namespace Prefs;
+    ESP_LOGD(tag, "init hardware for signaling...done");
+
+#ifdef RAWLED
+    esp32s2::LedControl::init();
+#endif
+#ifdef LEDSTRIPE
+    esp32s2::LedStripeControl::init();
+#endif
     //
     // Timer starten
     //
     SignalControl::startTimer();
-    ESP_LOGD(tag, "init hardware for LED...done");
+    ESP_LOGD(tag, "init hardware for signaling...done");
+  }
+
+  void SignalControl::allOff()
+  {
+#ifdef RAWLED
+    LedControl::allOff();
+#endif
+#ifdef LEDSTRIPE
+    LedStripeControl::allOff();
+#endif
+  }
+
+#ifdef RAWLED
+#endif
+#ifdef LEDSTRIPE
+#endif
+
+  void SignalControl::flashControlLED()
+  {
+    // TODO: Contol LED blitzen lassen
+    controlLedSwitchedOffDelta = Prefs::BLINK_LED_CONTROL_NORMAL_ON;
   }
 
   /**
@@ -84,16 +113,33 @@ namespace esp32s2
       {
         if (attentionLEDIsOn)
         {
-          // TODO: Blinkled aus
+          // Blink led aus
+#ifdef RAWLED
+          LedControl::setAttentionLED(false);
+#endif
+#ifdef LEDSTRIPE
+          LedStripeControl::setAttentionLED(false);
+#endif
           nextChange = nowTime + Prefs::BLINK_LED_ATTENTION_OFF;
           attentionLEDIsOn = false;
         }
         else
         {
-          // TODO: BlinkeLED an
+#ifdef RAWLED
+          LedControl::setAttentionLED(true);
+#endif
+#ifdef LEDSTRIPE
+          LedStripeControl::setAttentionLED(true);
+#endif
           nextChange = nowTime + Prefs::BLINK_LED_ATTENTION_ON;
           attentionLEDIsOn = true;
         }
+#ifdef RAWLED
+        LedControl::makeChange();
+#endif
+#ifdef LEDSTRIPE
+        LedStripeControl::makeChange();
+#endif
       }
       return;
     }
@@ -104,16 +150,34 @@ namespace esp32s2
       {
         if (isApModeOn)
         {
-          // TODO: AP Mode LED aus
+          // AP Mode LED aus
+#ifdef RAWLED
+          LedControl::setAPModeLED(false);
+#endif
+#ifdef LEDSTRIPE
+          LedStripeControl::setAPModeLED(false);
+#endif
           nextChange = nowTime + Prefs::BLINK_LED_CONTROL_AP_OFF;
           isApModeOn = false;
         }
         else
         {
-          // TODO: AP Mode LED an
+          // AP Mode LED an
+#ifdef RAWLED
+          LedControl::setAPModeLED(true);
+#endif
+#ifdef LEDSTRIPE
+          LedStripeControl::setAPModeLED(true);
+#endif
           nextChange = nowTime + Prefs::BLINK_LED_CONTROL_AP_ON;
           isApModeOn = true;
         }
+#ifdef RAWLED
+        LedControl::makeChange();
+#endif
+#ifdef LEDSTRIPE
+        LedStripeControl::makeChange();
+#endif
       }
       return;
     }
@@ -133,7 +197,13 @@ namespace esp32s2
       {
         if (isControlLedOn)
         {
-          // TODO: Contol LED aus
+          // Contol LED aus
+#ifdef RAWLED
+          LedControl::setControlLED(false);
+#endif
+#ifdef LEDSTRIPE
+          LedStripeControl::setControlLED(false);
+#endif
           isControlLedOn = false;
           controlLedSwitchedOff = 0ULL;
         }
@@ -142,7 +212,13 @@ namespace esp32s2
       {
         if (!isControlLedOn)
         {
-          // TODO: Contrtol LED an
+          // Contrtol LED an
+#ifdef RAWLED
+          LedControl::setControlLED(true);
+#endif
+#ifdef LEDSTRIPE
+          LedStripeControl::setControlLED(true);
+#endif
           isControlLedOn = true;
         }
       }
@@ -167,7 +243,13 @@ namespace esp32s2
       //
       if (!isPumpLedOn)
       {
-        // TODO: Pumpe LED AN
+        // Pumpe LED AN
+#ifdef RAWLED
+        LedControl::setPumpLED(true);
+#endif
+#ifdef LEDSTRIPE
+        LedStripeControl::setPumpLED(true);
+#endif
         isPumpLedOn = true;
       }
       // die Ausschaltzeit setzen, falls pumpCycles 0 wird
@@ -182,7 +264,13 @@ namespace esp32s2
       {
         if (isPumpLedOn && (nowTime > pumpLedSwitchedOff))
         {
-          // TODO: Pumnp LED AUS
+          // Tumnp LED AUS
+#ifdef RAWLED
+          LedControl::setPumpLED(false);
+#endif
+#ifdef LEDSTRIPE
+          LedStripeControl::setPumpLED(false);
+#endif
           isPumpLedOn = false;
           pumpLedSwitchedOff = 0ULL;
         }
@@ -193,8 +281,20 @@ namespace esp32s2
     {
       if (isRainLedOn)
       {
-        // TODO: ausschalten
+        // ausschalten
+#ifdef RAWLED
+        LedControl::setRainLED(true);
+#endif
+#ifdef LEDSTRIPE
+        LedStripeControl::setRainLED(true);
+#endif
       }
     }
+#ifdef RAWLED
+    LedControl::makeChange();
+#endif
+#ifdef LEDSTRIPE
+    LedStripeControl::makeChange();
+#endif
   }
 }

@@ -2,6 +2,7 @@
 #include "ProjectDefaults.hpp"
 #include "AppPreferences.hpp"
 #include <cmath>
+#include <esp_log.h>
 
 namespace esp32s2
 {

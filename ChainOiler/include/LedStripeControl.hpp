@@ -19,15 +19,21 @@ namespace esp32s2
     static uint32_t ledCount;             //! Anzahl der LED im Streifen
     static portMUX_TYPE colorMutex;       //! Mutex für zugriff auf hsv-umrechnung
     static led_strip_t *strip;            //! zeiger auf STRIP objekt/struktur
+    static bool changed;                  //! gab es änderungen nach dem refresh?
 
   public:
     static void init();
+    static void allOff();              //! alles ausschalten
+    static void setRainLED(bool);      //! LED für Regen einschalten
+    static void setControlLED(bool);   //! LED für ..ms ein
+    static void setPumpLED(bool);      //! pump led ein ....ms
+    static void setAttentionLED(bool); //! Achtung LED ein oder AUS
+    static void setAPModeLED(bool);    //! LEDs für AP Mide ein
+    static void makeChange();          //! Veränderungen setzen
+    //
     static void hsv2rgb(uint32_t h, uint32_t s, uint32_t v, uint32_t *r, uint32_t *g, uint32_t *b);
     static void hsv2rgba(uint32_t h, uint32_t s, uint32_t v, uint32_t *rgba);
-    static void clear();
     static void setPixel(uint32_t, uint32_t); //! set pixel (index, rgba)
-    static void refresh();
-    static void flashControlLed(int64_t); // control led soll blitzen
 
   private:
     LedStripeControl();

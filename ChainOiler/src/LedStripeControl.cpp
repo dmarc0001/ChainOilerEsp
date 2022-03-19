@@ -1,4 +1,6 @@
 #include "LedStripeControl.hpp"
+#include <esp_log.h>
+#include <esp_err.h>
 
 namespace esp32s2
 {
@@ -8,6 +10,7 @@ namespace esp32s2
   uint32_t LedStripeControl::ledCount{Prefs::LED_STRIPE_COUNT};
   portMUX_TYPE LedStripeControl::colorMutex{0U, 0U};
   led_strip_t *LedStripeControl::strip{nullptr};
+  bool LedStripeControl::changed{true};
 
   /**
    * @brief initialize dribvers for WS2812
@@ -50,6 +53,7 @@ namespace esp32s2
     // Clear LED strip (turn off all LEDs)
     ESP_LOGD(tag, "clear all led...");
     ESP_ERROR_CHECK(LedStripeControl::strip->clear(LedStripeControl::strip, 100));
+    LedStripeControl::changed = false;
     //
     ESP_LOGD(tag, "install WS2812 led stripe driver...OK");
   }
@@ -58,11 +62,51 @@ namespace esp32s2
    * @brief clear all LED
    *
    */
-  void LedStripeControl::clear()
+  void LedStripeControl::allOff()
   {
     if (!LedStripeControl::strip)
       return;
     ESP_ERROR_CHECK(LedStripeControl::strip->clear(LedStripeControl::strip, 100));
+    LedStripeControl::changed = false;
+  }
+
+  void LedStripeControl::setRainLED(bool)
+  {
+    LedStripeControl::changed = true;
+  }
+
+  void LedStripeControl::setControlLED(bool)
+  {
+    LedStripeControl::changed = true;
+  }
+
+  void LedStripeControl::setPumpLED(bool)
+  {
+    LedStripeControl::changed = true;
+  }
+
+  void LedStripeControl::setAttentionLED(bool)
+  {
+    LedStripeControl::changed = true;
+  }
+
+  void LedStripeControl::setAPModeLED(bool)
+  {
+    LedStripeControl::changed = true;
+  }
+
+  /**
+   * @brief refresh/flush all pixels
+   *
+   */
+  void LedStripeControl::makeChange()
+  {
+    if (!changed)
+      return;
+    if (!LedStripeControl::strip)
+      return;
+    ESP_ERROR_CHECK(LedStripeControl::strip->refresh(LedStripeControl::strip, 100));
+    LedStripeControl::changed = false;
   }
 
   /**
@@ -76,22 +120,6 @@ namespace esp32s2
     if (!LedStripeControl::strip)
       return;
     ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, _index, _rgba >> 24, _rgba >> 16, _rgba >> 8));
-  }
-
-  /**
-   * @brief refresh/flush all pixels
-   *
-   */
-  void LedStripeControl::refresh()
-  {
-    if (!LedStripeControl::strip)
-      return;
-    ESP_ERROR_CHECK(LedStripeControl::strip->refresh(LedStripeControl::strip, 100));
-  }
-
-  void LedStripeControl::flashControlLed(int64_t)
-  {
-    // TODO: blitzen einbauen
   }
 
   /**

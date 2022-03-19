@@ -66,7 +66,7 @@ namespace esp32s2
     LedControl::makeChange();
   }
 
-  void LedControl::setAttention(bool _set)
+  void LedControl::setAttentionLED(bool _set)
   {
     //
     // LED vorbereiten
@@ -119,7 +119,7 @@ namespace esp32s2
     LedControl::ctrlLEDMask |= G_LED_CONTROL_MASK;
   }
 
-  void LedControl::setPumpLed(bool _set)
+  void LedControl::setPumpLED(bool _set)
   {
     //
     // LED vorbereiten
@@ -157,6 +157,11 @@ namespace esp32s2
    */
   void LedControl::makeChange()
   {
+    //
+    // wenn es was zu tun gibt
+    //
+    if (LedControl::ctrlLEDMask == 0U)
+      return;
     // ausführen der Änderungen
     dedic_gpio_bundle_write(LedControl::ledBundle, LedControl::ctrlLEDMask, LedControl::ctrlLedValue);
     LedControl::ctrlLEDMask = 0U;  // Maske für zu beackernde LED

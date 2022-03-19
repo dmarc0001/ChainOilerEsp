@@ -5,6 +5,12 @@
 #include <driver/dedic_gpio.h>
 #include "ProjectDefaults.hpp"
 #include "AppPreferences.hpp"
+#ifdef RAWLED
+#include "LedSingleControl.hpp"
+#endif
+#ifdef LEDSTRIPE
+#include "LedStripeControl.hpp"
+#endif
 
 namespace esp32s2
 {
@@ -20,7 +26,9 @@ namespace esp32s2
     static esp_timer_handle_t timerHandle;              //! da handle zum timer für die LED
 
   public:
-    static void init(); //! initialisiere das Objekt
+    static void init();            //! initialisiere das Objekt
+    static void allOff();          //! alle LED aus
+    static void flashControlLED(); //! control LED blitzen
 
   private:
     SignalControl(){};                 //! verbotener Konstruktor (Objekt ist nur statisch)
