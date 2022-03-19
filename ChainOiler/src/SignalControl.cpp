@@ -54,8 +54,13 @@ namespace esp32s2
 
   void SignalControl::flashControlLED()
   {
-    // TODO: Contol LED blitzen lassen
+    // Contol LED blitzen lassen
     controlLedSwitchedOffDelta = Prefs::BLINK_LED_CONTROL_NORMAL_ON;
+  }
+
+  void SignalControl::flashCrossLED()
+  {
+    controlLedSwitchedOffDelta = Prefs::BLINK_LED_CONTROL_CROSS_ON;
   }
 
   /**
@@ -198,12 +203,24 @@ namespace esp32s2
         if (isControlLedOn)
         {
           // Contol LED aus
+          if (Preferences::appOpMode == opMode::CROSS)
+          {
 #ifdef RAWLED
-          LedControl::setControlLED(false);
+            LedControl::setControlCrossLED(false);
 #endif
 #ifdef LEDSTRIPE
-          LedStripeControl::setControlLED(false);
+            LedStripeControl::setControlCrossLED(false);
 #endif
+          }
+          else
+          {
+#ifdef RAWLED
+            LedControl::setControlLED(false);
+#endif
+#ifdef LEDSTRIPE
+            LedStripeControl::setControlLED(false);
+#endif
+          }
           isControlLedOn = false;
           controlLedSwitchedOff = 0ULL;
         }
@@ -213,12 +230,24 @@ namespace esp32s2
         if (!isControlLedOn)
         {
           // Contrtol LED an
+          if (Preferences::appOpMode == opMode::CROSS)
+          {
 #ifdef RAWLED
-          LedControl::setControlLED(true);
+            LedControl::setControlCrossLED(true);
 #endif
 #ifdef LEDSTRIPE
-          LedStripeControl::setControlLED(true);
+            LedStripeControl::setControlCrossLED(true);
 #endif
+          }
+          else
+          {
+#ifdef RAWLED
+            LedControl::setControlLED(true);
+#endif
+#ifdef LEDSTRIPE
+            LedStripeControl::setControlLED(true);
+#endif
+          }
           isControlLedOn = true;
         }
       }
@@ -264,7 +293,7 @@ namespace esp32s2
       {
         if (isPumpLedOn && (nowTime > pumpLedSwitchedOff))
         {
-          // Tumnp LED AUS
+          // Pumnp LED AUS
 #ifdef RAWLED
           LedControl::setPumpLED(false);
 #endif

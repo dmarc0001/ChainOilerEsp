@@ -119,6 +119,22 @@ namespace esp32s2
     LedControl::ctrlLEDMask |= G_LED_CONTROL_MASK;
   }
 
+  void LedControl::setControlCrossLED(bool _set)
+  {
+    //
+    // LED vorbereiten
+    //
+    if (_set)
+    {
+      LedControl::ctrlLedValue |= G_LED_CONTROL_MASK;
+    }
+    else
+    {
+      LedControl::ctrlLedValue &= !G_LED_CONTROL_MASK;
+    }
+    LedControl::ctrlLEDMask |= G_LED_CONTROL_MASK;
+  }
+
   void LedControl::setPumpLED(bool _set)
   {
     //

@@ -51,7 +51,7 @@ namespace Prefs
   constexpr const char *THRESHOLD_RAIN_SENSOR_STR{"rain_threshold"};   //! Regensensor Schwellwert
   constexpr uint32_t DEFAULT_THRESHOLD_RAIN_SENSOR = 512U;             //! Schwellenwert für Regen TODO: Hysterese zum Abschalten
   constexpr const char *PUMP_LED_LITHGING_TIME_STR{"pump_led_time"};   //! Zeit für die Aktivitätsanzeige
-  constexpr uint64_t DEFAULT_PUMP_LED_LITHGING_TIME = 300ULL;          //! Leuchtzeit der Pumpen-LED
+  constexpr uint64_t DEFAULT_PUMP_LED_LITHGING_TIME = 250ULL;          //! Leuchtzeit der Pumpen-LED
   constexpr const char *ABSOLUTE_PATH_LEN_STR{"abs_path_len"};         //! akkumulierte Wegstrecke
   //
   // Ein-/Ausgänge GPIO, nicht konfigurierbar
@@ -72,6 +72,15 @@ namespace Prefs
   constexpr gpio_num_t LED_STRIPE_RMT_TX_GPIO = GPIO_NUM_17;      //! Kontrolle für LED-stripe
   constexpr rmt_channel_t LED_STRIPE_RMT_CHANNEL = RMT_CHANNEL_3; //! welcher remotecontrol channel
   constexpr uint32_t LED_STRIPE_COUNT = 3U;                       //! Anzahl der LED im Streifen
+  constexpr uint32_t LED_STRIPE_CONTROL = 2U;                     //! Stripe LED für CONTROL
+  constexpr uint32_t LED_STRIPE_RAIN = 1U;                        //! Stripe LED für Regen
+  constexpr uint32_t LED_STRIPE_PUMP = 0L;                        //! Stripe LED für Pumpe
+  constexpr uint32_t LED_STRIPE_CONTROL_HSVCOLOR = 120U;          //! Farbe für Control Blinken (grün)
+  constexpr uint32_t LED_STRIPE_CROSS_HSVCOLOR = 15U;             //! Farbe für Control Blinken (zinnober)
+  constexpr uint32_t LED_STRIPE_PUMP_HSVCOLOR = 195U;             //! Farbe für Pumpe nachleuchten (blaucyan)
+  constexpr uint32_t LED_STRIPE_RAIN_HSVCOLOR = 75U;              //! Farbe für Regen (grüngelb)
+  constexpr uint32_t LED_STRIPE_ATT_HSVCOLOR = 300U;              //! Farbe für ATENTION (magenta)
+  constexpr uint32_t LED_STRIPE_AP_HSVCOLOR = 165U;               //! Farbe für ACCESSPOINT nachleuchten (grüncyan)
 
   //
   // Wie lange dauert das entprellen in Microsekunden
@@ -84,8 +93,8 @@ namespace Prefs
   //
   constexpr int64_t BLINK_LED_CONTROL_NORMAL_OFF = 3000 * 1000;
   constexpr int64_t BLINK_LED_CONTROL_NORMAL_ON = 10 * 1000;
-  constexpr int64_t BLINK_LED_CONTROL_CROSS_OFF = 100 * 1000;
-  constexpr int64_t BLINK_LED_CONTROL_CROSS_ON = 4000 * 1000;
+  constexpr int64_t BLINK_LED_CONTROL_CROSS_OFF = 2500 * 1000;
+  constexpr int64_t BLINK_LED_CONTROL_CROSS_ON = 100 * 1000;
   constexpr int64_t BLINK_LED_CONTROL_AP_OFF = 100 * 1000;
   constexpr int64_t BLINK_LED_CONTROL_AP_ON = 1000 * 1000;
   constexpr int64_t BLINK_LED_CONTROL_TEST_OFF = 60 * 1000;

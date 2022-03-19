@@ -26,14 +26,15 @@ namespace esp32s2
     static uint32_t ctrlLedValue;                //! Werte
 
   public:
-    static void init();                //! hardware/values initialisieren
-    static void allOff();              //! alles ausschalten
-    static void setRainLED(bool);      //! LED für Regen einschalten
-    static void setControlLED(bool);   //! LED für ..ms ein
-    static void setPumpLED(bool);      //! pump led ein ....ms
-    static void setAttentionLED(bool); //! Achtung LED ein oder AUS
-    static void setAPModeLED(bool);    //! LEDs für AP Mide ein
-    static void makeChange();          //! Veränderungen setzen
+    static void init();                   //! hardware/values initialisieren
+    static void allOff();                 //! alles ausschalten
+    static void setRainLED(bool);         //! LED für Regen einschalten
+    static void setControlLED(bool);      //! LED für ..ms ein
+    static void setControlCrossLED(bool); //! LED für ..ms ein
+    static void setPumpLED(bool);         //! pump led ein ....ms
+    static void setAttentionLED(bool);    //! Achtung LED ein oder AUS
+    static void setAPModeLED(bool);       //! LEDs für AP Mide ein
+    static void makeChange();             //! Veränderungen setzen
 
   private:
     LedControl(){};

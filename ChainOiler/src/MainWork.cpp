@@ -152,7 +152,7 @@ namespace ChOiler
         {
           // Blinken initiieren
           ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_CROSS_ON + BLINK_LED_CONTROL_CROSS_OFF + BLINK_LED_CONTROL_CROSS_OFF;
-          esp32s2::SignalControl::flashControlLED();
+          esp32s2::SignalControl::flashCrossLED();
         }
         MainWorker::buttonStati();
         MainWorker::tachoCompute();
@@ -361,11 +361,13 @@ namespace ChOiler
         {
           ESP_LOGI(tag, "set NORMAL mode");
           Preferences::setAppMode(opMode::NORMAL);
+          SignalControl::flashControlLED();
         }
         else
         {
           ESP_LOGI(tag, "set CROSS mode");
           Preferences::setAppMode(opMode::CROSS);
+          SignalControl::flashCrossLED();
         }
       }
       //

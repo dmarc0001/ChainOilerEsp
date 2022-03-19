@@ -29,6 +29,7 @@ namespace esp32s2
     static void init();            //! initialisiere das Objekt
     static void allOff();          //! alle LED aus
     static void flashControlLED(); //! control LED blitzen
+    static void flashCrossLED();   //! cross LED blitzen
 
   private:
     SignalControl(){};                 //! verbotener Konstruktor (Objekt ist nur statisch)
