@@ -1,7 +1,6 @@
 #include "TachoControl.hpp"
 #include "ProjectDefaults.hpp"
 #include "AppPreferences.hpp"
-#include "LedControl.hpp"
 #include <cmath>
 
 namespace esp32s2

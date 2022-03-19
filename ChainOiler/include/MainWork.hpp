@@ -8,22 +8,21 @@
 #include <limits>
 #include <time.h>
 #include <sys/time.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_sleep.h"
-#include "driver/rtc_io.h"
-#include "driver/uart.h"
-#include "esp_log.h"
-#include "esp_task_wdt.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <esp_sleep.h>
+#include <driver/rtc_io.h>
+#include <driver/uart.h>
+#include <esp_task_wdt.h>
 #include "ProjectDefaults.hpp"
 #include "AppPreferences.hpp"
 #include "AppTypes.hpp"
 #include "TachoControl.hpp"
 #ifdef RAWLED
-#include "LedControl.hpp"
+#include "LedSingleControl.hpp"
 #endif
 #ifdef LEDSTRIPE
-#include "LedStrip.hpp"
+#include "LedStripeControl.hpp"
 #endif
 #include "ButtonControl.hpp"
 #include "PumpControl.hpp"

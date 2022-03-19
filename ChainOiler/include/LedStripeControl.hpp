@@ -1,17 +1,16 @@
 #pragma once
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_task_wdt.h"
-#include "esp_log.h"
-#include "driver/rmt.h"
-#include "soc/rtc_wdt.h"
-#include "led_strip.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <esp_task_wdt.h>
+#include <driver/rmt.h>
+#include <soc/rtc_wdt.h>
+#include <led_strip.h>
 #include "ProjectDefaults.hpp"
 
 namespace esp32s2
 {
-  class LedStrip
+  class LedStripeControl
   {
   private:
     static const char *tag;               //! der Logname
@@ -31,7 +30,7 @@ namespace esp32s2
     static void flashControlLed(int64_t); // control led soll blitzen
 
   private:
-    LedStrip();
+    LedStripeControl();
   };
 
 }

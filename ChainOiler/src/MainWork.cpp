@@ -1,4 +1,5 @@
 #include "MainWork.hpp"
+#include <esp_log.h>
 
 namespace ChOiler
 {
@@ -51,7 +52,7 @@ namespace ChOiler
     esp32s2::LedControl::init();
 #endif
 #ifdef LEDSTRIPE
-    esp32s2::LedStrip::init();
+    esp32s2::LedStripeControl::init();
 #endif
     esp32s2::PumpControl::init();
     esp32s2::TachoControl::init();
@@ -91,7 +92,7 @@ namespace ChOiler
     esp32s2::LedControl::allOff();
 #endif
 #ifdef LEDSTRIPE
-    esp32s2::LedStrip::clear();
+    esp32s2::LedStripeControl::clear();
 #endif
     //
     Preferences::setAppMode(opMode::NORMAL);
@@ -154,7 +155,7 @@ namespace ChOiler
           esp32s2::LedControl::setControlLED(BLINK_LED_CONTROL_NORMAL_ON);
 #endif
 #ifdef LEDSTRIPE
-          esp32s2::LedStrip::flashControlLed(BLINK_LED_CONTROL_NORMAL_ON);
+          esp32s2::LedStripeControl::flashControlLed(BLINK_LED_CONTROL_NORMAL_ON);
 #endif
         }
         MainWorker::buttonStati();
@@ -170,7 +171,7 @@ namespace ChOiler
           esp32s2::LedControl::setControlLED(BLINK_LED_CONTROL_CROSS_ON);
 #endif
 #ifdef LEDSTRIPE
-          esp32s2::LedStrip::flashControlLed(BLINK_LED_CONTROL_CROSS_ON);
+          esp32s2::LedStripeControl::flashControlLed(BLINK_LED_CONTROL_CROSS_ON);
 #endif
         }
         MainWorker::buttonStati();
@@ -186,7 +187,7 @@ namespace ChOiler
           esp32s2::LedControl::setControlLED(BLINK_LED_CONTROL_NORMAL_ON);
 #endif
 #ifdef LEDSTRIPE
-          esp32s2::LedStrip::flashControlLed(BLINK_LED_CONTROL_NORMAL_ON);
+          esp32s2::LedStripeControl::flashControlLed(BLINK_LED_CONTROL_NORMAL_ON);
 #endif
         }
         MainWorker::buttonStati();
@@ -202,7 +203,7 @@ namespace ChOiler
           esp32s2::LedControl::setControlLED(BLINK_LED_CONTROL_TEST_ON);
 #endif
 #ifdef LEDSTRIPE
-          esp32s2::LedStrip::flashControlLed(BLINK_LED_CONTROL_TEST_ON);
+          esp32s2::LedStripeControl::flashControlLed(BLINK_LED_CONTROL_TEST_ON);
 #endif
         }
         MainWorker::buttonStati();
@@ -216,7 +217,7 @@ namespace ChOiler
           esp32s2::LedControl::setControlLED(BLINK_LED_CONTROL_AP_ON);
 #endif
 #ifdef LEDSTRIPE
-          esp32s2::LedStrip::flashControlLed(BLINK_LED_CONTROL_AP_ON);
+          esp32s2::LedStripeControl::flashControlLed(BLINK_LED_CONTROL_AP_ON);
 #endif
         }
         MainWorker::buttonStati();
@@ -552,7 +553,7 @@ namespace ChOiler
     esp32s2::LedControl::allOff();
 #endif
 #ifdef LEDSTRIPE
-    esp32s2::LedStrip::clear();
+    esp32s2::LedStripeControl::clear();
 #endif
     printf("..Good night.\n");
     //

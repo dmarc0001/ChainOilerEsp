@@ -1,19 +1,19 @@
-#include "LedStrip.hpp"
+#include "LedStripeControl.hpp"
 
 namespace esp32s2
 {
-  const char *LedStrip::tag{"ledstrip"};
-  gpio_num_t LedStrip::stripeRemoteTXPort{Prefs::LED_STRIPE_RMT_TX_GPIO};
-  rmt_channel_t LedStrip::rmtChannel{Prefs::LED_STRIPE_RMT_CHANNEL};
-  uint32_t LedStrip::ledCount{Prefs::LED_STRIPE_COUNT};
-  portMUX_TYPE LedStrip::colorMutex{0U, 0U};
-  led_strip_t *LedStrip::strip{nullptr};
+  const char *LedStripeControl::tag{"ledstrip"};
+  gpio_num_t LedStripeControl::stripeRemoteTXPort{Prefs::LED_STRIPE_RMT_TX_GPIO};
+  rmt_channel_t LedStripeControl::rmtChannel{Prefs::LED_STRIPE_RMT_CHANNEL};
+  uint32_t LedStripeControl::ledCount{Prefs::LED_STRIPE_COUNT};
+  portMUX_TYPE LedStripeControl::colorMutex{0U, 0U};
+  led_strip_t *LedStripeControl::strip{nullptr};
 
   /**
    * @brief initialize dribvers for WS2812
    *
    */
-  void LedStrip::init()
+  void LedStripeControl::init()
   {
     ESP_LOGD(tag, "initialize WS2812 led stripe...");
     rmt_config_t config =
@@ -42,14 +42,14 @@ namespace esp32s2
     ESP_ERROR_CHECK(rmt_driver_install(config.channel, 0, 0));
     // install ws2812 driver
     led_strip_config_t strip_config = LED_STRIP_DEFAULT_CONFIG(ledCount, (led_strip_dev_t)config.channel);
-    LedStrip::strip = led_strip_new_rmt_ws2812(&strip_config);
-    if (!LedStrip::strip)
+    LedStripeControl::strip = led_strip_new_rmt_ws2812(&strip_config);
+    if (!LedStripeControl::strip)
     {
       ESP_LOGE(tag, "install WS2812 driver failed");
     }
     // Clear LED strip (turn off all LEDs)
     ESP_LOGD(tag, "clear all led...");
-    ESP_ERROR_CHECK(LedStrip::strip->clear(LedStrip::strip, 100));
+    ESP_ERROR_CHECK(LedStripeControl::strip->clear(LedStripeControl::strip, 100));
     //
     ESP_LOGD(tag, "install WS2812 led stripe driver...OK");
   }
@@ -58,11 +58,11 @@ namespace esp32s2
    * @brief clear all LED
    *
    */
-  void LedStrip::clear()
+  void LedStripeControl::clear()
   {
-    if (!LedStrip::strip)
+    if (!LedStripeControl::strip)
       return;
-    ESP_ERROR_CHECK(LedStrip::strip->clear(LedStrip::strip, 100));
+    ESP_ERROR_CHECK(LedStripeControl::strip->clear(LedStripeControl::strip, 100));
   }
 
   /**
@@ -71,25 +71,25 @@ namespace esp32s2
    * @param _index
    * @param _rgba
    */
-  void LedStrip::setPixel(uint32_t _index, uint32_t _rgba)
+  void LedStripeControl::setPixel(uint32_t _index, uint32_t _rgba)
   {
-    if (!LedStrip::strip)
+    if (!LedStripeControl::strip)
       return;
-    ESP_ERROR_CHECK(LedStrip::strip->set_pixel(LedStrip::strip, _index, _rgba >> 24, _rgba >> 16, _rgba >> 8));
+    ESP_ERROR_CHECK(LedStripeControl::strip->set_pixel(LedStripeControl::strip, _index, _rgba >> 24, _rgba >> 16, _rgba >> 8));
   }
 
   /**
    * @brief refresh/flush all pixels
    *
    */
-  void LedStrip::refresh()
+  void LedStripeControl::refresh()
   {
-    if (!LedStrip::strip)
+    if (!LedStripeControl::strip)
       return;
-    ESP_ERROR_CHECK(LedStrip::strip->refresh(LedStrip::strip, 100));
+    ESP_ERROR_CHECK(LedStripeControl::strip->refresh(LedStripeControl::strip, 100));
   }
 
-  void LedStrip::flashControlLed(int64_t)
+  void LedStripeControl::flashControlLed(int64_t)
   {
     // TODO: blitzen einbauen
   }
@@ -102,9 +102,9 @@ namespace esp32s2
    * @param _value
    * @param _rgba
    */
-  void LedStrip::hsv2rgba(uint32_t _hue, uint32_t _sat, uint32_t _value, uint32_t *_rgba)
+  void LedStripeControl::hsv2rgba(uint32_t _hue, uint32_t _sat, uint32_t _value, uint32_t *_rgba)
   {
-    portENTER_CRITICAL(&LedStrip::colorMutex);
+    portENTER_CRITICAL(&LedStripeControl::colorMutex);
 
     _hue %= 360; // h -> [0,360]
     uint32_t rgb_max = _value * 2.55f;
@@ -137,7 +137,7 @@ namespace esp32s2
       *_rgba = rgb_max << 24 | rgb_min << 16 | (rgb_max - rgb_adj) << 8;
       break;
     }
-    portEXIT_CRITICAL(&LedStrip::colorMutex);
+    portEXIT_CRITICAL(&LedStripeControl::colorMutex);
   }
 
   /**
@@ -150,9 +150,9 @@ namespace esp32s2
    * @param green
    * @param blue
    */
-  void LedStrip::hsv2rgb(uint32_t hue, uint32_t sat, uint32_t value, uint32_t *red, uint32_t *green, uint32_t *blue)
+  void LedStripeControl::hsv2rgb(uint32_t hue, uint32_t sat, uint32_t value, uint32_t *red, uint32_t *green, uint32_t *blue)
   {
-    portENTER_CRITICAL(&LedStrip::colorMutex);
+    portENTER_CRITICAL(&LedStripeControl::colorMutex);
 
     hue %= 360; // h -> [0,360]
     uint32_t rgb_max = value * 2.55f;
@@ -197,7 +197,7 @@ namespace esp32s2
       *blue = rgb_max - rgb_adj;
       break;
     }
-    portEXIT_CRITICAL(&LedStrip::colorMutex);
+    portEXIT_CRITICAL(&LedStripeControl::colorMutex);
   }
 
 }
