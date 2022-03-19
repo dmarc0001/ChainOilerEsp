@@ -9,7 +9,12 @@
 
 namespace esp32s2
 {
+#ifdef RAWLED
   class LedControl; //! forward deklaration für friend
+#endif
+#ifdef LEDSTRIPE
+  class LedStrip;
+#endif
   class PumpControl;
 }
 
@@ -52,7 +57,12 @@ namespace Prefs
     static volatile bool pumpAction;            //! Marker wenn pumpenstöse gesetzt werden, pumpCycles ist zu schnell auf 0
 
   public:
-    friend esp32s2::LedControl;                    //! ein Freund
+#ifdef RAWLED
+    friend esp32s2::LedControl; //! ein Freund
+#endif
+#ifdef LEDSTRIPE
+    friend esp32s2::LedStrip; //! ein Freund
+#endif
     friend esp32s2::PumpControl;                   //! ein Freund
     static const std::string &getVersion();        //! Versionsstring zurückgeben
     static void init();                            //! das (statische) Objekt initialisieren

@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <driver/rtc_io.h>
 #include <driver/adc.h>
+#include <driver/rmt.h>
 
 namespace Prefs
 {
@@ -67,6 +68,11 @@ namespace Prefs
   constexpr gpio_num_t INPUT_RAIN_SWITCH_OPTIONAL = GPIO_NUM_6; //! optionaler Regentaster (TODO:)
   constexpr adc1_channel_t INPUT_ADC_RAIN_00 = ADC1_CHANNEL_0;  //! Eingang Analogschnittstelle GPIO01- PIN01
   constexpr adc1_channel_t INPUT_ADC_RAIN_01 = ADC1_CHANNEL_2;  //! Eingang Analogschnittstelle GPIO03 - PIN03
+  // LED Stripe
+  constexpr gpio_num_t LED_STRIPE_RMT_TX_GPIO = GPIO_NUM_17;      //! Kontrolle für LED-stripe
+  constexpr rmt_channel_t LED_STRIPE_RMT_CHANNEL = RMT_CHANNEL_3; //! welcher remotecontrol channel
+  constexpr uint32_t LED_STRIPE_COUNT = 3U;                       //! Anzahl der LED im Streifen
+
   //
   // Wie lange dauert das entprellen in Microsekunden
   //

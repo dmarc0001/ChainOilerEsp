@@ -19,7 +19,12 @@
 #include "AppPreferences.hpp"
 #include "AppTypes.hpp"
 #include "TachoControl.hpp"
+#ifdef RAWLED
 #include "LedControl.hpp"
+#endif
+#ifdef LEDSTRIPE
+#include "LedStrip.hpp"
+#endif
 #include "ButtonControl.hpp"
 #include "PumpControl.hpp"
 #include "RainSensorControl.hpp"

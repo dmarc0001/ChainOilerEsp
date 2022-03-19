@@ -14,7 +14,7 @@ namespace esp32s2
   volatile int64_t LedControl::rainLedSwitchedOff{0LL};         //! wann soll die Rgen-LED wieder aus?
   volatile int64_t LedControl::apModeLedSwitchOff{0LL};         //! wann soll ap-mode ausgeschakltet werden?
   esp_timer_handle_t LedControl::timerHandle{nullptr};          //! timer handle
-  dedic_gpio_bundle_handle_t LedControl::ledBundle{nullptr};    //! gebünmdetes GPOI Array
+  dedic_gpio_bundle_handle_t LedControl::ledBundle{nullptr};    //! gebündeltes GPOI Array
 
   /**
    * @brief initialisierung der Hardware für die LED
@@ -56,9 +56,6 @@ namespace esp32s2
     // Timer starten
     //
     LedControl::startTimer();
-#ifdef DEBUG
-    LedControl::initWroverLED();
-#endif
     ESP_LOGD(tag, "init hardware for LED...done");
   }
 
@@ -306,82 +303,6 @@ namespace esp32s2
     {
       dedic_gpio_bundle_write(LedControl::ledBundle, ctrlLEDMask, ctrlLedValue);
     }
-  }
-
-  void LedControl::initWroverLED()
-  {
-    uint32_t red = 255;
-    uint32_t green = 255;
-    uint32_t blue = 0;
-
-    ESP_LOGE(tag, "init WS2812 driver...");
-    rmt_config_t config =
-        {
-            .rmt_mode = RMT_MODE_TX,
-            .channel = RMT_TX_CHANNEL,
-            .gpio_num = GPIO_NUM_18,
-            .clk_div = 2, // set counter clock to 40MHz was 40
-            .mem_block_num = 1,
-            .flags = 0,
-            .tx_config =
-                {
-                    .carrier_freq_hz = 38000,
-                    .carrier_level = RMT_CARRIER_LEVEL_HIGH,
-                    .idle_level = RMT_IDLE_LEVEL_LOW,
-                    .carrier_duty_percent = 33,
-                    .loop_count = 2,
-                    .carrier_en = false,
-                    .loop_en = false,
-                    .idle_output_en = true,
-                }};
-
-    // set counter clock to 40MHz
-    ESP_ERROR_CHECK(rmt_config(&config));
-    ESP_ERROR_CHECK(rmt_driver_install(config.channel, 0, 0));
-
-    // install ws2812 driver
-    led_strip_config_t strip_config = LED_STRIP_DEFAULT_CONFIG(NUM_OF_LED_PER_STRIP, (led_strip_dev_t)config.channel);
-    led_strip_t *strip = led_strip_new_rmt_ws2812(&strip_config);
-    if (!strip)
-    {
-      ESP_LOGE(tag, "install WS2812 driver failed");
-    }
-    // Clear LED strip (turn off all LEDs)
-    ESP_ERROR_CHECK(strip->clear(strip, 100));
-    for (auto i = 0; i < 15; ++i)
-    {
-      switch (i & 3)
-      {
-      case 0:
-        red = 255;
-        green = 0;
-        blue = 0;
-        break;
-      case 1:
-        red = 0;
-        green = 255;
-        blue = 0;
-        break;
-      case 2:
-        red = 0;
-        green = 0;
-        blue = 255;
-        break;
-      default:
-        red = 80;
-        green = 80;
-        blue = 80;
-      }
-      for (int j = 0; j < NUM_OF_LED_PER_STRIP; ++j)
-      {
-        // Write RGB values to strip driver
-        ESP_ERROR_CHECK(strip->set_pixel(strip, j, red, green, blue));
-      }
-      // Flush RGB values to LEDs
-      ESP_ERROR_CHECK(strip->refresh(strip, 100));
-      vTaskDelay(pdMS_TO_TICKS(100));
-    }
-    strip->clear(strip, 50);
   }
 
 } // namespace

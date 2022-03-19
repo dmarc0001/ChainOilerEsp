@@ -40,9 +40,8 @@ namespace esp32s2
     static void
     init();
     static void loop();
-    static void allOff();
-    static void setRainLED(bool);
-    static void initWroverLED();
+    static void allOff();               //! alles ausschalten
+    static void setRainLED(bool);       //! LED für Regen einschalten
     static void setControlLED(int64_t); //! LED für ..ms ein
     static void setPumpLed(int64_t);    //! pump led ein ....ms
     static void setAPModeLED(int64_t);  //! LEDs für AP Mide ein
