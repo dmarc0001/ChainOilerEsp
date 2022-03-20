@@ -72,7 +72,7 @@ namespace Prefs
 // LED Stripe
 //
 #ifdef LEDSTRIPE
-  constexpr gpio_num_t LED_STRIPE_RMT_TX_GPIO = GPIO_NUM_17;      //! Kontrolle für LED-stripe
+  constexpr gpio_num_t LED_STRIPE_RMT_TX_GPIO = GPIO_NUM_36;      //! Kontrolle für LED-stripe
   constexpr rmt_channel_t LED_STRIPE_RMT_CHANNEL = RMT_CHANNEL_3; //! welcher remotecontrol channel
   constexpr uint32_t LED_STRIPE_COUNT = 3U;                       //! Anzahl der LED im Streifen
   constexpr uint32_t LED_STRIPE_CONTROL = 2U;                     //! Stripe LED für CONTROL
