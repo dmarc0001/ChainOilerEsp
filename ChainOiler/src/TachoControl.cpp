@@ -10,9 +10,8 @@ namespace esp32s2
    * @brief instanziere und initialisiere die statischen Variablen
    *
    */
-  xQueueHandle TachoControl::pathLenQueue = nullptr; //! handle fuer queue
-  xQueueHandle TachoControl::speedQueue = nullptr;   //! handle fuer queue
-  const char *TachoControl::tag{"TachoCtrl"};        //! tag fürs debug logging
+  xQueueHandle TachoControl::speedQueue = nullptr; //! handle fuer queue
+  const char *TachoControl::tag{"TachoCtrl"};      //! tag fürs debug logging
 
   /**
    * Initialisieere die Hardware
@@ -24,15 +23,16 @@ namespace esp32s2
     ESP_LOGI(tag, "init hardware...");
     //
     // Queue initialisieren
+    // Jeder Eintrag markiert 25 Meter
+    // der Wert ist die Zeit für diese 25 Meter in us
     //
-    pathLenQueue = xQueueCreate(QUEUE_LEN_DISTANCE, sizeof(pathLenMeters));
-    speedQueue = xQueueCreate(QUEUE_LEN_TACHO, sizeof(deltaTimeTenMeters_us));
+    speedQueue = xQueueCreate(QUEUE_LEN_TACHO, sizeof(tachoQueueEntry_t));
     //
     // Tacho initialisieren
     //
     ESP_LOGD(tag, "init tacho input...");
     //
-    //  Tacho  Eingang
+    //  Tacho Eingang
     //
     gpio_config_t config_in = {.pin_bit_mask = BIT64(INPUT_TACHO),
                                .mode = GPIO_MODE_INPUT,
@@ -47,7 +47,7 @@ namespace esp32s2
     //
     pcnt_unit_t unit0 = PCNT_UNIT_0;
     ESP_LOGD(tag, "init pulse counter unit0, channel 0...");
-    int16_t pulsesFor25Meters = Preferences::getPulsesFor25Meters();
+    int16_t pulsesFor25Meters = static_cast<int16_t>(Preferences::getPulsesFor25Meters());
     //
     // Pulszähler Wegstrecke initialisieren
     //
@@ -68,6 +68,7 @@ namespace esp32s2
     //
     ESP_ERROR_CHECK(pcnt_unit_config(&pcnt_config_w));
     ESP_LOGD(tag, "init pulse counter unit0, channel 0...done");
+    //
     // Configure and enable the input filter
     // 1800 zyklen sind bei 80 mhz 22 us
     // also wird alles ignoriert was kürzer ist
@@ -93,7 +94,7 @@ namespace esp32s2
     // ISR installieren und Callback aktivieren
     //
     pcnt_isr_service_install(ESP_INTR_FLAG_IRAM);
-    pcnt_isr_handler_add(unit0, TachoControl::tachoOilerCountISR, nullptr);
+    pcnt_isr_handler_add(unit0, TachoControl::tachoCountISR, nullptr);
     //
     // alles ist initialisiert, starte die Counter
     //
@@ -102,14 +103,11 @@ namespace esp32s2
   }
 
   /**
-   * @brief Benachrichtige bei gewünschter Entfernung (hier 100 Meter)
+   * @brief Benachrichtige bei gewünschter Entfernung (hier 25 Meter)
    *
    */
-  void IRAM_ATTR TachoControl::tachoOilerCountISR(void *)
+  void IRAM_ATTR TachoControl::tachoCountISR(void *)
   {
-    static uint32_t counter{0};
-    static uint32_t path_len = Prefs::PATH_LEN_METERS_PER_ISR * 4U;
-    uint64_t currentTimeStamp{0};
     int task_awoken = pdFALSE;
     /*
     PCNT_EVT_THRES_1 = BIT(2),           //!< PCNT watch point event: threshold1 value event
@@ -124,31 +122,21 @@ namespace esp32s2
     //
     if (uxQueueMessagesWaiting(TachoControl::speedQueue) < Prefs::QUEUE_LEN_TACHO)
     {
-      currentTimeStamp = esp_timer_get_time();
-      xQueueSendToBackFromISR(TachoControl::speedQueue, &currentTimeStamp, &task_awoken);
+      //
+      // Einen union Eintrag erstellen
+      //
+      tachoQueueEntry_t entry;
+      entry.timestamp_us = esp_timer_get_time();
+      entry.meters = Prefs::PATH_LEN_METERS_PER_ISR;
+      //
+      // ans Ende der Queue
+      //
+      xQueueSendToBackFromISR(TachoControl::speedQueue, &entry, &task_awoken);
       if (task_awoken == pdTRUE)
       {
         portYIELD_FROM_ISR();
       }
     }
-    if ((counter & 0x03U) == 0x03U)
-    {
-      //
-      // alle 100 Meter, weil interrupt alle 25 Meter
-      // die Entfernungdsdaten in die Queue speichern
-      //
-      // pcnt_get_event_value(PCNT_UNIT_0, PCNT_EVT_THRES_0, &evt.value);
-      if (uxQueueMessagesWaiting(TachoControl::pathLenQueue) < Prefs::QUEUE_LEN_DISTANCE)
-      {
-        // xQueueSendToBackFromISR(TachoControl::pathLenQueue, &path_len, &task_awoken);
-        xQueueSendToBackFromISR(TachoControl::pathLenQueue, &path_len, &task_awoken);
-        if (task_awoken == pdTRUE)
-        {
-          portYIELD_FROM_ISR();
-        }
-      }
-    }
-    ++counter;
   }
 
   /**

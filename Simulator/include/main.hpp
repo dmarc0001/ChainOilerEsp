@@ -26,9 +26,10 @@ constexpr long MIN_SPEED = 10;
 //
 void setup();
 void loop();
+void flashLed( uint32_t );
 uint32_t pulsesForKmh( double speed );
-ICACHE_RAM_ATTR void timerIsr();
-ICACHE_RAM_ATTR void functionBreakSwitchIsr();
+IRAM_ATTR void timerIsr();
+IRAM_ATTR void functionBreakSwitchIsr();
 volatile uint32_t g_counter;
 volatile bool breakAction;
 volatile bool isBreak;

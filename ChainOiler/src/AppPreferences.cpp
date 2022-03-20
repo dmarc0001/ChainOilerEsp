@@ -5,7 +5,7 @@
 
 namespace Prefs
 {
-  const char *Preferences::serialStr = "20220319-210303-build-1124";
+  const char *Preferences::serialStr = "20220320-203640-build-1190";
   const std::string Preferences::serialString = std::string(Preferences::serialStr);
   const char *Preferences::tag{"Preferences"};                              //! tag fürs debug logging
   nvs_handle_t Preferences::nvs_handle{0U};                                 //! handle für NVS
@@ -684,20 +684,20 @@ namespace Prefs
   }
 
   /**
-   * @brief Berechne Anzahl der Tachoimpulse für 10 Meter (für Tacho/speed)
+   * @brief Berechne Anzahl der Tachoimpulse für 25 Meter (für Tacho/speed)
    *
    * @return int16_t
    */
   uint16_t Preferences::getPulsesFor25Meters()
   {
-    float val10Meters = (25.0 / circumFerence) * pulsePerRound;
-    uint16_t count = static_cast<uint16_t>(std::ceil(val10Meters));
+    float val25Meters = (25.0 / circumFerence) * pulsePerRound;
+    uint16_t count = static_cast<uint16_t>(std::ceil(val25Meters));
     ESP_LOGI(tag, "==== pulses for 25 meters: <%06d>", count);
     return (count >= 1) ? count : 1;
   }
 
   /**
-   * @brief berechne die kleinste Impulslänge bei den Eisntellungen für Tacho
+   * @brief berechne die kleinste Impulslänge bei den Einstellungen für Tacho
    *
    * @return uint16_t
    */
