@@ -24,16 +24,11 @@ namespace ChOiler
 
 namespace esp32s2
 {
-  using pcnt_evt_t = struct
+  struct tachoQueueEntry_t
   {
-    // pulse counter queue structur
-    pcnt_unit_t unit;         //! the PCNT unit that originated an interrupt
-    pcnt_evt_type_t evt_type; //! INT type
-    int16_t value;            //! value
-    uint16_t meters;          //! anzahl Meter
+    int64_t timestamp_us;
+    uint32_t meters;
   };
-  using deltaTimeTenMeters_us = uint64_t; //! zeitstempel für 10 Meter
-  using pathLenMeters = uint32_t;         // Wegstrecke in Metern
 
   class TachoControl
   {
@@ -42,7 +37,6 @@ namespace esp32s2
 
   protected:
     static void init();
-    static xQueueHandle pathLenQueue;
     static xQueueHandle speedQueue;
 
   public:
@@ -51,8 +45,7 @@ namespace esp32s2
     static void resume();
 
   private:
-    static void IRAM_ATTR tachoOilerCountISR(void *);
-    static void IRAM_ATTR speedCountISR(void *);
+    static void IRAM_ATTR tachoCountISR(void *);
   };
 
 } // namespace esp32s2

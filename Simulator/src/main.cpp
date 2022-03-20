@@ -64,6 +64,14 @@ uint32_t pulsesForKmh( double speed )
   return result;
 }
 
+void flashLed( uint32_t _len )
+{
+  digitalWrite( LED_INTERNAL, LOW );  // led an
+  delay( _len );
+  digitalWrite( LED_INTERNAL, HIGH );  // led an
+  delay( _len );
+}
+
 void loop()
 {
   static float speed = 0.0;
@@ -87,6 +95,8 @@ void loop()
       if ( makeABreak )
       {
         Serial.println( "changed: make a break!" );
+        flashLed( 150UL );
+        flashLed( 180UL );
         // werde langsamer
         isUpwarts = false;
       }
@@ -94,6 +104,10 @@ void loop()
       {
         Serial.print( "changed: end the break, drive on\n" );
         // Pause beendet
+        flashLed( 150UL );
+        flashLed( 150UL );
+        flashLed( 150UL );
+        flashLed( 150UL );
         isBreak = false;
         speed = MIN_SPEED;
         timer1_enable( TIM_DIV16, TIM_EDGE, TIM_LOOP );
@@ -190,7 +204,7 @@ void loop()
 /**
  * Time Interrupt Service routine
  */
-ICACHE_RAM_ATTR void timerIsr()
+IRAM_ATTR void timerIsr()
 {
   volatile static int tacho_state = LOW;
   if ( isBreak )
@@ -208,7 +222,7 @@ ICACHE_RAM_ATTR void timerIsr()
   }
 }
 
-ICACHE_RAM_ATTR void functionBreakSwitchIsr()
+IRAM_ATTR void functionBreakSwitchIsr()
 {
   volatile static uint32_t downTime = 0L;
   volatile static bool functionSwitchDown = false;

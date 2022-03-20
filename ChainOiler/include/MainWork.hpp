@@ -31,11 +31,14 @@ namespace ChOiler
    */
   class MainWorker
   {
+  public:
+    using speedMicroSec = int64_t;
+
   private:
-    static const char *tag;                                     //! Kennzeichnung fürs debug
-    static esp_sleep_wakeup_cause_t wakeupCause;                //! der Grund fürs neu starten
-    static std::list<esp32s2::deltaTimeTenMeters_us> speedList; // Vector für Tachoauswertung
-    static WiFiAccessPoint AccessPoint;                         //! das Objekt für WiFi
+    static const char *tag;                      //! Kennzeichnung fürs debug
+    static esp_sleep_wakeup_cause_t wakeupCause; //! der Grund fürs neu starten
+    static std::list<speedMicroSec> speedList;   //! Liste für Tachoauswertung
+    static WiFiAccessPoint AccessPoint;          //! das Objekt für WiFi
 
   protected:
   public:

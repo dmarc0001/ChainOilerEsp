@@ -68,7 +68,10 @@ namespace Prefs
   constexpr gpio_num_t INPUT_RAIN_SWITCH_OPTIONAL = GPIO_NUM_6; //! optionaler Regentaster (TODO:)
   constexpr adc1_channel_t INPUT_ADC_RAIN_00 = ADC1_CHANNEL_0;  //! Eingang Analogschnittstelle GPIO01- PIN01
   constexpr adc1_channel_t INPUT_ADC_RAIN_01 = ADC1_CHANNEL_2;  //! Eingang Analogschnittstelle GPIO03 - PIN03
-  // LED Stripe
+//
+// LED Stripe
+//
+#ifdef LEDSTRIPE
   constexpr gpio_num_t LED_STRIPE_RMT_TX_GPIO = GPIO_NUM_17;      //! Kontrolle für LED-stripe
   constexpr rmt_channel_t LED_STRIPE_RMT_CHANNEL = RMT_CHANNEL_3; //! welcher remotecontrol channel
   constexpr uint32_t LED_STRIPE_COUNT = 3U;                       //! Anzahl der LED im Streifen
@@ -81,6 +84,7 @@ namespace Prefs
   constexpr uint32_t LED_STRIPE_RAIN_HSVCOLOR = 75U;              //! Farbe für Regen (grüngelb)
   constexpr uint32_t LED_STRIPE_ATT_HSVCOLOR = 300U;              //! Farbe für ATENTION (magenta)
   constexpr uint32_t LED_STRIPE_AP_HSVCOLOR = 165U;               //! Farbe für ACCESSPOINT nachleuchten (grüncyan)
+#endif
 
   //
   // Wie lange dauert das entprellen in Microsekunden
@@ -111,13 +115,13 @@ namespace Prefs
   //
   // Konstanten
   //
-  constexpr size_t QUEUE_LEN_DISTANCE = 10;              //! Wie lang ist die RTOS Queue für entfernungsmessung
-  constexpr size_t QUEUE_LEN_TACHO = 8;                  //! wie lang ist die queue für Tacho Ereignisse
-  constexpr size_t SPEED_HISTORY_LEN = 200;              //! max länge der Tempo-Historie
+  constexpr size_t QUEUE_LEN_TACHO = 24;                 //! wie lang ist die queue für Tacho Ereignisse
+  constexpr size_t SPEED_HISTORY_LEN = 40;               //! max länge der Tempo-Historie
   constexpr uint32_t PATH_LEN_METERS_PER_ISR = 25;       //! wie weit ist die strecke zwiwchen zwei interrupts
   constexpr float PATH_LEN_METERS_PER_ISR_FLOAT = 25.0F; //! dieselbe Länge als Float
   constexpr uint64_t HISTORY_MAX_TIME_MS = 10000;        //! wie lang ist die history beim speed maximal
-  constexpr uint8_t PUMP_OFF_ZYCLES = 8;                 //! wenn die Punpe on war, wie viele Zyklen bis wieder an möglich
+  constexpr uint32_t HISTORY_MAX_SAMPLES = 4;            //! wie viele Samples reichen für die Durchschnittsberechnung x* 25 meter....
+  constexpr uint8_t PUMP_OFF_ZYCLES = 9;                 //! wenn die Punpe on war, wie viele Zyklen bis wieder an möglich
   constexpr uint32_t P_OFF = 0U;                         //! Status für Pumpe OFF
   constexpr uint32_t P_ON = 1U;                          //! Status für Punpe ON
   constexpr uint32_t LED_OFF = 0U;                       //! Status für LED OFF
