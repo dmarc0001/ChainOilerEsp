@@ -11,6 +11,8 @@
 
 namespace esp32s2
 {
+  constexpr uint32_t fadingStep = 3U;
+
   class LedStripeControl : public SignalControlAbstract
   {
     //

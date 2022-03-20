@@ -167,7 +167,10 @@ namespace esp32s2
       return true;
     // berechnen welche Farbe dran ist
     uint32_t r, g, b;
-    pumpFadingValue -= 5U;
+    if (pumpFadingValue > fadingStep)
+      pumpFadingValue -= fadingStep;
+    else
+      pumpFadingValue = 0U;
     LedStripeControl::hsv2rgb(Prefs::LED_STRIPE_PUMP_HSVCOLOR, 100U, pumpFadingValue, &r, &g, &b);
     ESP_ERROR_CHECK(strip->set_pixel(strip, Prefs::LED_STRIPE_PUMP, r, g, b));
     changed = true;

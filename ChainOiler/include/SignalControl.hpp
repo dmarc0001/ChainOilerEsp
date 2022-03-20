@@ -30,6 +30,9 @@
 
 namespace esp32s2
 {
+  // timer periode für LED in us
+  constexpr uint64_t timerPeriod_us = 80 * 1000ULL;
+
   class SignalControl
   {
   private:

@@ -79,14 +79,14 @@ namespace esp32s2
     //
     ESP_ERROR_CHECK(esp_timer_create(&appTimerArgs, &SignalControl::timerHandle));
     //
-    // timer starten, microsekunden ( 100 ms soll es)
+    // timer starten, microsekunden ( timerPeriod_us soll es)
     //
-    ESP_ERROR_CHECK(esp_timer_start_periodic(SignalControl::timerHandle, 100000ULL));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(SignalControl::timerHandle, timerPeriod_us));
     //
   }
 
   /**
-   * @brief Timer alle 100 ms
+   * @brief Timer alle timerPeriod_us us
    *
    */
   void SignalControl::timerCallback(void *)
@@ -246,8 +246,8 @@ namespace esp32s2
           }
           else
           {
-            // das dimmen dauert noch (gib ihm noch 100 ms)
-            pumpLedSwitchedOff = nowTime + 100 * 1000;
+            // das dimmen dauert noch (gib ihm noch 60 ms)
+            pumpLedSwitchedOff = nowTime + 60 * 1000;
           }
         }
       }
