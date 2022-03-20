@@ -1,4 +1,5 @@
 #include "MainWork.hpp"
+#include <esp_log.h>
 
 namespace ChOiler
 {
@@ -44,10 +45,10 @@ namespace ChOiler
     gpio_install_isr_service(0);
     //
     // initialisiere die Hardware
-    //
+    // -DLEDSTRIPE -DRAWLED
     //
     esp32s2::ButtonControl::init();
-    esp32s2::LedControl::init();
+    esp32s2::SignalControl::init();
     esp32s2::PumpControl::init();
     esp32s2::TachoControl::init();
     esp32s2::RainSensorControl::init();
@@ -82,7 +83,7 @@ namespace ChOiler
     // vTaskDelay(pdMS_TO_TICKS(100));
     // LED aus, NORMAL Modus setzten
     Preferences::setAttentionFlag(false);
-    esp32s2::LedControl::allOff();
+    esp32s2::SignalControl::allOff();
     //
     Preferences::setAppMode(opMode::NORMAL);
     //
@@ -140,7 +141,7 @@ namespace ChOiler
         {
           // Blinken initiieren
           ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_NORMAL_ON + BLINK_LED_CONTROL_NORMAL_OFF;
-          esp32s2::LedControl::setControlLED(BLINK_LED_CONTROL_NORMAL_ON);
+          esp32s2::SignalControl::flashControlLED();
         }
         MainWorker::buttonStati();
         MainWorker::tachoCompute();
@@ -151,7 +152,7 @@ namespace ChOiler
         {
           // Blinken initiieren
           ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_CROSS_ON + BLINK_LED_CONTROL_CROSS_OFF + BLINK_LED_CONTROL_CROSS_OFF;
-          esp32s2::LedControl::setControlLED(BLINK_LED_CONTROL_CROSS_ON);
+          esp32s2::SignalControl::flashCrossLED();
         }
         MainWorker::buttonStati();
         MainWorker::tachoCompute();
@@ -162,7 +163,7 @@ namespace ChOiler
         {
           // Blinken initiieren
           ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_NORMAL_ON + BLINK_LED_CONTROL_NORMAL_OFF;
-          esp32s2::LedControl::setControlLED(BLINK_LED_CONTROL_NORMAL_ON);
+          esp32s2::SignalControl::flashControlLED();
         }
         MainWorker::buttonStati();
         MainWorker::tachoCompute();
@@ -173,7 +174,7 @@ namespace ChOiler
         {
           // Blinken initiieren
           ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_TEST_ON + BLINK_LED_CONTROL_TEST_OFF;
-          esp32s2::LedControl::setControlLED(BLINK_LED_CONTROL_TEST_ON);
+          esp32s2::SignalControl::flashControlLED();
         }
         MainWorker::buttonStati();
         break;
@@ -182,7 +183,7 @@ namespace ChOiler
         {
           // Blinken initiieren
           ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_AP_ON + BLINK_LED_CONTROL_AP_OFF;
-          esp32s2::LedControl::setAPModeLED(BLINK_LED_CONTROL_AP_ON);
+          esp32s2::SignalControl::flashControlLED();
         }
         MainWorker::buttonStati();
         break;
@@ -344,7 +345,6 @@ namespace ChOiler
       if (Preferences::getControlSwitchAction() == fClick::SHORT)
       {
         ESP_LOGD(tag, "CONTROL Button short down");
-        // LedControl::allOff();
         if (Preferences::getAppMode() == opMode::APMODE)
         {
           // unschalten in Normal
@@ -361,11 +361,13 @@ namespace ChOiler
         {
           ESP_LOGI(tag, "set NORMAL mode");
           Preferences::setAppMode(opMode::NORMAL);
+          SignalControl::flashControlLED();
         }
         else
         {
           ESP_LOGI(tag, "set CROSS mode");
           Preferences::setAppMode(opMode::CROSS);
+          SignalControl::flashCrossLED();
         }
       }
       //
@@ -514,7 +516,7 @@ namespace ChOiler
       ESP_LOGD(tag, "%s: sleep in %02d secounds...", __func__, i);
       vTaskDelay(pdMS_TO_TICKS(1000));
     }
-    esp32s2::LedControl::allOff();
+    esp32s2::SignalControl::allOff();
     printf("..Good night.\n");
     //
     // Wiederbelebung erst durch Tachoimpuls

@@ -1,4 +1,5 @@
 #include "ConfigWiFoAP.hpp"
+#include <lwip/err.h>
 #include <esp_err.h>
 #include <esp_log.h>
 

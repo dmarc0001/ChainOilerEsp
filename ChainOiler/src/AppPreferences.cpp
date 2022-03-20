@@ -1,10 +1,11 @@
 #include "AppPreferences.hpp"
 #include "ProjectDefaults.hpp"
 #include <cmath>
+#include <esp_log.h>
 
 namespace Prefs
 {
-  const char *Preferences::serialStr = "20220316-214502-build-0977";
+  const char *Preferences::serialStr = "20220319-210303-build-1124";
   const std::string Preferences::serialString = std::string(Preferences::serialStr);
   const char *Preferences::tag{"Preferences"};                              //! tag fürs debug logging
   nvs_handle_t Preferences::nvs_handle{0U};                                 //! handle für NVS

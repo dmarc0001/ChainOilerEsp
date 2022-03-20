@@ -1,16 +1,21 @@
 #pragma once
 #include <string>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_log.h"
-#include "nvs_flash.h"
-#include "nvs.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <nvs_flash.h>
+#include <nvs.h>
 #include "AppTypes.hpp"
 
 namespace esp32s2
 {
+#ifdef RAWLED
   class LedControl; //! forward deklaration für friend
+#endif
+#ifdef LEDSTRIPE
+  class LedStripeControl;
+#endif
   class PumpControl;
+  class SignalControl;
 }
 
 namespace Prefs
@@ -52,8 +57,14 @@ namespace Prefs
     static volatile bool pumpAction;            //! Marker wenn pumpenstöse gesetzt werden, pumpCycles ist zu schnell auf 0
 
   public:
-    friend esp32s2::LedControl;                    //! ein Freund
+#ifdef RAWLED
+    friend esp32s2::LedControl; //! ein Freund
+#endif
+#ifdef LEDSTRIPE
+    friend esp32s2::LedStripeControl; //! ein Freund
+#endif
     friend esp32s2::PumpControl;                   //! ein Freund
+    friend esp32s2::SignalControl;                 //! auch ein Freund
     static const std::string &getVersion();        //! Versionsstring zurückgeben
     static void init();                            //! das (statische) Objekt initialisieren
     static void close();                           //! Objekt schließen

@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <driver/rtc_io.h>
 #include <driver/adc.h>
+#include <driver/rmt.h>
 
 namespace Prefs
 {
@@ -50,7 +51,7 @@ namespace Prefs
   constexpr const char *THRESHOLD_RAIN_SENSOR_STR{"rain_threshold"};   //! Regensensor Schwellwert
   constexpr uint32_t DEFAULT_THRESHOLD_RAIN_SENSOR = 512U;             //! Schwellenwert für Regen TODO: Hysterese zum Abschalten
   constexpr const char *PUMP_LED_LITHGING_TIME_STR{"pump_led_time"};   //! Zeit für die Aktivitätsanzeige
-  constexpr uint64_t DEFAULT_PUMP_LED_LITHGING_TIME = 300ULL;          //! Leuchtzeit der Pumpen-LED
+  constexpr uint64_t DEFAULT_PUMP_LED_LITHGING_TIME = 250ULL;          //! Leuchtzeit der Pumpen-LED
   constexpr const char *ABSOLUTE_PATH_LEN_STR{"abs_path_len"};         //! akkumulierte Wegstrecke
   //
   // Ein-/Ausgänge GPIO, nicht konfigurierbar
@@ -67,6 +68,20 @@ namespace Prefs
   constexpr gpio_num_t INPUT_RAIN_SWITCH_OPTIONAL = GPIO_NUM_6; //! optionaler Regentaster (TODO:)
   constexpr adc1_channel_t INPUT_ADC_RAIN_00 = ADC1_CHANNEL_0;  //! Eingang Analogschnittstelle GPIO01- PIN01
   constexpr adc1_channel_t INPUT_ADC_RAIN_01 = ADC1_CHANNEL_2;  //! Eingang Analogschnittstelle GPIO03 - PIN03
+  // LED Stripe
+  constexpr gpio_num_t LED_STRIPE_RMT_TX_GPIO = GPIO_NUM_17;      //! Kontrolle für LED-stripe
+  constexpr rmt_channel_t LED_STRIPE_RMT_CHANNEL = RMT_CHANNEL_3; //! welcher remotecontrol channel
+  constexpr uint32_t LED_STRIPE_COUNT = 3U;                       //! Anzahl der LED im Streifen
+  constexpr uint32_t LED_STRIPE_CONTROL = 2U;                     //! Stripe LED für CONTROL
+  constexpr uint32_t LED_STRIPE_RAIN = 1U;                        //! Stripe LED für Regen
+  constexpr uint32_t LED_STRIPE_PUMP = 0L;                        //! Stripe LED für Pumpe
+  constexpr uint32_t LED_STRIPE_CONTROL_HSVCOLOR = 120U;          //! Farbe für Control Blinken (grün)
+  constexpr uint32_t LED_STRIPE_CROSS_HSVCOLOR = 15U;             //! Farbe für Control Blinken (zinnober)
+  constexpr uint32_t LED_STRIPE_PUMP_HSVCOLOR = 195U;             //! Farbe für Pumpe nachleuchten (blaucyan)
+  constexpr uint32_t LED_STRIPE_RAIN_HSVCOLOR = 75U;              //! Farbe für Regen (grüngelb)
+  constexpr uint32_t LED_STRIPE_ATT_HSVCOLOR = 300U;              //! Farbe für ATENTION (magenta)
+  constexpr uint32_t LED_STRIPE_AP_HSVCOLOR = 165U;               //! Farbe für ACCESSPOINT nachleuchten (grüncyan)
+
   //
   // Wie lange dauert das entprellen in Microsekunden
   //
@@ -78,8 +93,8 @@ namespace Prefs
   //
   constexpr int64_t BLINK_LED_CONTROL_NORMAL_OFF = 3000 * 1000;
   constexpr int64_t BLINK_LED_CONTROL_NORMAL_ON = 10 * 1000;
-  constexpr int64_t BLINK_LED_CONTROL_CROSS_OFF = 100 * 1000;
-  constexpr int64_t BLINK_LED_CONTROL_CROSS_ON = 4000 * 1000;
+  constexpr int64_t BLINK_LED_CONTROL_CROSS_OFF = 2500 * 1000;
+  constexpr int64_t BLINK_LED_CONTROL_CROSS_ON = 100 * 1000;
   constexpr int64_t BLINK_LED_CONTROL_AP_OFF = 100 * 1000;
   constexpr int64_t BLINK_LED_CONTROL_AP_ON = 1000 * 1000;
   constexpr int64_t BLINK_LED_CONTROL_TEST_OFF = 60 * 1000;
@@ -88,7 +103,11 @@ namespace Prefs
   constexpr int64_t BLINK_LED_ATTENTION_ON = 35 * 1000;
   constexpr int64_t BLINK_LED_AWAKE_OFF = 150 * 1000;
   constexpr int64_t BLINK_LED_AWAKE_ON = 80 * 1000;
+#ifdef RAWLED
   constexpr int64_t PUMP_LED_DELAY = 3000 * 1000;
+#else
+  constexpr int64_t PUMP_LED_DELAY = 1200 * 1000;
+#endif
   //
   // Konstanten
   //
