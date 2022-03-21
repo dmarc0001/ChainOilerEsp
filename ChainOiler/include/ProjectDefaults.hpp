@@ -95,18 +95,21 @@ namespace Prefs
   //
   // intervalle beim blinken in Microsekunden
   //
-  constexpr int64_t BLINK_LED_CONTROL_NORMAL_OFF = 3000 * 1000;
+  constexpr int64_t BLINK_LED_CONTROL_NORMAL_OFF = 3 * 1000 * 1000;
   constexpr int64_t BLINK_LED_CONTROL_NORMAL_ON = 10 * 1000;
-  constexpr int64_t BLINK_LED_CONTROL_CROSS_OFF = 2500 * 1000;
+  constexpr int64_t BLINK_LED_CONTROL_CROSS_OFF = 4 * 1000 * 1000;
   constexpr int64_t BLINK_LED_CONTROL_CROSS_ON = 100 * 1000;
   constexpr int64_t BLINK_LED_CONTROL_AP_OFF = 100 * 1000;
-  constexpr int64_t BLINK_LED_CONTROL_AP_ON = 1000 * 1000;
+  constexpr int64_t BLINK_LED_CONTROL_AP_ON = 1 * 1000 * 1000;
   constexpr int64_t BLINK_LED_CONTROL_TEST_OFF = 60 * 1000;
   constexpr int64_t BLINK_LED_CONTROL_TEST_ON = 60 * 1000;
   constexpr int64_t BLINK_LED_ATTENTION_OFF = 35 * 1000;
   constexpr int64_t BLINK_LED_ATTENTION_ON = 35 * 1000;
   constexpr int64_t BLINK_LED_AWAKE_OFF = 150 * 1000;
   constexpr int64_t BLINK_LED_AWAKE_ON = 80 * 1000;
+  constexpr int64_t BLINK_LED_RAIN_OFF = 10 * 1000 * 1000;
+  constexpr int64_t BLINK_LED_RAIN_ON = 5 * 1000 * 1000;
+
 #ifdef RAWLED
   constexpr int64_t PUMP_LED_DELAY = 3000 * 1000;
 #else

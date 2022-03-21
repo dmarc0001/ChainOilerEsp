@@ -45,42 +45,48 @@ namespace ChOiler
     gpio_install_isr_service(0);
     //
     // initialisiere die Hardware
-    // -DLEDSTRIPE -DRAWLED
     //
-    esp32s2::ButtonControl::init();
-    esp32s2::SignalControl::init();
-    esp32s2::PumpControl::init();
-    esp32s2::TachoControl::init();
-    esp32s2::RainSensorControl::init();
+    esp32s2::ButtonControl::init();     // Hardware für den Knopf
+    esp32s2::SignalControl::init();     // Signalisierung (LED)
+    esp32s2::PumpControl::init();       // Pumpen Ansteuerung
+    esp32s2::TachoControl::init();      // Tachomessung
+    esp32s2::RainSensorControl::init(); // Regensensor
     ESP_LOGD(tag, "init done.");
   }
 
   /**
-   * @brief Hauptschleife des Programmes
+   * @brief Hauptschleife des Programmes, läuft als eigener TASK
    *
    */
   void MainWorker::run(void *)
   {
     using namespace Prefs;
-    static int64_t computeSpeedTime = esp_timer_get_time() + timeForSpeedMeasure;
-    static int64_t computeOilerCheckTime = esp_timer_get_time() + timeForOilerCheck;
-    static int64_t ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_NORMAL_OFF;
-    esp_err_t err;
-    TaskHandle_t workerHandle = xTaskGetIdleTaskHandle();
+
+    static int64_t computeSpeedTime{0LL};
+    static int64_t computeOilerCheckTime{0LL};
+    static int64_t ledNextActionTime{0LL};
+    static int64_t rainLedNextActionTime{0LL};
+    esp_err_t err{0};
+    TaskHandle_t workerHandle{nullptr};
+    int64_t nowTime = esp_timer_get_time();
 
     //
-    ESP_LOGI(tag, "%s: run start...", __func__);
+    // das Taskhandle für diesen Task erfragen, brauche ich für den Wachhund
+    //
+    workerHandle = xTaskGetIdleTaskHandle();
 
+    ESP_LOGI(tag, "%s: run start...", __func__);
     //
     // das Startsignal leuchten/blinken
     //
     Preferences::setAttentionFlag(true);
+    // blinken zum Start des Task
+    computeSpeedTime = esp_timer_get_time() + timeForSpeedMeasure;
     while (esp_timer_get_time() < computeSpeedTime)
     {
+      // das sollte so 2 Sekunden dauern (timeForSpeedMeasure)
       vTaskDelay(100);
     }
-    // 100 ms warten
-    // vTaskDelay(pdMS_TO_TICKS(100));
     // LED aus, NORMAL Modus setzten
     Preferences::setAttentionFlag(false);
     esp32s2::SignalControl::allOff();
@@ -90,17 +96,23 @@ namespace ChOiler
     // hier geth es dann richtig los
     // SChleife für immer :-)
     //
-    ESP_LOGI(tag, "%s: loop start...", __func__);
+    ESP_LOGD(tag, "%s: loop start...", __func__);
 #ifdef DEBUG
     // TODO: nur zum Testen
     Preferences::addPumpCycles(8);
 #endif
-    // nächste Geschwindigkeitsmessung ist:
-    computeSpeedTime = esp_timer_get_time() + timeForSpeedMeasure;
+    //
+    // Aktionszeitpunkte festlegen
+    //
+    nowTime = esp_timer_get_time();
+    computeSpeedTime = nowTime + timeForSpeedMeasure;
+    computeOilerCheckTime = nowTime + timeForOilerCheck;
+    ledNextActionTime = nowTime + BLINK_LED_CONTROL_NORMAL_OFF;
+    rainLedNextActionTime = nowTime + BLINK_LED_RAIN_OFF;
     //
     // watchdog initialisieren und scharf machen
     //
-    ESP_LOGD(tag, "init watchdog for task...");
+    ESP_LOGI(tag, "init watchdog for task...");
     err = esp_task_wdt_init(10000, false);
     if (err != ESP_OK)
     {
@@ -121,25 +133,24 @@ namespace ChOiler
         ESP_LOGI(tag, "esp watchdog init successful...");
       }
     }
-#ifdef DEBUG
-    // 100 ms warten
-    vTaskDelay(pdMS_TO_TICKS(100));
-#endif
     //
+    // #####################################################################
+    // #### forever and forever                                         ####
     // #####################################################################
     //
     while (true)
     {
       // wachund zurücksetzen
       esp_task_wdt_reset();
-      // taskYIELD();
+      //
       // je nach Modus
+      //
       switch (Preferences::getAppMode())
       {
       case opMode::NORMAL:
         if (esp_timer_get_time() > ledNextActionTime)
         {
-          // Blinken initiieren
+          // Blitzen initiieren
           ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_NORMAL_ON + BLINK_LED_CONTROL_NORMAL_OFF;
           esp32s2::SignalControl::flashControlLED();
         }
@@ -150,8 +161,8 @@ namespace ChOiler
       case opMode::CROSS:
         if (esp_timer_get_time() > ledNextActionTime)
         {
-          // Blinken initiieren
-          ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_CROSS_ON + BLINK_LED_CONTROL_CROSS_OFF + BLINK_LED_CONTROL_CROSS_OFF;
+          // blitzen initiieren
+          ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_CROSS_ON + BLINK_LED_CONTROL_CROSS_OFF;
           esp32s2::SignalControl::flashCrossLED();
         }
         MainWorker::buttonStati();
@@ -161,9 +172,16 @@ namespace ChOiler
       case opMode::RAIN:
         if (esp_timer_get_time() > ledNextActionTime)
         {
-          // Blinken initiieren
+          // blitzen initiieren
           ledNextActionTime = esp_timer_get_time() + BLINK_LED_CONTROL_NORMAL_ON + BLINK_LED_CONTROL_NORMAL_OFF;
           esp32s2::SignalControl::flashControlLED();
+          if (esp_timer_get_time() > rainLedNextActionTime)
+          {
+            esp32s2::SignalControl::flashRainLED();
+            // das bewirkt, dass wenn regenmode aktiv ist, die LED dauerleuchtet
+            // und wenn nicht geht sie aleine aus
+            rainLedNextActionTime = esp_timer_get_time() + BLINK_LED_RAIN_OFF;
+          }
         }
         MainWorker::buttonStati();
         MainWorker::tachoCompute();
@@ -207,20 +225,7 @@ namespace ChOiler
         }
         if (esp_timer_get_time() > computeOilerCheckTime)
         {
-#ifdef DEBUG
-          err = esp_task_wdt_status(workerHandle);
-          if (err != ESP_OK)
-          {
-            if (err == ESP_ERR_NOT_FOUND)
-            {
-              ESP_LOGW(tag, "=== The task is currently not subscribed to the TWDT (Task Watchdog Timer)! ===");
-            }
-            else if (err == ESP_ERR_INVALID_STATE)
-            {
-              ESP_LOGW(tag, "=== The TWDT (Task Watchdog Timer) is not initialized, therefore no tasks can be subscribed === ");
-            }
-          }
-#endif
+          // den Wachhund füttern
           esp_task_wdt_reset();
           computeOilerCheckTime = esp_timer_get_time() + timeForOilerCheck;
           MainWorker::checkOilState();

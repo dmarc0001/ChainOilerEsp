@@ -58,6 +58,11 @@ namespace esp32s2
     controlLedSwitchedOffDelta = Prefs::BLINK_LED_CONTROL_CROSS_ON;
   }
 
+  void SignalControl::flashRainLED()
+  {
+    rainLedSwitchedOff = Prefs::BLINK_LED_RAIN_ON;
+  }
+
   /**
    * @brief eigene Timer routine für die Steuerung der LED
    *
@@ -92,9 +97,10 @@ namespace esp32s2
   void SignalControl::timerCallback(void *)
   {
     //
-    // alle 100 ms
+    // alle timerPeriod_us
     //
     using namespace Prefs;
+
     static bool isBusy{false};
     static uint32_t busyCount{0U};
     static int64_t nextChange{0LL};
@@ -253,12 +259,29 @@ namespace esp32s2
       }
     }
 
-    if (rainLedSwitchedOff != 0uLL)
+    //
+    // soll die Regenlampe an sein?
+    //
+    if (rainLedSwitchedOff != 0LL)
     {
-      if (isRainLedOn)
+      if (nowTime > rainLedSwitchedOff)
       {
-        // ausschalten
-        SignalControl::ledObject->setRainLED(false);
+        // ausschalten?
+        if (isRainLedOn)
+        {
+          SignalControl::ledObject->setRainLED(false);
+          isRainLedOn = false;
+          rainLedSwitchedOff = 0LL;
+        }
+      }
+      else
+      {
+        // einschalten?
+        if (!isRainLedOn)
+        {
+          SignalControl::ledObject->setRainLED(true);
+          isRainLedOn = true;
+        }
       }
     }
     SignalControl::ledObject->makeChange();
