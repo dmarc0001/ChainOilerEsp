@@ -13,8 +13,6 @@
 
 namespace ChOiler
 {
-  constexpr const char *WIFI_NVS_PARTITION{"nvs"};
-
   class WiFiAccessPoint
   {
   private:

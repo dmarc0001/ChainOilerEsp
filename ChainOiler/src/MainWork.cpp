@@ -524,6 +524,10 @@ namespace ChOiler
     esp_deep_sleep_start();
   }
 
+  /**
+   * @brief gehe zum WLAN Accesspoint zum konfigurieren
+   *
+   */
   void MainWorker::switchToAccessPointMode()
   {
     using namespace Prefs;

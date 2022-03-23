@@ -23,11 +23,12 @@ namespace Prefs
   constexpr uint32_t CURRENT_PREFS_VERSION = 1U;
   constexpr uint32_t INVALID_VERSION = 999U;
   constexpr const char *PREFS_PARTITION_LABEL{"prefs"};
+  constexpr const char *WIFI_NVS_PARTITION{"nvs"};
   //
   // Konfigurierbare Parameter und deren keys
   //
   constexpr const char *PREFS_VERSION_STR{"prefs_ver"};                //! Name fuer Version
-  constexpr const char *PREFS_PARTITION{"prefs"};                      //! partition für Einstelliungen
+  constexpr const char *PREFS_PARTITION{"prefs"};                      //! partition für Einstellungen
   constexpr const char *SSID_STR{"ap_ssid"};                           //! SSID name für WLAN-Accesspoint
   constexpr const char *DEFAULT_SSID{"CHAINOILER"};                    //! SSID für WLAN-Accesspoint
   constexpr const char *AP_PASSWORD_STR{"ap_password"};                //! Passwort für WLAN

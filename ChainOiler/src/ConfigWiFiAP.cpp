@@ -15,7 +15,7 @@ namespace ChOiler
   WiFiAccessPoint::WiFiAccessPoint(){};
 
   /**
-   * @brief Eventhandler fü WiFi Funktionen
+   * @brief Eventhandler für WiFi Funktionen
    *
    * @param arg
    * @param event_base
@@ -54,8 +54,11 @@ namespace ChOiler
     //
     // System für WiFi initialisieren
     //
+    ESP_LOGD(tag, "init nvs partition...");
     result = WiFiAccessPoint::initNVS();
+    ESP_LOGD(tag, "init nvs partition...done");
     //
+    ESP_LOGD(tag, "init netif...");
     if (ESP_OK != esp_netif_init())
     {
       //
@@ -65,6 +68,7 @@ namespace ChOiler
       result = false;
     }
 
+    ESP_LOGD(tag, "create event loop...");
     if (result && (ESP_OK != esp_event_loop_create_default()))
     {
       //
@@ -76,15 +80,18 @@ namespace ChOiler
 
     if (result)
     {
+      ESP_LOGD(tag, "make default accesspoint...");
       // default wifi accesspoint machen
       esp_netif_create_default_wifi_ap();
       wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
       // initialisieren, wenn machbar
+      ESP_LOGD(tag, "init wifi...");
       if (result && (ESP_OK != esp_wifi_init(&cfg)))
       {
         ESP_LOGE(tag, "%s, %d: esp_wifi_init() failed!", __FILE__, __LINE__);
         result = false;
       }
+      ESP_LOGD(tag, "init event handler...");
       // event Handler initialisieren
       if (result && (ESP_OK != esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &WiFiAccessPoint::wifiEventHandler,
                                                                    nullptr, nullptr)))
@@ -95,6 +102,7 @@ namespace ChOiler
     }
     if (result)
     {
+      ESP_LOGD(tag, "config my wifi accesspoint...");
       // Meine wifi Konfiguration machen
       void *param = &wifi_config.ap.ssid[0];
       wifi_config.ap.ssid_len = Preferences::getApSSID().copy(static_cast<char *>(param), 32, 0);
@@ -113,6 +121,7 @@ namespace ChOiler
     // meinen accesspoint initialisieren
     //
     // ESP_ERROR_CHECK( esp_wifi_set_mode( WIFI_MODE_AP ) );
+    ESP_LOGD(tag, "set AP mode...");
     if (result && (ESP_OK != esp_wifi_set_mode(WIFI_MODE_AP)))
     {
       ESP_LOGE(tag, "%s, %d: esp_wifi_set_mode() failed!", __FILE__, __LINE__);
@@ -122,6 +131,7 @@ namespace ChOiler
     // Konfiguration setzen
     //
     // ESP_ERROR_CHECK( esp_wifi_set_config( WIFI_IF_AP, &wifi_config ) );
+    ESP_LOGD(tag, "apply my config...");
     if (result && (ESP_OK != esp_wifi_set_config(WIFI_IF_AP, &wifi_config)))
     {
       ESP_LOGE(tag, "%s, %d: esp_wifi_set_config() failed!", __FILE__, __LINE__);
@@ -131,6 +141,7 @@ namespace ChOiler
     // wifi starten um den webserver starten zu können
     //
     // ESP_ERROR_CHECK( esp_wifi_start() );
+    ESP_LOGD(tag, "start wifi...");
     if (result && (ESP_OK != esp_wifi_start()))
     {
       ESP_LOGE(tag, "%s, %d: esp_wifi_start() failed!", __FILE__, __LINE__);
@@ -195,7 +206,7 @@ namespace ChOiler
       ESP_LOGD(tag, "deinit WIFI...OK");
     }
     ESP_LOGD(tag, "deinit WIFI NVS...");
-    nvs_flash_deinit_partition(WIFI_NVS_PARTITION);
+    nvs_flash_deinit_partition(Prefs::WIFI_NVS_PARTITION);
     if (ESP_OK != esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, nullptr))
     {
       ESP_LOGE(tag, "%s, %d: event unregister failed!", __FILE__, __LINE__);
@@ -208,7 +219,7 @@ namespace ChOiler
   {
     WiFiAccessPoint::nvsIsInit = false;
 
-    esp_err_t err = nvs_flash_init_partition(WIFI_NVS_PARTITION);
+    esp_err_t err = nvs_flash_init_partition(Prefs::WIFI_NVS_PARTITION);
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND)
     {
       ESP_LOGE(tag, "WLAN NVM init failed, erase nvm flash...");
@@ -216,8 +227,8 @@ namespace ChOiler
       // Partition ist nicht okay, wird geloescht
       // Wiederhole nvs_flash_init
       //
-      ESP_ERROR_CHECK(nvs_flash_erase_partition(WIFI_NVS_PARTITION));
-      err = nvs_flash_init_partition(WIFI_NVS_PARTITION);
+      ESP_ERROR_CHECK(nvs_flash_erase_partition(Prefs::WIFI_NVS_PARTITION));
+      err = nvs_flash_init_partition(Prefs::WIFI_NVS_PARTITION);
       //
       // ging ales gut?
       //
