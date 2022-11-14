@@ -1,3 +1,7 @@
+restful_server/
+oiler-http/
+http-server-idf-test/
+ChainOiler2/
 workspace_chainoiler.code-workspace
 .vscode/c_cpp_properties.json
 ChainOiler/src/AppPreferences.cpp.old
