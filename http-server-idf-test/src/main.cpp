@@ -24,6 +24,7 @@ void app_main()
     ESP_LOGI( tag, "==================================================================" );
     vTaskDelay( pdMS_TO_TICKS( 1500 ) );
   }
+
   ESP_LOGD( tag, "controller start..." );
   // Initialize NVS
   esp_err_t ret = nvs_flash_init();
