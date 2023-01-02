@@ -31,7 +31,7 @@ namespace esp32s2
     bool changed;                    //! gab es änderungen nach dem refresh?
     static bool colorsComputed;      //! Farben schon berechnet?
     static uint32_t blackRGBA;       //! dunkel
-    static uint32_t controlRGBA;     //! farbe für CONTROL
+    static uint32_t controlRGBA;     //! farbe für CONTROL #303030
     static uint32_t crossRGBA;       //! farbe für CROSS Betrieb
     static uint32_t crossDarkRGBA;   //! farbe für CROSS dunkelphase Betrieb
     static uint32_t pumpRGBA;        //! Farbe für Pumpe
